@@ -1,10 +1,16 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-500 to-cyan-600 p-4 flex justify-center items-center relative">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-8 md:p-10 max-h-[95vh] overflow-y-auto">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-1">Create Call Ticket</h1>
-        <p class="text-gray-600 text-sm">Create a ticket for phone call support</p>
-      </div>
+  <div class="flex flex-col h-full">
+    <!-- Fixed Header -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Create Call Ticket</h1>
+      <p class="text-gray-600">Create a ticket for phone call support</p>
+    </div>
+
+    <!-- Scrollable Main Content -->
+    <div class="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-br from-blue-50 to-cyan-50">
+      <div class="p-6">
+        <div class="bg-white rounded-2xl shadow-xl max-w-4xl mx-auto p-6 md:p-8">
+        <!-- Form content -->
 
       <form @submit.prevent="handleSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         <!-- Customer Name Field -->
@@ -236,13 +242,12 @@
         </div>
       </div>
     </div>
+    </div>
+  </div>
   </div>
 </template>
 
 <script>
-definePageMeta({
-  layout: false
-})
 
 export default {
   name: 'CallTicket',
