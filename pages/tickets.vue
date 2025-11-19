@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-screen overflow-hidden">
     <!-- Fixed Header -->
-    <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
       <h1 class="text-2xl font-bold text-gray-900 mb-4">Support Tickets</h1>
 
       <!-- Search and Filters -->
@@ -215,25 +215,25 @@
     </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto">
-      <div class="bg-white">
+    <div class="flex-1 overflow-auto bg-gray-50" style="height: calc(100vh - 400px);">
+      <div class="p-6 min-h-full">
         <!-- Table View -->
-        <div class="overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50 border-b border-gray-200">
+        <div class="bg-white rounded-lg shadow overflow-hidden" style="min-height: 400px;">
+          <div class="overflow-x-auto" style="height: 100%;">
+            <table class="w-full" style="min-width: 1200px;">
+              <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
-                  <th v-if="visibleColumns.ticketId" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ticket ID</th>
-                  <th v-if="visibleColumns.customer" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
-                  <th v-if="visibleColumns.agent" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Agent</th>
-                  <th v-if="visibleColumns.product" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                  <th v-if="visibleColumns.type" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                  <th v-if="visibleColumns.status" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th v-if="visibleColumns.created" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
-                  <th v-if="visibleColumns.resolved" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Resolved</th>
-                  <th v-if="visibleColumns.csat" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">CSAT</th>
-                  <th v-if="visibleColumns.fcr" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">FCR</th>
-                  <th v-if="visibleColumns.notes" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Notes</th>
+                  <th v-if="visibleColumns.ticketId" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Ticket ID</th>
+                  <th v-if="visibleColumns.customer" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 200px; min-width: 200px;">Customer</th>
+                  <th v-if="visibleColumns.agent" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 150px; min-width: 150px;">Agent</th>
+                  <th v-if="visibleColumns.product" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Product</th>
+                  <th v-if="visibleColumns.type" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Type</th>
+                  <th v-if="visibleColumns.status" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Status</th>
+                  <th v-if="visibleColumns.created" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Created</th>
+                  <th v-if="visibleColumns.resolved" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Resolved</th>
+                  <th v-if="visibleColumns.csat" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 80px; min-width: 80px;">CSAT</th>
+                  <th v-if="visibleColumns.fcr" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 60px; min-width: 60px;">FCR</th>
+                  <th v-if="visibleColumns.notes" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 300px; min-width: 300px;">Notes</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200">
@@ -340,71 +340,7 @@
             </table>
           </div>
 
-          <!-- Pagination Controls -->
-          <div v-if="totalPages > 1" class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div class="flex items-center justify-between">
-              <div class="text-sm text-gray-700">
-                Showing <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span> to
-                <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredTickets.length) }}</span> of
-                <span class="font-medium">{{ filteredTickets.length }}</span> results
-              </div>
-
-              <div class="flex items-center gap-2">
-                <!-- Items per page -->
-                <div class="flex items-center gap-2 text-sm text-gray-600">
-                  <span>Show</span>
-                  <select v-model="itemsPerPage" @change="changeItemsPerPage($event.target.value)" class="border border-gray-300 rounded px-2 py-1 text-sm">
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                  </select>
-                  <span>per page</span>
-                </div>
-
-                <!-- Pagination Buttons -->
-                <div class="flex items-center gap-1">
-                  <!-- Previous Button -->
-                  <button
-                    @click="previousPage"
-                    :disabled="currentPage === 1"
-                    class="px-3 py-1 text-sm border rounded-md transition-colors"
-                    :class="currentPage === 1
-                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-                  >
-                    Previous
-                  </button>
-
-                  <!-- Page Numbers -->
-                  <template v-for="page in pageNumbers" :key="page">
-                    <button
-                      @click="goToPage(page)"
-                      class="px-3 py-1 text-sm border rounded-md transition-colors"
-                      :class="page === currentPage
-                        ? 'border-blue-500 bg-blue-500 text-white'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-                    >
-                      {{ page }}
-                    </button>
-                  </template>
-
-                  <!-- Next Button -->
-                  <button
-                    @click="nextPage"
-                    :disabled="currentPage === totalPages"
-                    class="px-3 py-1 text-sm border rounded-md transition-colors"
-                    :class="currentPage === totalPages
-                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
+  
           <!-- Empty State -->
           <div v-if="filteredTickets.length === 0" class="text-center py-12">
             <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -413,10 +349,62 @@
             <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
             <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
           </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Fixed Pagination Controls -->
+    <div class="flex-shrink-0 px-6 py-4 bg-white border-t border-gray-200 sticky bottom-0">
+      <div class="flex flex-col gap-3">
+        <!-- Info row -->
+        <div class="text-sm text-gray-700">
+          Showing <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span> to
+          <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredTickets.length) }}</span> of
+          <span class="font-medium">{{ filteredTickets.length }}</span> tickets (Page {{ currentPage }} of {{ totalPages }})
+        </div>
+
+        <!-- Controls row -->
+        <div class="flex items-center justify-center">
+          <!-- Previous Button -->
+          <button
+            @click="previousPage"
+            :disabled="currentPage === 1"
+            class="px-4 py-2 text-sm border rounded-md transition-colors mr-2"
+            :class="currentPage === 1
+              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+          >
+            Previous
+          </button>
+
+          <!-- Page Numbers -->
+          <template v-for="page in pageNumbers" :key="page">
+            <button
+              @click="goToPage(page)"
+              class="px-3 py-2 text-sm border rounded-md transition-colors mx-1"
+              :class="page === currentPage
+                ? 'border-blue-500 bg-blue-500 text-white'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              {{ page }}
+            </button>
+          </template>
+
+          <!-- Next Button -->
+          <button
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+            class="px-4 py-2 text-sm border rounded-md transition-colors ml-2"
+            :class="currentPage === totalPages
+              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   </div>
 </template>
@@ -484,7 +472,7 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 10,
+      itemsPerPage: 5,
 
       // Sample data
       tickets: [
@@ -739,6 +727,48 @@ export default {
           csatRating: null,
           firstCallResolution: false,
           notes: 'Server response time degradation - urgent'
+        },
+        {
+          id: 'T019',
+          customerName: 'Test User 1',
+          customerContact: '+1 (555) 111-1111',
+          agentName: 'Sarah Smith',
+          productCategory: 'Product A',
+          type: 'technical',
+          status: 'pending',
+          createdDate: '2024-01-31',
+          resolvedDate: null,
+          csatRating: null,
+          firstCallResolution: false,
+          notes: 'Test ticket for pagination'
+        },
+        {
+          id: 'T020',
+          customerName: 'Test User 2',
+          customerContact: '+1 (555) 222-2222',
+          agentName: 'Mike Johnson',
+          productCategory: 'Product B',
+          type: 'billing',
+          status: 'resolved',
+          createdDate: '2024-01-31',
+          resolvedDate: '2024-01-31',
+          csatRating: 5,
+          firstCallResolution: true,
+          notes: 'Another test ticket'
+        },
+        {
+          id: 'T021',
+          customerName: 'Test User 3',
+          customerContact: '+1 (555) 333-3333',
+          agentName: 'Emily Davis',
+          productCategory: 'Product C',
+          type: 'general',
+          status: 'in-progress',
+          createdDate: '2024-02-01',
+          resolvedDate: null,
+          csatRating: null,
+          firstCallResolution: false,
+          notes: 'Third test ticket'
         }
       ]
     }
@@ -994,3 +1024,43 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* Force scrollbar visibility */
+.overflow-auto::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* For Firefox */
+.overflow-auto {
+  scrollbar-width: auto;
+}
+
+/* Ensure horizontal scrollbar for table */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 12px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+</style>
