@@ -3,6 +3,7 @@ import {ticketController} from "./controller/ticket.js";
 const router = express.Router();
 
 router.post("/new-tickets", ticketController.createTicket);
+router.post("/call-tickets", ticketController.createCallTicket);
 
 router.get("/products", ticketController.getProducts);
 
