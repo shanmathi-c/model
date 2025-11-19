@@ -17,4 +17,20 @@ export class ticketController {
            }
        });
     }
+
+    static getProducts(req, res) {
+        connection.query("SELECT * FROM product", (err, result) => {
+            if (err) {
+                return res.json({
+                    message: "Error fetching products",
+                    error: err
+                });
+            } else {
+                return res.json({
+                    message: "Products fetched successfully",
+                    data: result
+                });
+            }
+        });
+    }
 }

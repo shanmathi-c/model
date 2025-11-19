@@ -4,6 +4,8 @@ const router = express.Router();
 
 router.post("/new-tickets", ticketController.createTicket);
 
+router.get("/products", ticketController.getProducts);
+
 router.get("/", (req, res) => {
     res.send("get tickets!");
 });
