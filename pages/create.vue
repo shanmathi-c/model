@@ -69,7 +69,6 @@
           />
           <div class="mt-1 min-h-4">
             <span v-if="errors.name" class="text-red-500 text-xs animate-slideDown block">{{ errors.name }}</span>
-            <span v-else-if="formData.name.length > 0" class="text-gray-400 text-xs text-right block">{{ formData.name.length }}/100</span>
           </div>
         </div>
 
@@ -157,7 +156,6 @@
           />
           <div class="mt-1 min-h-4">
             <span v-if="errors.subject" class="text-red-500 text-xs animate-slideDown block">{{ errors.subject }}</span>
-            <span v-else-if="formData.subject.length > 0" class="text-gray-400 text-xs text-right block">{{ formData.subject.length }}/200</span>
           </div>
         </div>
 
@@ -179,7 +177,6 @@
           ></textarea>
           <div class="mt-1 min-h-4">
             <span v-if="errors.description" class="text-red-500 text-xs animate-slideDown block">{{ errors.description }}</span>
-            <span v-else-if="formData.description.length > 0" class="text-gray-400 text-xs text-right block">{{ formData.description.length }}/5000</span>
           </div>
         </div>
 
@@ -227,69 +224,19 @@
 
             </form>
 
-      <!-- Success Modal -->
-      <div v-if="showSuccess" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-slideUp">
-          <div class="text-center">
-            <!-- Success Icon -->
-            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-            </div>
+      <!-- Success Message -->
+      <div v-if="showSuccess" class="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg animate-slideInRight">
+        <div class="flex items-center gap-2">
+          <!-- Success Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
 
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Ticket Created Successfully!</h2>
-            <p class="text-gray-600 mb-6">Your support ticket has been submitted and we'll get back to you as soon as possible.</p>
-
-            <!-- Ticket Details -->
-            <div v-if="ticketDetails" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <h3 class="font-semibold text-gray-800 mb-3">Ticket Details</h3>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Ticket ID:</span>
-                  <span class="font-mono font-semibold text-indigo-600">{{ ticketDetails.ticketId }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Name:</span>
-                  <span class="text-gray-900">{{ ticketDetails.name }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Email:</span>
-                  <span class="text-gray-900">{{ ticketDetails.email }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Phone:</span>
-                  <span class="text-gray-900">{{ ticketDetails.phone }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Subject:</span>
-                  <span class="text-gray-900 truncate max-w-[200px]">{{ ticketDetails.subject }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Type:</span>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                    {{ ticketDetails.ticketType === 'freshdesk' ? 'Freshdesk' : 'Call' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex gap-3">
-              <button
-                @click="createNewTicket"
-                class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Create Another Ticket
-              </button>
-              <button
-                @click="closeModal"
-                class="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+          <div>
+            <span class="font-medium">Success! </span>
+            <span>Ticket created successfully</span>
+            <span v-if="ticketDetails && ticketDetails.ticketId" class="font-mono text-sm"> (ID: {{ ticketDetails.ticketId }})</span>
           </div>
         </div>
       </div>
@@ -445,6 +392,15 @@ export default {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
+        // Store form data before submission since we'll clear it
+        const formDataForSubmission = {
+          name: this.formData.name,
+          email: this.formData.email,
+          phone: this.formData.countryCode + ' ' + this.formData.phone,
+          subject: this.formData.subject,
+          ticketType: 'freshdesk'
+        }
+
         // Sanitize form data
         const sanitizedData = this.sanitizeFormData()
 
@@ -467,21 +423,34 @@ export default {
 
         const result = await response.json()
 
-        // Store ticket details for modal
+        // Clear old ticket details immediately
+        this.ticketDetails = null
+
+        // Clear form IMMEDIATELY after successful submission
+        this.resetForm()
+        this.clearSavedFormData()
+
+        // Close any existing modal first
+        this.showSuccess = false
+        await this.$nextTick()
+
+        // Store NEW ticket details using stored form data
         this.ticketDetails = {
           ticketId: result.data.ticketId,
-          name: this.formData.name,
-          email: this.formData.email,
-          phone: this.formData.countryCode + ' ' + this.formData.phone,
-          subject: this.formData.subject,
+          name: formDataForSubmission.name,
+          email: formDataForSubmission.email,
+          phone: formDataForSubmission.phone,
+          subject: formDataForSubmission.subject,
           ticketType: 'freshdesk'
         }
 
-        // Show success modal
+        // Show success message
         this.showSuccess = true
 
-        // Clear saved form data
-        this.clearSavedFormData()
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          this.showSuccess = false
+        }, 3000)
 
       } catch (error) {
         console.error('Error submitting ticket:', error)
@@ -808,20 +777,7 @@ export default {
       this.saveFormData()
     },
 
-    // Modal methods
-    createNewTicket() {
-      // Reset form and close modal
-      this.resetForm()
-      this.showSuccess = false
-      this.ticketDetails = null
-    },
-
-    closeModal() {
-      // Just close the modal
-      this.showSuccess = false
-      this.ticketDetails = null
-    },
-
+    
     // Handle phone input with formatting
     handlePhoneInput(event) {
       this.clearError('phone')
@@ -901,32 +857,19 @@ export default {
 </script>
 
 <style scoped>
-/* Modal animations */
-@keyframes fadeIn {
+/* Success message animation */
+@keyframes slideInRight {
   from {
     opacity: 0;
+    transform: translateX(100%);
   }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.animate-slideUp {
-  animation: slideUp 0.3s ease-out;
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
 }
 </style>
