@@ -45,6 +45,7 @@
                 <button
                   v-if="hasActiveFilters"
                   @click="clearFilters"
+                  onclick="event.stopPropagation()"
                   class="text-xs text-blue-600 hover:text-blue-700"
                 >
                   Clear
@@ -205,7 +206,7 @@
         >
           {{ chip.label }}
           <button
-            @click="removeFilter(chip.key)"
+            @click.stop="removeFilter(chip.key)"
             class="hover:text-blue-900 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
           >
             ×
@@ -780,11 +781,13 @@ export default {
   },
 
   mounted() {
-    document.addEventListener('click', this.handleClickOutside)
+    // Add click event listener
+    document.addEventListener('click', this.handleClickOutside);
   },
 
   beforeDestroy() {
-    document.removeEventListener('click', this.handleClickOutside)
+    // Clean up event listener
+    document.removeEventListener('click', this.handleClickOutside);
   },
 
   computed: {
@@ -963,11 +966,23 @@ export default {
 
     // Close dropdown when clicking outside
     handleClickOutside(event) {
-      if (this.filterDropdownRef && !this.filterDropdownRef.contains(event.target)) {
-        this.showFilterDropdown = false
+      // Get the clicked element
+      const clickedElement = event.target;
+
+      // Close filter dropdown if clicking outside
+      if (this.showFilterDropdown) {
+        const filterDropdown = this.$refs.filterDropdownRef;
+        if (filterDropdown && !filterDropdown.contains(clickedElement)) {
+          this.showFilterDropdown = false;
+        }
       }
-      if (this.displayDropdownRef && !this.displayDropdownRef.contains(event.target)) {
-        this.showDisplayDropdown = false
+
+      // Close display dropdown if clicking outside
+      if (this.showDisplayDropdown) {
+        const displayDropdown = this.$refs.displayDropdownRef;
+        if (displayDropdown && !displayDropdown.contains(clickedElement)) {
+          this.showDisplayDropdown = false;
+        }
       }
     },
 
