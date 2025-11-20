@@ -124,20 +124,51 @@
           <!-- Assign Controls (visible when tickets are selected) -->
           <div v-if="selectedTickets.length > 0" class="flex items-center gap-3">
             <!-- Agent Selection for Bulk Assign -->
-            <select
-              v-model="bulkAssignAgent"
-              class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Select agent"
-            >
-              <option value="">Select an agent...</option>
-              <option
-                v-for="agent in allAvailableAgents"
-                :key="agent.id"
-                :value="agent.id"
-              >
-                {{ agent.name }}
-              </option>
-            </select>
+            <div class="w-80">
+              <div class="relative" ref="bulkAgentDropdown">
+                <button
+                  @click="toggleBulkAgentDropdown"
+                  class="w-full px-3 py-2 pr-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-left"
+                >
+                  <span v-if="!bulkAssignAgent" class="text-gray-400">Select agent...</span>
+                  <span v-else class="flex items-center gap-2">
+                    <span>{{ allAvailableAgents.find(a => a.id == bulkAssignAgent)?.agentName || allAvailableAgents.find(a => a.id == bulkAssignAgent)?.name }}</span>
+                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      {{ allAvailableAgents.find(a => a.id == bulkAssignAgent)?.team }}
+                    </span>
+                    <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                      {{ allAvailableAgents.find(a => a.id == bulkAssignAgent)?.productName }}
+                    </span>
+                  </span>
+                </button>
+                <!-- Custom dropdown arrow -->
+                <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+                <!-- Dropdown options -->
+                <div
+                  v-if="showBulkAgentDropdown"
+                  class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                >
+                  <div
+                    v-for="agent in allAvailableAgents"
+                    :key="agent.id"
+                    @click="selectBulkAgent(agent.id)"
+                    class="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                  >
+                    <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
+                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      {{ agent.team }}
+                    </span>
+                    <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                      {{ agent.productName }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- Bulk Assign Button -->
             <button
@@ -259,19 +290,51 @@
               <!-- Agent selection -->
               <div v-else>
                 <p class="text-xs font-medium text-gray-700 mb-2">Available agents for {{ ticket.productName }}:</p>
-                <select
-                  v-model="ticket.selectedAgent"
-                  class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select an agent...</option>
-                  <option
-                    v-for="agent in ticket.availableAgents"
-                    :key="agent.id"
-                    :value="agent.id"
-                  >
-                    {{ agent.name }}
-                  </option>
-                </select>
+                <div class="w-full max-w-lg">
+                  <div class="relative" :ref="`ticketAgentDropdown-${ticket.id}`">
+                    <button
+                      @click="toggleTicketAgentDropdown(ticket)"
+                      class="w-full px-3 py-2 pr-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-left"
+                    >
+                      <span v-if="!ticket.selectedAgent" class="text-gray-400">Select agent...</span>
+                      <span v-else class="flex items-center gap-2">
+                        <span>{{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.agentName || ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.name }}</span>
+                        <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          {{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team }}
+                        </span>
+                        <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                          {{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.productName }}
+                        </span>
+                      </span>
+                    </button>
+                    <!-- Custom dropdown arrow -->
+                    <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                    <!-- Dropdown options -->
+                    <div
+                      v-if="ticket.showAgentDropdown"
+                      class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    >
+                      <div
+                        v-for="agent in ticket.availableAgents"
+                        :key="agent.id"
+                        @click="selectTicketAgent(ticket, agent.id)"
+                        class="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                      >
+                        <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
+                        <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          {{ agent.team }}
+                        </span>
+                        <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                          {{ agent.productName }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div v-if="ticket.availableAgents && ticket.availableAgents.length === 0" class="text-xs text-gray-500 mt-1">
                   No available agents for this product
                 </div>
@@ -368,6 +431,7 @@ export default {
       ignoreNextClick: false,
       bulkAssignAgent: null,
       isBulkAssigning: false,
+      showBulkAgentDropdown: false,
 
       // Refs
       filterDropdownRef: null,
@@ -466,7 +530,8 @@ export default {
             selectedAgent: null,
             isAssigning: false,
             loadingAgents: false,
-            availableAgents: null
+            availableAgents: null,
+            showAgentDropdown: false
           }))
         }
       } catch (error) {
@@ -534,6 +599,28 @@ export default {
       } finally {
         ticket.loadingAgents = false
       }
+    },
+
+    // Toggle bulk agent dropdown
+    toggleBulkAgentDropdown() {
+      this.showBulkAgentDropdown = !this.showBulkAgentDropdown
+    },
+
+    // Select bulk agent
+    selectBulkAgent(agentId) {
+      this.bulkAssignAgent = agentId
+      this.showBulkAgentDropdown = false
+    },
+
+    // Toggle ticket agent dropdown
+    toggleTicketAgentDropdown(ticket) {
+      ticket.showAgentDropdown = !ticket.showAgentDropdown
+    },
+
+    // Select ticket agent
+    selectTicketAgent(ticket, agentId) {
+      ticket.selectedAgent = agentId
+      ticket.showAgentDropdown = false
     },
 
     // Toggle filter dropdown
@@ -715,12 +802,31 @@ export default {
       return
     }
 
+    // Close filter dropdown
     if (this.showFilterDropdown) {
       const filterDropdown = this.$refs.filterDropdownRef;
       if (filterDropdown && !filterDropdown.contains(event.target)) {
         this.showFilterDropdown = false;
       }
     }
+
+    // Close bulk agent dropdown
+    if (this.showBulkAgentDropdown) {
+      const bulkAgentDropdown = this.$refs.bulkAgentDropdown;
+      if (bulkAgentDropdown && !bulkAgentDropdown.contains(event.target)) {
+        this.showBulkAgentDropdown = false;
+      }
+    }
+
+    // Close ticket agent dropdowns
+    this.tickets.forEach(ticket => {
+      if (ticket.showAgentDropdown) {
+        const ticketDropdown = this.$refs[`ticketAgentDropdown-${ticket.id}`];
+        if (ticketDropdown && ticketDropdown.length > 0 && !ticketDropdown[0].contains(event.target)) {
+          ticket.showAgentDropdown = false;
+        }
+      }
+    });
   }
 }
 </script>
