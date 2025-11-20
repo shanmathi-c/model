@@ -246,7 +246,7 @@
             <button
               v-if="!ticket.showAssignment"
               @click="showAssignmentForm(ticket)"
-              class="w-full px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              class="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
             >
               Assign Ticket
             </button>
@@ -261,7 +261,7 @@
                 <p class="text-xs font-medium text-gray-700 mb-2">Available agents for {{ ticket.productName }}:</p>
                 <select
                   v-model="ticket.selectedAgent"
-                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select an agent...</option>
                   <option
@@ -280,9 +280,9 @@
                 <button
                   @click="assignTicket(ticket)"
                   :disabled="!ticket.selectedAgent || ticket.isAssigning"
-                  class="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
-                  <span v-if="!ticket.isAssigning">Submit Assignment</span>
+                  <span v-if="!ticket.isAssigning">Submit</span>
                   <span v-else>Assigning...</span>
                 </button>
                 <button
