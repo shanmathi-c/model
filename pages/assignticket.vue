@@ -85,8 +85,8 @@
                     </button>
                     <div v-if="expandedSections.product" class="mt-1 space-y-1">
                       <label v-for="product in products" :key="product.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" :value="product.name" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">{{ product.name }}</span>
+                        <input type="checkbox" :value="product.productName" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">{{ product.productName }}</span>
                       </label>
                     </div>
                   </div>
