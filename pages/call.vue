@@ -1,570 +1,498 @@
 <template>
-  <div class="flex flex-col h-full">
-    <!-- Fixed Header -->
-    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">Create Call Ticket</h1>
-      <p class="text-gray-600">Create a ticket for phone call support</p>
+  <div class="h-screen bg-gray-50 flex flex-col">
+    <!-- Fixed Header Section - Sticky -->
+    <div class="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
+      <!-- Header Title -->
+      <div class="mb-4">
+        <h1 class="text-2xl font-bold text-gray-900">Call Tickets</h1>
+        <p class="text-gray-600 mt-1">View and manage phone call support tickets</p>
+      </div>
+
+      <!-- Search and Filter Bar -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Search Bar -->
+        <div class="relative w-96 max-w-full">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            v-model="searchQuery"
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            placeholder="Search tickets..."
+            @input="handleSearch"
+          />
+        </div>
+
+        <!-- Filter Button -->
+        <div class="flex gap-2">
+          <button
+            @click="toggleFilter"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter
+          </button>
+
+          <!-- Status Filter Dropdown (shown when filter is active) -->
+          <select
+            v-if="showFilter"
+            v-model="statusFilter"
+            @change="fetchCallTickets"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <option value="">All Status</option>
+            <option value="created">Created</option>
+            <option value="assigned">Assigned</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <!-- Scrollable Main Content -->
-    <div class="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-br from-blue-50 to-cyan-50">
-      <div class="p-6">
-        <div class="bg-white rounded-2xl shadow-xl max-w-4xl mx-auto p-6 md:p-8">
-        <!-- Form content -->
-
-      <form @submit.prevent="handleSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-        <!-- Customer Name Field -->
-        <div :class="{ 'has-error': errors.name }">
-          <label for="name" class="block text-xs font-semibold text-gray-700 mb-1.5">
-            Customer Name <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="name"
-            v-model="formData.name"
-            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm transition-all duration-200 bg-gray-50 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
-            :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20 animate-shake': errors.name }"
-            placeholder="Enter customer name"
-            required
-            maxlength="100"
-            @input="clearError('name')"
-          />
-          <div class="mt-1 min-h-4">
-            <span v-if="errors.name" class="text-red-500 text-xs animate-slideDown block">{{ errors.name }}</span>
-          </div>
+    <!-- Table Container - Scrollable Content -->
+    <div class="flex-1 overflow-hidden bg-gray-50">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center h-64">
+        <div class="flex flex-col items-center">
+          <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p class="mt-4 text-gray-600">Loading call tickets...</p>
         </div>
+      </div>
 
-        <!-- Phone Field -->
-        <div :class="{ 'has-error': errors.phone }">
-          <label for="phone" class="block text-xs font-semibold text-gray-700 mb-1.5">
-            Phone Number <span class="text-red-500">*</span>
-          </label>
-          <div class="flex gap-0">
-            <select
-              v-model="formData.countryCode"
-              class="px-3 py-2 border-2 border-gray-200 border-r-0 rounded-l-lg text-sm transition-all duration-200 bg-gray-50 min-w-[100px] cursor-pointer appearance-none bg-image-chevron focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 relative z-10"
-              :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20': errors.phone }"
-              required
-              @change="clearError('phone')"
-            >
-              <option value="+1">🇺🇸 +1</option>
-              <option value="+44">🇬🇧 +44</option>
-              <option value="+91">🇮🇳 +91</option>
-              <option value="+86">🇨🇳 +86</option>
-              <option value="+81">🇯🇵 +81</option>
-              <option value="+49">🇩🇪 +49</option>
-              <option value="+33">🇫🇷 +33</option>
-              <option value="+39">🇮🇹 +39</option>
-              <option value="+34">🇪🇸 +34</option>
-              <option value="+61">🇦🇺 +61</option>
-              <option value="+7">🇷🇺 +7</option>
-              <option value="+55">🇧🇷 +55</option>
-              <option value="+52">🇲🇽 +52</option>
-              <option value="+27">🇿🇦 +27</option>
-              <option value="+82">🇰🇷 +82</option>
-              <option value="+31">🇳🇱 +31</option>
-              <option value="+46">🇸🇪 +46</option>
-              <option value="+47">🇳🇴 +47</option>
-              <option value="+971">🇦🇪 +971</option>
-              <option value="+65">🇸🇬 +65</option>
-            </select>
-            <input
-              type="tel"
-              id="phone"
-              v-model="formData.phone"
-              class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-r-lg text-sm transition-all duration-200 bg-gray-50 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 relative z-10"
-              :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20 animate-shake': errors.phone }"
-              placeholder="123-456-7890"
-              required
-              @input="handlePhoneInput"
-            />
-          </div>
-          <span v-if="errors.phone" class="text-red-500 text-xs mt-1 block animate-slideDown">{{ errors.phone }}</span>
-        </div>
-
-        <!-- Email Field -->
-        <div class="md:col-span-2" :class="{ 'has-error': errors.email }">
-          <label for="email" class="block text-xs font-semibold text-gray-700 mb-1.5">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            v-model="formData.email"
-            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm transition-all duration-200 bg-gray-50 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
-            :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20 animate-shake': errors.email }"
-            placeholder="customer@example.com (optional)"
-            @input="clearError('email')"
-          />
-          <span v-if="errors.email" class="text-red-500 text-xs mt-1 block animate-slideDown">{{ errors.email }}</span>
-        </div>
-
-        <!-- Call Subject Field -->
-        <div class="md:col-span-2" :class="{ 'has-error': errors.subject }">
-          <label for="subject" class="block text-xs font-semibold text-gray-700 mb-1.5">
-            Call Subject <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="subject"
-            v-model="formData.subject"
-            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm transition-all duration-200 bg-gray-50 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
-            :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20 animate-shake': errors.subject }"
-            placeholder="Brief summary of the call"
-            required
-            maxlength="200"
-            @input="clearError('subject')"
-          />
-          <div class="mt-1 min-h-4">
-            <span v-if="errors.subject" class="text-red-500 text-xs animate-slideDown block">{{ errors.subject }}</span>
-            <span v-else-if="formData.subject.length > 0" class="text-gray-400 text-xs text-right block">{{ formData.subject.length }}/200</span>
-          </div>
-        </div>
-
-        <!-- Call Notes Field -->
-        <div class="md:col-span-2" :class="{ 'has-error': errors.description }">
-          <label for="description" class="block text-xs font-semibold text-gray-700 mb-1.5">
-            Call Notes <span class="text-red-500">*</span>
-          </label>
-          <textarea
-            id="description"
-            v-model="formData.description"
-            class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm transition-all duration-200 bg-gray-50 resize-vertical focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 font-sans"
-            :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20 animate-shake': errors.description }"
-            rows="6"
-            placeholder="Detailed notes about the call conversation..."
-            required
-            maxlength="5000"
-            @input="clearError('description')"
-          ></textarea>
-          <div class="mt-1 min-h-4">
-            <span v-if="errors.description" class="text-red-500 text-xs animate-slideDown block">{{ errors.description }}</span>
-            <span v-else-if="formData.description.length > 0" class="text-gray-400 text-xs text-right block">{{ formData.description.length }}/5000</span>
-          </div>
-        </div>
-
-        <!-- General Error Message -->
-        <div v-if="errors.general" class="md:col-span-2 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3 animate-slideIn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      <!-- Error State -->
+      <div v-else-if="error" class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p class="font-medium">{{ errors.general }}</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Error loading tickets</h3>
+          <p class="mt-1 text-sm text-gray-500">{{ error }}</p>
+          <div class="mt-6">
+            <button @click="fetchCallTickets" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              Try again
+            </button>
+          </div>
         </div>
+      </div>
 
-        <!-- Submit Button -->
-        <div class="md:col-span-2 flex justify-center">
-          <button
-            type="submit"
-            class="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-8 py-3 rounded-lg font-semibold text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/25 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            :disabled="isSubmitting"
-          >
-            <span v-if="!isSubmitting" class="flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
-              Save Call Ticket
-            </span>
-            <span v-else class="flex items-center justify-center gap-2">
-              <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Saving...
-            </span>
-          </button>
+      <!-- Empty State -->
+      <div v-else-if="filteredTickets.length === 0" class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No call tickets found</h3>
+          <p class="mt-1 text-sm text-gray-500">Get started by creating a new call ticket.</p>
+          <div class="mt-6">
+            <button @click="$router.push('/')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              Create New Ticket
+            </button>
+          </div>
         </div>
+      </div>
 
-          </form>
+      <!-- Tickets Table Wrapper -->
+      <div v-else class="h-full overflow-auto">
+        <div class="inline-block min-w-full align-middle">
+          <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg m-4">
+          <table class="min-w-full divide-y divide-gray-300">
+            <!-- Table Header - Fixed -->
+            <thead class="bg-gray-50 sticky top-0 z-10">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ticket ID
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Subject
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th scope="col" class="relative px-6 py-3">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
 
-      <!-- Success Modal -->
-      <div v-if="showSuccess" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-slideUp">
-          <div class="text-center">
-            <!-- Success Icon -->
-            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-            </div>
+            <!-- Table Body - Scrollable -->
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="ticket in paginatedTickets" :key="ticket.id" class="hover:bg-gray-50 transition-colors">
+                <!-- Ticket ID -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {{ ticket.ticketId }}
+                </td>
 
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Call Ticket Saved!</h2>
-            <p class="text-gray-600 mb-6">The call ticket has been successfully saved to the system.</p>
+                <!-- Customer Name -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ ticket.name }}</div>
+                  <div v-if="ticket.email" class="text-sm text-gray-500">{{ ticket.email }}</div>
+                </td>
 
-            <!-- Ticket Details -->
-            <div v-if="ticketDetails" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <h3 class="font-semibold text-gray-800 mb-3">Ticket Details</h3>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Ticket ID:</span>
-                  <span class="font-mono font-semibold text-blue-600">{{ ticketDetails.ticketId }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Customer Name:</span>
-                  <span class="text-gray-900">{{ ticketDetails.name }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Email:</span>
-                  <span class="text-gray-900">{{ ticketDetails.email || 'Not provided' }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Phone:</span>
-                  <span class="text-gray-900">{{ ticketDetails.phone }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Subject:</span>
-                  <span class="text-gray-900 truncate max-w-[200px]">{{ ticketDetails.subject }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Type:</span>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Phone Call
+                <!-- Phone -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ ticket.phone }}
+                </td>
+
+                <!-- Subject -->
+                <td class="px-6 py-4">
+                  <div class="text-sm text-gray-900 max-w-xs truncate" :title="ticket.subject">
+                    {{ ticket.subject }}
+                  </div>
+                </td>
+
+                <!-- Status -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span :class="getStatusClass(ticket.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                    {{ formatStatus(ticket.status) }}
                   </span>
-                </div>
-              </div>
-            </div>
+                </td>
 
-            <!-- Action Buttons -->
-            <div class="flex gap-3">
+                <!-- Created Date -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ formatDate(ticket.createdAt || ticket.created_at) }}
+                </td>
+
+                <!-- Actions -->
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button @click="viewTicket(ticket)" class="text-blue-600 hover:text-blue-900 mr-3">
+                    View
+                  </button>
+                  <button @click="editTicket(ticket)" class="text-indigo-600 hover:text-indigo-900">
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div v-if="totalPages > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
               <button
-                @click="createNewTicket"
-                class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+                @click="prevPage"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create New Ticket
+                Previous
               </button>
               <button
-                @click="closeModal"
-                class="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition-colors"
+                @click="nextPage"
+                :disabled="currentPage === totalPages"
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Close
+                Next
               </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Showing
+                  <span class="font-medium">{{ startIndex + 1 }}</span>
+                  to
+                  <span class="font-medium">{{ Math.min(endIndex, filteredTickets.length) }}</span>
+                  of
+                  <span class="font-medium">{{ filteredTickets.length }}</span>
+                  results
+                </p>
+              </div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    @click="prevPage"
+                    :disabled="currentPage === 1"
+                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span class="sr-only">Previous</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <span
+                    v-for="page in visiblePages"
+                    :key="page"
+                    @click="goToPage(page)"
+                    :class="[
+                      'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
+                      page === currentPage
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ]"
+                  >
+                    {{ page }}
+                  </span>
+                  <button
+                    @click="nextPage"
+                    :disabled="currentPage === totalPages"
+                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span class="sr-only">Next</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      </div>
     </div>
-    </div>
-  </div>
   </div>
 </template>
 
 <script>
-
 export default {
-  name: 'CallTicket',
+  name: 'CallTicketsList',
 
   data() {
     return {
-      // Form data
-      formData: {
-        productId: null,  // Not required for call tickets
-        name: '',
-        email: '',
-        countryCode: '+1',
-        phone: '',
-        subject: '',
-        description: '',
-        ticketType: 'call'  // Fixed for call page
-      },
+      // Data state
+      tickets: [],
+      loading: false,
+      error: null,
 
-      // Form states
-      isSubmitting: false,
-      showSuccess: false,
+      // Search and filter
+      searchQuery: '',
+      statusFilter: '',
+      showFilter: false,
 
-      // Success modal
-      ticketDetails: null,
-
-      // Error states
-      errors: {
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        description: '',
-        general: ''
-      }
+      // Pagination
+      currentPage: 1,
+      itemsPerPage: 10
     }
   },
 
-  methods: {
-    // Handle form submission
-    async handleSubmit() {
-      // Clear previous errors
-      this.clearErrors()
+  computed: {
+    // Filter tickets based on search and status filter
+    filteredTickets() {
+      let filtered = this.tickets
 
-      // Validate form
-      if (!this.validateForm()) {
-        return
+      // Filter by ticketType = 'call'
+      filtered = filtered.filter(ticket => ticket.ticketType === 'call')
+
+      // Apply search filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase()
+        filtered = filtered.filter(ticket =>
+          ticket.ticketId?.toLowerCase().includes(query) ||
+          ticket.name?.toLowerCase().includes(query) ||
+          ticket.phone?.toLowerCase().includes(query) ||
+          ticket.subject?.toLowerCase().includes(query) ||
+          ticket.email?.toLowerCase().includes(query)
+        )
       }
 
-      this.isSubmitting = true
+      // Apply status filter
+      if (this.statusFilter) {
+        filtered = filtered.filter(ticket => ticket.status === this.statusFilter)
+      }
+
+      return filtered
+    },
+
+    // Paginated tickets
+    paginatedTickets() {
+      const start = (this.currentPage - 1) * this.itemsPerPage
+      const end = start + this.itemsPerPage
+      return this.filteredTickets.slice(start, end)
+    },
+
+    // Total pages
+    totalPages() {
+      return Math.ceil(this.filteredTickets.length / this.itemsPerPage)
+    },
+
+    // Start index for pagination display
+    startIndex() {
+      return (this.currentPage - 1) * this.itemsPerPage
+    },
+
+    // End index for pagination display
+    endIndex() {
+      return this.startIndex + this.itemsPerPage
+    },
+
+    // Visible page numbers for pagination
+    visiblePages() {
+      const pages = []
+      const maxVisible = 5
+      let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2))
+      let end = Math.min(this.totalPages, start + maxVisible - 1)
+
+      if (end - start < maxVisible - 1) {
+        start = Math.max(1, end - maxVisible + 1)
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+
+      return pages
+    }
+  },
+
+  mounted() {
+    this.fetchCallTickets()
+  },
+
+  methods: {
+    // Fetch call tickets from API
+    async fetchCallTickets() {
+      this.loading = true
+      this.error = null
 
       try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-
-        // Sanitize form data
-        const sanitizedData = this.sanitizeFormData()
-
-        // Submit call ticket using call-tickets endpoint
-        const response = await fetch('http://localhost:5001/call-tickets', {
-          method: 'POST',
+        const response = await fetch('http://localhost:5001/tickets', {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify(sanitizedData),
-          signal: controller.signal
+          }
         })
-        clearTimeout(timeoutId)
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.message || `Server error: ${response.status}`)
+          throw new Error(`Server error: ${response.status}`)
         }
 
         const result = await response.json()
+        this.tickets = result.data || []
 
-        // Store ticket details for modal
-        this.ticketDetails = {
-          ticketId: result.data.ticketId,
-          name: this.formData.name,
-          email: this.formData.email,
-          phone: this.formData.countryCode + ' ' + this.formData.phone,
-          subject: this.formData.subject,
-          ticketType: 'call'
-        }
-
-        // Show success modal
-        this.showSuccess = true
+        // Reset to first page when filtering
+        this.currentPage = 1
 
       } catch (error) {
-        console.error('Error submitting call ticket:', error)
-
-        if (error.name === 'AbortError') {
-          this.setError('general', 'Request timed out. Please try again.')
-        } else if (error.message.includes('Failed to fetch')) {
-          this.setError('general', 'Network error. Please check your connection and try again.')
-        } else {
-          this.setError('general', error.message || 'Error saving call ticket. Please try again.')
-        }
+        console.error('Error fetching call tickets:', error)
+        this.error = error.message || 'Error fetching tickets. Please try again.'
       } finally {
-        this.isSubmitting = false
+        this.loading = false
       }
     },
 
-    // Validate form (no product validation for calls)
-    validateForm() {
-      let isValid = true
-
-      // Name validation
-      if (!this.formData.name.trim()) {
-        this.setError('name', 'Name is required')
-        isValid = false
-      } else if (this.formData.name.trim().length < 2) {
-        this.setError('name', 'Name must be at least 2 characters')
-        isValid = false
-      }
-
-      // Email validation (optional for calls)
-      if (this.formData.email && !this.validateEmail(this.formData.email)) {
-        this.setError('email', 'Please enter a valid email address')
-        isValid = false
-      }
-
-      // Phone validation
-      if (!this.formData.phone.trim()) {
-        this.setError('phone', 'Phone number is required')
-        isValid = false
-      } else {
-        const cleanPhone = this.cleanPhoneNumber(this.formData.phone)
-        if (cleanPhone.length < 7) {
-          this.setError('phone', 'Phone number must be at least 7 digits')
-          isValid = false
-        }
-      }
-
-      // Subject validation
-      if (!this.formData.subject.trim()) {
-        this.setError('subject', 'Subject is required')
-        isValid = false
-      } else if (this.formData.subject.trim().length < 3) {
-        this.setError('subject', 'Subject must be at least 3 characters')
-        isValid = false
-      }
-
-      // Description validation
-      if (!this.formData.description.trim()) {
-        this.setError('description', 'Call notes are required')
-        isValid = false
-      } else if (this.formData.description.trim().length < 10) {
-        this.setError('description', 'Call notes must be at least 10 characters')
-        isValid = false
-      }
-
-      return isValid
+    // Handle search input
+    handleSearch() {
+      // Reset to first page when searching
+      this.currentPage = 1
     },
 
-    // Sanitize form data
-    sanitizeFormData() {
-      return {
-        name: this.sanitizeText(this.formData.name),
-        email: this.formData.email ? this.formData.email.toLowerCase().trim() : '',
-        countryCode: this.formData.countryCode,
-        phone: this.cleanPhoneNumber(this.formData.phone),
-        subject: this.sanitizeText(this.formData.subject),
-        description: this.sanitizeText(this.formData.description),
-        ticketType: 'call'
+    // Toggle filter dropdown
+    toggleFilter() {
+      this.showFilter = !this.showFilter
+      if (!this.showFilter) {
+        this.statusFilter = ''
+        this.fetchCallTickets()
       }
     },
 
-    // Sanitize text input
-    sanitizeText(text) {
-      return text
-        .trim()
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/<[^>]*>/g, '')
-        .slice(0, 5000)
-    },
-
-    // Clean phone number
-    cleanPhoneNumber(phone) {
-      return phone.replace(/\D/g, '')
-    },
-
-    // Handle phone input
-    handlePhoneInput(event) {
-      this.clearError('phone')
-      let value = event.target.value
-      value = value.replace(/[^\d\s\-\(\)]/g, '')
-      this.formData.phone = value
-    },
-
-    // Validate email
-    validateEmail(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      return re.test(email)
-    },
-
-    // Error handling methods
-    setError(field, message) {
-      this.errors[field] = message
-    },
-
-    clearErrors() {
-      Object.keys(this.errors).forEach(key => {
-        this.errors[key] = ''
-      })
-    },
-
-    clearError(field) {
-      this.errors[field] = ''
-    },
-
-    // Reset form to initial state
-    resetForm() {
-      this.formData = {
-        productId: null,
-        name: '',
-        email: '',
-        countryCode: '+1',
-        phone: '',
-        subject: '',
-        description: '',
-        ticketType: 'call'
+    // Pagination methods
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--
       }
     },
 
-    // Modal methods
-    createNewTicket() {
-      // Reset form and close modal
-      this.resetForm()
-      this.showSuccess = false
-      this.ticketDetails = null
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++
+      }
     },
 
-    closeModal() {
-      // Just close the modal
-      this.showSuccess = false
-      this.ticketDetails = null
+    goToPage(page) {
+      this.currentPage = page
+    },
+
+    // View ticket details
+    viewTicket(ticket) {
+      // Navigate to ticket details page or open modal
+      console.log('View ticket:', ticket)
+      // You can implement a modal or navigate to a details page
+    },
+
+    // Edit ticket
+    editTicket(ticket) {
+      // Navigate to edit page or open edit modal
+      console.log('Edit ticket:', ticket)
+      // You can implement an edit modal or navigate to edit page
+    },
+
+    // Get status CSS class
+    getStatusClass(status) {
+      const statusClasses = {
+        'created': 'bg-blue-100 text-blue-800',
+        'assigned': 'bg-yellow-100 text-yellow-800',
+        'in-progress': 'bg-purple-100 text-purple-800',
+        'resolved': 'bg-green-100 text-green-800',
+        'closed': 'bg-gray-100 text-gray-800'
+      }
+      return statusClasses[status] || 'bg-gray-100 text-gray-800'
+    },
+
+    // Format status text
+    formatStatus(status) {
+      return status ? status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown'
+    },
+
+    // Format date
+    formatDate(dateString) {
+      if (!dateString) return 'N/A'
+
+      try {
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      } catch {
+        return 'Invalid Date'
+      }
     }
   }
 }
 </script>
 
 <style scoped>
-/* Custom animations */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Custom scrollbar for table */
+.overflow-auto::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.overflow-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }
 
-@keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  75% {
-    transform: translateX(5px);
-  }
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
 }
 
-.animate-slideDown {
-  animation: slideDown 0.2s ease-out;
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
-.animate-slideIn {
-  animation: slideIn 0.3s ease-out;
-}
-
-.animate-shake {
-  animation: shake 0.3s ease-in-out;
-}
-
-/* Modal animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.animate-slideUp {
-  animation: slideUp 0.3s ease-out;
+/* Smooth transitions */
+.transition-colors {
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 </style>
