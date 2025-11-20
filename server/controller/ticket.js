@@ -38,8 +38,33 @@ export class ticketController {
         });
     }
 
+    // Generate sequential userId
+    static generateUserId() {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "SELECT MAX(userId) as maxUserId FROM tickets",
+                (err, result) => {
+                    if (err) {
+                        // If error, start with 1
+                        resolve(1);
+                        return;
+                    }
+
+                    if (result.length > 0 && result[0].maxUserId !== null) {
+                        // Increment the maximum userId
+                        const newUserId = result[0].maxUserId + 1;
+                        resolve(newUserId);
+                    } else {
+                        // If no users exist, start with 1
+                        resolve(1);
+                    }
+                }
+            );
+        });
+    }
+
     static async createTicket(req, res) {
-       const { productId, name, email, countryCode, phone, subject, description, ticketType } = req.body;
+       const { productId, userId, name, email, countryCode, phone, subject, description, ticketType } = req.body;
 
        // Validate required fields (productId and email not required for call tickets)
        if (!name || !phone || !subject || !description) {
@@ -53,6 +78,15 @@ export class ticketController {
            // Generate unique ticket ID
            const ticketId = await ticketController.generateTicketId();
 
+           // Generate or use existing userId
+           let finalUserId;
+           if (userId) {
+               finalUserId = parseInt(userId);
+           } else {
+               // Generate a new sequential userId
+               finalUserId = await ticketController.generateUserId();
+           }
+
            // Combine country code and phone into a single phone field
            const fullPhone = countryCode ? countryCode + ' ' + phone : phone;
 
@@ -60,6 +94,7 @@ export class ticketController {
            const dbTicketData = {
                ticketId: ticketId,  // Add generated ticket ID
                productId: productId || null,  // Store productId, null if not selected
+               userId: finalUserId,  // Add userId field as integer
                name: name,
                email: email || null,  // Email is optional for call tickets
                phone: fullPhone,  // Store combined phone number with country code
@@ -80,7 +115,8 @@ export class ticketController {
                 message: "Ticket created successfully",
                 data: {
                     ...result,
-                    ticketId: ticketId  // Include generated ticket ID in response
+                    ticketId: ticketId,  // Include generated ticket ID in response
+                    userId: finalUserId   // Include the userId in response
                 }
             })
            }

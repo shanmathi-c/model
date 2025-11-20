@@ -402,6 +402,7 @@ export default {
       // Form data
       formData: {
         productId: '',  // Store productId instead of productName
+        userId: null,   // Add userId field - initialize as null
         name: '',
         email: '',
         countryCode: '+1',
@@ -665,6 +666,7 @@ export default {
     resetForm() {
       this.formData = {
         productId: '',  // Always empty to show placeholder
+        userId: this.generateUserId(),  // Keep or generate userId
         name: '',
         email: '',
         countryCode: '+1',
@@ -775,14 +777,14 @@ export default {
     // Sanitize form data
     sanitizeFormData() {
       return {
-        productId: this.formData.productId,  // Send productId to database
+        productId: this.formData.productId,
         name: this.sanitizeText(this.formData.name),
         email: this.formData.email.toLowerCase().trim(),
         countryCode: this.formData.countryCode,
         phone: this.cleanPhoneNumber(this.formData.phone),
         subject: this.sanitizeText(this.formData.subject),
         description: this.sanitizeText(this.formData.description),
-        ticketType: 'freshdesk'  // Hardcode for create page
+        ticketType: 'freshdesk'
       }
     },
 
@@ -798,6 +800,23 @@ export default {
     // Clean phone number
     cleanPhoneNumber(phone) {
       return phone.replace(/\D/g, '')
+    },
+
+    // Generate a sequential userId
+    generateUserId() {
+      // Get the last used userId from localStorage
+      let lastUserId = parseInt(localStorage.getItem('lastUserId') || '0')
+
+      // Increment to get the new userId
+      let newUserId = lastUserId + 1
+
+      // Save the new userId back to localStorage
+      localStorage.setItem('lastUserId', newUserId.toString())
+
+      // Also save the current userId for this user
+      localStorage.setItem('currentUserId', newUserId.toString())
+
+      return newUserId
     },
 
     // Format phone number as user types
@@ -880,11 +899,14 @@ export default {
 
           // Only load if less than an hour old
           if (Date.now() - parsed.timestamp < oneHour) {
-            // Restore all fields; user previously stored productId
-            const { productId, ...otherData } = parsed
-            this.formData = { ...this.formData, ...otherData }
-            if (productId !== undefined) {
-              this.formData.productId = productId
+            // Restore all fields
+            this.formData = { ...this.formData, ...parsed }
+            delete this.formData.timestamp // Remove timestamp from formData
+
+            // Ensure userId is a number if it exists
+            if (this.formData.userId) {
+              this.formData.userId = parseInt(this.formData.userId)
+              console.log('Loaded userId from localStorage:', this.formData.userId)
             }
           }
         }
