@@ -246,7 +246,10 @@
           <div>
             <span class="font-medium">Success! </span>
             <span>Ticket created successfully</span>
-            <span v-if="ticketDetails && ticketDetails.ticketId" class="font-mono text-sm"> (ID: {{ ticketDetails.ticketId }})</span>
+            <span v-if="ticketDetails && ticketDetails.status" class="inline-block ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+              Status: {{ ticketDetails.status.toUpperCase() }}
+            </span>
+            <span v-if="ticketDetails && ticketDetails.ticketId" class="font-mono text-sm ml-2">(ID: {{ ticketDetails.ticketId }})</span>
           </div>
         </div>
       </div>
@@ -628,6 +631,7 @@ export default {
           email: formDataForSubmission.email,
           phone: formDataForSubmission.phone,
           subject: formDataForSubmission.subject,
+          status: 'created',
           ticketType: 'freshdesk'
         }
 

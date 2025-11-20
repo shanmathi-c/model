@@ -100,6 +100,7 @@ export class ticketController {
                phone: fullPhone,  // Store combined phone number with country code
                subject: subject,
                description: description,
+               status: 'created',  // Add status field with default value 'created'
                ticketType: ticketType || 'freshdesk'  // Store ticket type, default to freshdesk
                // Removed created_at - database will use default timestamp
            };
