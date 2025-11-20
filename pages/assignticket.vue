@@ -133,11 +133,8 @@
                   <span v-if="!bulkAssignAgent" class="text-gray-400">Select agent...</span>
                   <span v-else class="flex items-center gap-2">
                     <span>{{ allAvailableAgents.find(a => a.id == bulkAssignAgent)?.agentName || allAvailableAgents.find(a => a.id == bulkAssignAgent)?.name }}</span>
-                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    <span v-if="allAvailableAgents.find(a => a.id == bulkAssignAgent)?.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                       {{ allAvailableAgents.find(a => a.id == bulkAssignAgent)?.team }}
-                    </span>
-                    <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                      {{ allAvailableAgents.find(a => a.id == bulkAssignAgent)?.productName }}
                     </span>
                   </span>
                 </button>
@@ -156,15 +153,14 @@
                     v-for="agent in allAvailableAgents"
                     :key="agent.id"
                     @click="selectBulkAgent(agent.id)"
-                    class="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                    class="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                   >
-                    <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
-                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {{ agent.team }}
-                    </span>
-                    <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                      {{ agent.productName }}
-                    </span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
+                      <span v-if="agent.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                        {{ agent.team }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -299,11 +295,8 @@
                       <span v-if="!ticket.selectedAgent" class="text-gray-400">Select agent...</span>
                       <span v-else class="flex items-center gap-2">
                         <span>{{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.agentName || ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.name }}</span>
-                        <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                        <span v-if="ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                           {{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team }}
-                        </span>
-                        <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                          {{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.productName }}
                         </span>
                       </span>
                     </button>
@@ -322,15 +315,14 @@
                         v-for="agent in ticket.availableAgents"
                         :key="agent.id"
                         @click="selectTicketAgent(ticket, agent.id)"
-                        class="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                        class="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       >
-                        <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
-                        <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                          {{ agent.team }}
-                        </span>
-                        <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                          {{ agent.productName }}
-                        </span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
+                          <span v-if="agent.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                            {{ agent.team }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
