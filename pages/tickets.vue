@@ -226,6 +226,7 @@
                 <tr>
                   <th v-if="visibleColumns.ticketId" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Ticket ID</th>
                   <th v-if="visibleColumns.customer" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 200px; min-width: 200px;">Customer</th>
+                  <th v-if="visibleColumns.phone" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 130px; min-width: 130px;">Phone</th>
                   <th v-if="visibleColumns.agent" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 150px; min-width: 150px;">Agent</th>
                   <th v-if="visibleColumns.product" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Product</th>
                   <th v-if="visibleColumns.type" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Type</th>
@@ -252,7 +253,28 @@
                   <td v-if="visibleColumns.customer" class="px-4 py-4">
                     <div class="text-sm">
                       <div class="font-medium text-gray-900">{{ ticket.customerName }}</div>
-                      <div class="text-gray-500">{{ ticket.customerContact }}</div>
+                      <div class="flex items-center gap-1 text-gray-500">
+                        <span>{{ ticket.customerContact }}</span>
+                        <img
+                          v-if="ticket.customerContact && !ticket.customerContact.includes('@') && (ticket.customerContact.includes('+') || ticket.customerContact.includes('phone') || ticket.customerContact.match(/^\+?\d[\d\s\-\(\)]*$/))"
+                          src="/phone-call.svg"
+                          alt="Call"
+                          class="w-3 h-3 cursor-pointer hover:text-green-600 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Phone -->
+                  <td v-if="visibleColumns.phone" class="px-4 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm text-gray-900">{{ ticket.phone || '-' }}</span>
+                      <img
+                        v-if="ticket.phone && ticket.phone !== '-'"
+                        src="/phone-call.svg"
+                        alt="Call"
+                        class="w-3 h-3 cursor-pointer hover:text-green-600 transition-colors"
+                      />
                     </div>
                   </td>
 
@@ -420,6 +442,10 @@ export default {
       filterDropdownRef: null,
       displayDropdownRef: null,
 
+      // Loading state
+      loading: false,
+      error: null,
+
       // Filters
       searchQuery: '',
       showFilterDropdown: false,
@@ -427,15 +453,16 @@ export default {
 
       // Filter options
       statusOptions: [
-        { value: 'unresolved', label: 'Unresolved' },
+        { value: 'created', label: 'Created' },
+        { value: 'assigned', label: 'Assigned' },
         { value: 'in-progress', label: 'In Progress' },
         { value: 'pending', label: 'Pending' },
         { value: 'resolved', label: 'Resolved' },
         { value: 'closed', label: 'Closed' }
       ],
 
-      agentOptions: ['Sarah Smith', 'Mike Johnson', 'Emily Davis'],
-      productOptions: ['Product A', 'Product B', 'Product C', 'Service Package 1', 'Service Package 2'],
+      agentOptions: [],
+      productOptions: [],
 
       // Active filters state
       activeFilters: {
@@ -457,6 +484,7 @@ export default {
       columnOptions: [
         { key: 'ticketId', label: 'ID' },
         { key: 'customer', label: 'Customer' },
+        { key: 'phone', label: 'Phone' },
         { key: 'agent', label: 'Agent' },
         { key: 'product', label: 'Product' },
         { key: 'type', label: 'Type' },
@@ -473,311 +501,23 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 5,
+      itemsPerPage: 10,
 
-      // Sample data
-      tickets: [
-        {
-          id: 'T001',
-          customerName: 'John Doe',
-          customerContact: 'john@example.com',
-          agentName: 'Sarah Smith',
-          productCategory: 'Product A',
-          type: 'technical',
-          status: 'unresolved',
-          createdDate: '2024-01-15',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Customer experiencing login issues with the mobile app'
-        },
-        {
-          id: 'T002',
-          customerName: 'Jane Wilson',
-          customerContact: '+1 (555) 123-4567',
-          agentName: 'Mike Johnson',
-          productCategory: 'Service Package 1',
-          type: 'billing',
-          status: 'resolved',
-          createdDate: '2024-01-14',
-          resolvedDate: '2024-01-14',
-          csatRating: 5,
-          firstCallResolution: true,
-          notes: 'Billing inquiry about subscription renewal'
-        },
-        {
-          id: 'T003',
-          customerName: 'Bob Anderson',
-          customerContact: 'bob.anderson@company.com',
-          agentName: 'Emily Davis',
-          productCategory: 'Product B',
-          type: 'general',
-          status: 'in-progress',
-          createdDate: '2024-01-13',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'General inquiry about product features and capabilities'
-        },
-        {
-          id: 'T004',
-          customerName: 'Alice Brown',
-          customerContact: '+1 (555) 987-6543',
-          agentName: 'Sarah Smith',
-          productCategory: 'Product C',
-          type: 'feature',
-          status: 'closed',
-          createdDate: '2024-01-10',
-          resolvedDate: '2024-01-12',
-          csatRating: 4,
-          firstCallResolution: false,
-          notes: 'Feature request for bulk export functionality'
-        },
-        {
-          id: 'T005',
-          customerName: 'Charlie Green',
-          customerContact: 'charlie@startup.io',
-          agentName: 'Mike Johnson',
-          productCategory: 'Service Package 2',
-          type: 'technical',
-          status: 'resolved',
-          createdDate: '2024-01-08',
-          resolvedDate: '2024-01-08',
-          csatRating: 5,
-          firstCallResolution: true,
-          notes: 'API integration support - successfully resolved'
-        },
-        {
-          id: 'T006',
-          customerName: 'David Lee',
-          customerContact: '+1 (555) 246-8135',
-          agentName: 'Emily Davis',
-          productCategory: 'Product A',
-          type: 'billing',
-          status: 'pending',
-          createdDate: '2024-01-16',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Requesting invoice for recent purchase'
-        },
-        {
-          id: 'T007',
-          customerName: 'Emma Watson',
-          customerContact: 'emma.w@company.com',
-          agentName: 'Sarah Smith',
-          productCategory: 'Product B',
-          type: 'technical',
-          status: 'resolved',
-          createdDate: '2024-01-11',
-          resolvedDate: '2024-01-13',
-          csatRating: 3,
-          firstCallResolution: false,
-          notes: 'Software installation support provided'
-        },
-        {
-          id: 'T008',
-          customerName: 'Frank Miller',
-          customerContact: '+1 (555) 345-6789',
-          agentName: 'Mike Johnson',
-          productCategory: 'Product C',
-          type: 'billing',
-          status: 'unresolved',
-          createdDate: '2024-01-17',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Customer billing dispute - subscription renewal issue'
-        },
-        {
-          id: 'T009',
-          customerName: 'Grace Chen',
-          customerContact: 'grace.chen@techcorp.com',
-          agentName: 'Emily Davis',
-          productCategory: 'Product A',
-          type: 'technical',
-          status: 'in-progress',
-          createdDate: '2024-01-17',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Database connection timeout issues - investigating'
-        },
-        {
-          id: 'T010',
-          customerName: 'Henry Williams',
-          customerContact: '+1 (555) 456-7890',
-          agentName: 'Sarah Smith',
-          productCategory: 'Service Package 1',
-          type: 'general',
-          status: 'resolved',
-          createdDate: '2024-01-16',
-          resolvedDate: '2024-01-16',
-          csatRating: 5,
-          firstCallResolution: true,
-          notes: 'General inquiry about new features roadmap'
-        },
-        {
-          id: 'T011',
-          customerName: 'Isabella Garcia',
-          customerContact: 'isabella.g@startup.io',
-          agentName: 'Mike Johnson',
-          productCategory: 'Product B',
-          type: 'feature',
-          status: 'pending',
-          createdDate: '2024-01-18',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Request for API documentation in Spanish language'
-        },
-        {
-          id: 'T012',
-          customerName: 'Jack Thompson',
-          customerContact: '+1 (555) 567-8901',
-          agentName: 'Emily Davis',
-          productCategory: 'Service Package 2',
-          type: 'technical',
-          status: 'unresolved',
-          createdDate: '2024-01-18',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Integration with third-party calendar app failing'
-        },
-        {
-          id: 'T013',
-          customerName: 'Karen Lee',
-          customerContact: 'karen.lee@enterprise.com',
-          agentName: 'Sarah Smith',
-          productCategory: 'Product A',
-          type: 'billing',
-          status: 'resolved',
-          createdDate: '2024-01-15',
-          resolvedDate: '2024-01-16',
-          csatRating: 4,
-          firstCallResolution: false,
-          notes: 'Invoice correction for annual subscription'
-        },
-        {
-          id: 'T014',
-          customerName: 'Liam Martinez',
-          customerContact: '+1 (555) 678-9012',
-          agentName: 'Mike Johnson',
-          productCategory: 'Product C',
-          type: 'general',
-          status: 'closed',
-          createdDate: '2024-01-09',
-          resolvedDate: '2024-01-11',
-          csatRating: 2,
-          firstCallResolution: false,
-          notes: 'Feature request denied - customer unhappy with response'
-        },
-        {
-          id: 'T015',
-          customerName: 'Mia Rodriguez',
-          customerContact: 'mia.r@company.org',
-          agentName: 'Emily Davis',
-          productCategory: 'Service Package 1',
-          type: 'technical',
-          status: 'in-progress',
-          createdDate: '2024-01-19',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Mobile app crashing on iOS devices - investigating'
-        },
-        {
-          id: 'T016',
-          customerName: 'Nathan Brown',
-          customerContact: '+1 (555) 789-0123',
-          agentName: 'Sarah Smith',
-          productCategory: 'Product B',
-          type: 'feature',
-          status: 'pending',
-          createdDate: '2024-01-19',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Request for dark mode feature in dashboard'
-        },
-        {
-          id: 'T017',
-          customerName: 'Olivia Davis',
-          customerContact: 'olivia.d@startup.co',
-          agentName: 'Mike Johnson',
-          productCategory: 'Service Package 2',
-          type: 'billing',
-          status: 'resolved',
-          createdDate: '2024-01-14',
-          resolvedDate: '2024-01-15',
-          csatRating: 5,
-          firstCallResolution: true,
-          notes: 'Successful plan upgrade - customer very satisfied'
-        },
-        {
-          id: 'T018',
-          customerName: 'Peter Johnson',
-          customerContact: '+1 (555) 890-1234',
-          agentName: 'Emily Davis',
-          productCategory: 'Product A',
-          type: 'technical',
-          status: 'unresolved',
-          createdDate: '2024-01-20',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Server response time degradation - urgent'
-        },
-        {
-          id: 'T019',
-          customerName: 'Test User 1',
-          customerContact: '+1 (555) 111-1111',
-          agentName: 'Sarah Smith',
-          productCategory: 'Product A',
-          type: 'technical',
-          status: 'pending',
-          createdDate: '2024-01-31',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Test ticket for pagination'
-        },
-        {
-          id: 'T020',
-          customerName: 'Test User 2',
-          customerContact: '+1 (555) 222-2222',
-          agentName: 'Mike Johnson',
-          productCategory: 'Product B',
-          type: 'billing',
-          status: 'resolved',
-          createdDate: '2024-01-31',
-          resolvedDate: '2024-01-31',
-          csatRating: 5,
-          firstCallResolution: true,
-          notes: 'Another test ticket'
-        },
-        {
-          id: 'T021',
-          customerName: 'Test User 3',
-          customerContact: '+1 (555) 333-3333',
-          agentName: 'Emily Davis',
-          productCategory: 'Product C',
-          type: 'general',
-          status: 'in-progress',
-          createdDate: '2024-02-01',
-          resolvedDate: null,
-          csatRating: null,
-          firstCallResolution: false,
-          notes: 'Third test ticket'
-        }
-      ]
+      // Data from backend
+      tickets: [],
+      allAgents: [],
+      allProducts: []
     }
   },
 
-  created() {
+  async created() {
     // Initialize visible columns
     this.visibleColumns = Object.fromEntries(this.columnOptions.map(col => [col.key, true]))
+
+    // Fetch data from backend
+    await this.fetchTickets()
+    await this.fetchProducts()
+    await this.fetchAgents()
   },
 
   mounted() {
@@ -788,6 +528,207 @@ export default {
   beforeDestroy() {
     // Clean up event listener
     document.removeEventListener('click', this.handleClickOutside);
+  },
+
+  methods: {
+    // Fetch tickets from backend
+    async fetchTickets() {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await $fetch('http://localhost:5001/tickets?limit=1000')
+        if (response.data) {
+          this.tickets = response.data.map(ticket => ({
+            id: ticket.ticketId || ticket.id,
+            customerName: ticket.name || '-',
+            customerContact: ticket.email || ticket.phone || '-',
+            phone: ticket.phone || '-',
+            agentName: ticket.assignedAgentName || ticket.agentName || '-',
+            productCategory: ticket.productName || 'No Product',
+            type: ticket.ticketType || 'general',
+            status: ticket.status || 'created',
+            createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
+            resolvedDate: ticket.resolvedAt || ticket.resolved_at || null,
+            csatRating: ticket.csatRating || ticket.csat_rating || null,
+            firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
+            notes: ticket.subject || ticket.description || '-',
+            importAction: ticket.importAction || null
+          }))
+        }
+      } catch (error) {
+        console.error('Error fetching tickets:', error)
+        this.error = 'Failed to load tickets'
+        this.tickets = []
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // Fetch products from backend
+    async fetchProducts() {
+      try {
+        const response = await $fetch('http://localhost:5001/products')
+        if (response.data) {
+          this.allProducts = response.data
+          this.productOptions = response.data.map(p => p.name || p.productName || p.title)
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error)
+        this.productOptions = []
+      }
+    },
+
+    // Fetch all agents
+    async fetchAgents() {
+      try {
+        // We'll need to fetch agents from all products since there's no "all agents" endpoint
+        // For now, we'll extract unique agent names from tickets
+        const uniqueAgents = [...new Set(this.tickets.map(t => t.agentName).filter(a => a && a !== '-'))]
+        this.agentOptions = uniqueAgents
+      } catch (error) {
+        console.error('Error fetching agents:', error)
+        this.agentOptions = []
+      }
+    },
+
+    // Toggle filter dropdown
+    toggleFilterDropdown() {
+      this.showFilterDropdown = !this.showFilterDropdown
+    },
+
+    // Toggle filter section
+    toggleFilterSection(section) {
+      this.expandedSections[section] = !this.expandedSections[section]
+    },
+
+    // Toggle display dropdown
+    toggleDisplayDropdown() {
+      this.showDisplayDropdown = !this.showDisplayDropdown
+    },
+
+    // Select all columns
+    selectAllColumns() {
+      Object.keys(this.visibleColumns).forEach(key => {
+        this.visibleColumns[key] = true
+      })
+    },
+
+    // Deselect all columns
+    deselectAllColumns() {
+      Object.keys(this.visibleColumns).forEach(key => {
+        this.visibleColumns[key] = false
+      })
+    },
+
+    // Remove individual filter
+    removeFilter(chipKey) {
+      const [type, value] = chipKey.split('-')
+
+      switch(type) {
+        case 'status':
+          const statusIndex = this.activeFilters.status.indexOf(value)
+          if (statusIndex > -1) this.activeFilters.status.splice(statusIndex, 1)
+          break
+        case 'agent':
+          const agentIndex = this.activeFilters.agents.findIndex(a => a.includes(value))
+          if (agentIndex > -1) this.activeFilters.agents.splice(agentIndex, 1)
+          break
+        case 'product':
+          const productIndex = this.activeFilters.products.findIndex(p => p.includes(value))
+          if (productIndex > -1) this.activeFilters.products.splice(productIndex, 1)
+          break
+        case 'fcr':
+          const fcrIndex = this.activeFilters.fcr.indexOf(value)
+          if (fcrIndex > -1) this.activeFilters.fcr.splice(fcrIndex, 1)
+          break
+      }
+    },
+
+    // Clear all filters
+    clearFilters() {
+      this.activeFilters = {
+        status: [],
+        agents: [],
+        products: [],
+        fcr: []
+      }
+    },
+
+    // Close dropdown when clicking outside
+    handleClickOutside(event) {
+      // Get the clicked element
+      const clickedElement = event.target;
+
+      // Close filter dropdown if clicking outside
+      if (this.showFilterDropdown) {
+        const filterDropdown = this.$refs.filterDropdownRef;
+        if (filterDropdown && !filterDropdown.contains(clickedElement)) {
+          this.showFilterDropdown = false;
+        }
+      }
+
+      // Close display dropdown if clicking outside
+      if (this.showDisplayDropdown) {
+        const displayDropdown = this.$refs.displayDropdownRef;
+        if (displayDropdown && !displayDropdown.contains(clickedElement)) {
+          this.showDisplayDropdown = false;
+        }
+      }
+    },
+
+    // Get status badge class
+    getStatusClass(status) {
+      const classes = {
+        'created': 'bg-yellow-100 text-yellow-800',
+        'assigned': 'bg-green-100 text-green-800',
+        'unresolved': 'bg-red-100 text-red-800',
+        'in-progress': 'bg-yellow-100 text-yellow-800',
+        'pending': 'bg-orange-100 text-orange-800',
+        'resolved': 'bg-green-100 text-green-800',
+        'closed': 'bg-gray-100 text-gray-800'
+      }
+      return classes[status] || 'bg-gray-100 text-gray-800'
+    },
+
+    // Format date
+    formatDate(dateString) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' }
+      return new Date(dateString).toLocaleDateString('en-US', options)
+    },
+
+    // Get initials from name
+    getInitials(name) {
+      if (!name || name === '-') return '?'
+      return name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+    },
+
+    // Pagination methods
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+      }
+    },
+
+    previousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++
+      }
+    },
+
+    changeItemsPerPage(count) {
+      this.itemsPerPage = count
+      this.currentPage = 1 // Reset to first page when changing items per page
+    }
   },
 
   computed: {
@@ -897,144 +838,6 @@ export default {
     // Check if any filters are active
     hasActiveFilters() {
       return this.activeFiltersCount > 0
-    }
-  },
-
-  methods: {
-    // Toggle filter dropdown
-    toggleFilterDropdown() {
-      this.showFilterDropdown = !this.showFilterDropdown
-    },
-
-    // Toggle filter section
-    toggleFilterSection(section) {
-      this.expandedSections[section] = !this.expandedSections[section]
-    },
-
-    // Toggle display dropdown
-    toggleDisplayDropdown() {
-      this.showDisplayDropdown = !this.showDisplayDropdown
-    },
-
-    // Select all columns
-    selectAllColumns() {
-      Object.keys(this.visibleColumns).forEach(key => {
-        this.visibleColumns[key] = true
-      })
-    },
-
-    // Deselect all columns
-    deselectAllColumns() {
-      Object.keys(this.visibleColumns).forEach(key => {
-        this.visibleColumns[key] = false
-      })
-    },
-
-    // Remove individual filter
-    removeFilter(chipKey) {
-      const [type, value] = chipKey.split('-')
-
-      switch(type) {
-        case 'status':
-          const statusIndex = this.activeFilters.status.indexOf(value)
-          if (statusIndex > -1) this.activeFilters.status.splice(statusIndex, 1)
-          break
-        case 'agent':
-          const agentIndex = this.activeFilters.agents.findIndex(a => a.includes(value))
-          if (agentIndex > -1) this.activeFilters.agents.splice(agentIndex, 1)
-          break
-        case 'product':
-          const productIndex = this.activeFilters.products.findIndex(p => p.includes(value))
-          if (productIndex > -1) this.activeFilters.products.splice(productIndex, 1)
-          break
-        case 'fcr':
-          const fcrIndex = this.activeFilters.fcr.indexOf(value)
-          if (fcrIndex > -1) this.activeFilters.fcr.splice(fcrIndex, 1)
-          break
-      }
-    },
-
-    // Clear all filters
-    clearFilters() {
-      this.activeFilters = {
-        status: [],
-        agents: [],
-        products: [],
-        fcr: []
-      }
-    },
-
-    // Close dropdown when clicking outside
-    handleClickOutside(event) {
-      // Get the clicked element
-      const clickedElement = event.target;
-
-      // Close filter dropdown if clicking outside
-      if (this.showFilterDropdown) {
-        const filterDropdown = this.$refs.filterDropdownRef;
-        if (filterDropdown && !filterDropdown.contains(clickedElement)) {
-          this.showFilterDropdown = false;
-        }
-      }
-
-      // Close display dropdown if clicking outside
-      if (this.showDisplayDropdown) {
-        const displayDropdown = this.$refs.displayDropdownRef;
-        if (displayDropdown && !displayDropdown.contains(clickedElement)) {
-          this.showDisplayDropdown = false;
-        }
-      }
-    },
-
-    // Get status badge class
-    getStatusClass(status) {
-      const classes = {
-        'unresolved': 'bg-red-100 text-red-800',
-        'in-progress': 'bg-yellow-100 text-yellow-800',
-        'pending': 'bg-orange-100 text-orange-800',
-        'resolved': 'bg-green-100 text-green-800',
-        'closed': 'bg-gray-100 text-gray-800'
-      }
-      return classes[status] || 'bg-gray-100 text-gray-800'
-    },
-
-    // Format date
-    formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric' }
-      return new Date(dateString).toLocaleDateString('en-US', options)
-    },
-
-    // Get initials from name
-    getInitials(name) {
-      return name
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-    },
-
-    // Pagination methods
-    goToPage(page) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.currentPage = page
-      }
-    },
-
-    previousPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--
-      }
-    },
-
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++
-      }
-    },
-
-    changeItemsPerPage(count) {
-      this.itemsPerPage = count
-      this.currentPage = 1 // Reset to first page when changing items per page
     }
   }
 }

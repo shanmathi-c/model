@@ -456,55 +456,83 @@ export class ticketController {
                 const queries = [
                     // Try with 'name' column and 'createdAt'
                     `SELECT t.*,
-                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.createdAt DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'name' column and 'created_at'
                     `SELECT t.*,
-                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.created_at DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'name' column and 'id'
                     `SELECT t.*,
-                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'product_name' column
                     `SELECT t.*,
-                            CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName
+                            CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'title' column
                     `SELECT t.*,
-                            CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName
+                            CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'productName' column
                     `SELECT t.*,
-                            CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName
+                            CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Final fallback without product join
-                    `SELECT t.*, 'No Product' as productName
+                    `SELECT t.*, 'No Product' as productName,
+                            a.agentName as assignedAgentName,
+                            at.importAction
                      FROM tickets t
+                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN agents a ON at.agentId = a.id
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`
                 ];
