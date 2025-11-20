@@ -237,6 +237,11 @@
               >
                 {{ ticket.ticketType || 'freshdesk' }}
               </span>
+              <span
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700"
+              >
+                {{ ticket.status || 'Created' }}
+              </span>
             </div>
           </div>
 
