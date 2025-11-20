@@ -223,7 +223,7 @@
         >
           <!-- Card Header -->
           <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
               <!-- Selection Checkbox -->
               <input
                 type="checkbox"
@@ -238,9 +238,22 @@
                 {{ ticket.ticketType || 'freshdesk' }}
               </span>
               <span
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                :class="ticket.status === 'assigned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
               >
                 {{ ticket.status || 'Created' }}
+              </span>
+              <!-- Assigned Agent Info -->
+              <span v-if="ticket.assignedAgentName" class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="font-medium text-blue-900">{{ ticket.assignedAgentName }}</span>
+              </span>
+              <!-- Import Action Info -->
+              <span v-if="ticket.importAction" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                :class="ticket.importAction === 'bulk' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'">
+                {{ ticket.importAction === 'bulk' ? 'Bulk' : 'Single' }}
               </span>
             </div>
           </div>
@@ -699,16 +712,20 @@ export default {
             this.showSuccess = false
           }, 3000)
 
-          // Remove assigned tickets from list
+          // Update assigned tickets status and agent info
+          const assignedAgent = this.allAvailableAgents.find(a => a.id == this.bulkAssignAgent)
           this.selectedTickets.forEach(ticket => {
-            const index = this.tickets.indexOf(ticket)
-            if (index > -1) {
-              this.tickets.splice(index, 1)
+            ticket.status = 'assigned'
+            if (assignedAgent) {
+              ticket.assignedAgentName = assignedAgent.agentName || assignedAgent.name
             }
+            ticket.importAction = 'bulk'
+            ticket.selected = false
+            ticket.showAssignment = false
           })
 
-          // Clear selection and agent
-          this.clearSelection()
+          // Clear bulk assignment selection
+          this.bulkAssignAgent = null
         }
       } catch (error) {
         console.error('Error assigning tickets:', error)
@@ -758,11 +775,15 @@ export default {
             this.showSuccess = false
           }, 3000)
 
-          // Remove ticket from list after successful assignment
-          const index = this.tickets.indexOf(ticket)
-          if (index > -1) {
-            this.tickets.splice(index, 1)
+          // Update ticket status and assigned agent info
+          ticket.status = 'assigned'
+          const assignedAgent = ticket.availableAgents.find(a => a.id == ticket.selectedAgent)
+          if (assignedAgent) {
+            ticket.assignedAgentName = assignedAgent.agentName || assignedAgent.name
           }
+          ticket.importAction = 'single'
+          ticket.showAssignment = false
+          ticket.selected = false
         }
       } catch (error) {
         console.error('Error assigning ticket:', error)

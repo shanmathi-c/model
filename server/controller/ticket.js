@@ -174,42 +174,63 @@ export class ticketController {
             let whereClause = hasAssignedField ? "WHERE (t.assignedTo IS NULL OR t.assignedTo = 0)" : "";
 
             // Try different product column names - using the correct JOIN that worked for getTickets
+            // Also join with assign-ticket and agents tables to get assigned agent info
             const queries = [
-                // Try with 'name' column in product table and correct productId join
+                // Try with 'name' column in product table and agent join
                 `SELECT t.*,
-                        CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                        CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
+                        a.agentName as assignedAgentName,
+                        at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
+                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
 
                 // Try with 'product_name' column in product table
                 `SELECT t.*,
-                        CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName
+                        CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName,
+                        a.agentName as assignedAgentName,
+                        at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
+                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
 
                 // Try with 'title' column in product table
                 `SELECT t.*,
-                        CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName
+                        CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName,
+                        a.agentName as assignedAgentName,
+                        at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
+                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
 
                 // Try with 'productName' column
                 `SELECT t.*,
-                        CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName
+                        CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName,
+                        a.agentName as assignedAgentName,
+                        at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
+                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
 
                 // Final fallback without product join
-                `SELECT t.*, 'No Product' as productName
+                `SELECT t.*, 'No Product' as productName,
+                        a.agentName as assignedAgentName,
+                        at.importAction
                  FROM tickets t
+                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`
             ];
