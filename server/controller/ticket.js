@@ -316,46 +316,49 @@ export class ticketController {
             });
         }
 
-        // Try different column names for assignment
-        const queries = [
-            // Update with assignedTo and assignedAt columns
-            `UPDATE tickets SET assignedTo = ?, assignedAt = NOW() WHERE id = ?`,
-            // Update with only assignedTo column
-            `UPDATE tickets SET assignedTo = ? WHERE id = ?`,
-            // Update with agent_id column
-            `UPDATE tickets SET agent_id = ?, assigned_date = NOW() WHERE id = ?`,
-            // Update with assigned field
-            `UPDATE tickets SET assigned = 1, assignedTo = ? WHERE id = ?`
-        ];
+        // Step 1: Insert into assign-ticket table
+        // Use correct column names based on your database
+        const insertQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES (?, ?, 'assigned', 'single')`;
 
-        const tryUpdate = (queryIndex) => {
-            connection.query(queries[queryIndex], [agentId, ticketId], (err, result) => {
-                if (err && queryIndex < queries.length - 1) {
-                    console.log(`Update Query ${queryIndex + 1} failed:`, err.sqlMessage);
-                    tryUpdate(queryIndex + 1);
-                } else if (err) {
+        connection.query(insertQuery, [ticketId, agentId], (insertErr, insertResult) => {
+            if (insertErr) {
+                return res.status(500).json({
+                    message: "Error creating assignment record",
+                    error: insertErr
+                });
+            }
+
+            // Step 2: Update ticket status to 'assigned'
+            const updateStatusQuery = `UPDATE tickets SET status = 'assigned' WHERE id = ?`;
+
+            connection.query(updateStatusQuery, [ticketId], (updateErr, updateResult) => {
+                if (updateErr) {
+                    // Rollback: delete the assignment record if status update fails
+                    connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId = ? AND agentId = ?`, [ticketId, agentId]);
                     return res.status(500).json({
-                        message: "Error assigning ticket",
-                        error: err
+                        message: "Error updating ticket status",
+                        error: updateErr
                     });
-                } else if (result.affectedRows === 0) {
+                }
+
+                if (updateResult.affectedRows === 0) {
+                    // Rollback: delete the assignment record if ticket not found
+                    connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId = ? AND agentId = ?`, [ticketId, agentId]);
                     return res.status(404).json({
                         message: "Ticket not found"
                     });
-                } else {
-                    return res.json({
-                        message: "Ticket assigned successfully",
-                        data: {
-                            ticketId: ticketId,
-                            agentId: agentId,
-                            assigned_at: new Date()
-                        }
-                    });
                 }
-            });
-        };
 
-        tryUpdate(0);
+                return res.json({
+                    message: "Ticket assigned successfully",
+                    data: {
+                        ticketId: ticketId,
+                        agentId: agentId,
+                        assigned_at: new Date()
+                    }
+                });
+            });
+        });
     }
 
     // Bulk assign tickets to agent
@@ -368,44 +371,44 @@ export class ticketController {
             });
         }
 
-        const placeholders = ticketIds.map(() => '?').join(',');
+        // Step 1: Insert multiple records into assign-ticket table
+        // Use correct column names based on your database
+        const assignValuesWithStatus = ticketIds.map(ticketId => `(${ticketId}, ${agentId}, 'assigned', 'bulk')`).join(',');
+        const insertQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES ${assignValuesWithStatus}`;
 
-        // Try different column names for assignment
-        const queries = [
-            // Update with assignedTo and assignedAt columns
-            `UPDATE tickets SET assignedTo = ?, assignedAt = NOW() WHERE id IN (${placeholders})`,
-            // Update with only assignedTo column
-            `UPDATE tickets SET assignedTo = ? WHERE id IN (${placeholders})`,
-            // Update with agent_id column
-            `UPDATE tickets SET agent_id = ?, assigned_date = NOW() WHERE id IN (${placeholders})`,
-            // Update with assigned field
-            `UPDATE tickets SET assigned = 1, assignedTo = ? WHERE id IN (${placeholders})`
-        ];
+        connection.query(insertQuery, (insertErr, insertResult) => {
+            if (insertErr) {
+                return res.status(500).json({
+                    message: "Error creating assignment records",
+                    error: insertErr
+                });
+            }
 
-        const tryBulkUpdate = (queryIndex) => {
-            connection.query(queries[queryIndex], [agentId, ...ticketIds], (err, result) => {
-                if (err && queryIndex < queries.length - 1) {
-                    console.log(`Bulk Update Query ${queryIndex + 1} failed:`, err.sqlMessage);
-                    tryBulkUpdate(queryIndex + 1);
-                } else if (err) {
+            // Step 2: Update ticket status to 'assigned' for all tickets
+            const placeholders = ticketIds.map(() => '?').join(',');
+            const updateStatusQuery = `UPDATE tickets SET status = 'assigned' WHERE id IN (${placeholders})`;
+
+            connection.query(updateStatusQuery, ticketIds, (updateErr, updateResult) => {
+                if (updateErr) {
+                    // Rollback: delete the assignment records if status update fails
+                    const deletePlaceholders = ticketIds.map(() => '?').join(',');
+                    connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId IN (${deletePlaceholders}) AND agentId = ?`, [...ticketIds, agentId]);
                     return res.status(500).json({
-                        message: "Error bulk assigning tickets",
-                        error: err
-                    });
-                } else {
-                    return res.json({
-                        message: "Tickets assigned successfully",
-                        data: {
-                            assignedCount: result.affectedRows,
-                            ticketIds: ticketIds,
-                            agentId: agentId
-                        }
+                        message: "Error updating ticket statuses",
+                        error: updateErr
                     });
                 }
-            });
-        };
 
-        tryBulkUpdate(0);
+                return res.json({
+                    message: "Tickets assigned successfully",
+                    data: {
+                        assignedCount: updateResult.affectedRows,
+                        ticketIds: ticketIds,
+                        agentId: agentId
+                    }
+                });
+            });
+        });
     }
 
     // Fetch paginated tickets
