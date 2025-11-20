@@ -895,7 +895,8 @@ export default {
           countryCode: this.formData.countryCode,
           phone: this.cleanPhoneNumber(this.formData.phone),
           subject: this.formData.subject,
-          description: this.formData.description
+          description: this.formData.description,
+          status: 'inbound'  // Add status as inbound
         }
 
         const response = await fetch('http://localhost:5001/callback', {
