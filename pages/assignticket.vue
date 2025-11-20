@@ -223,15 +223,7 @@
         >
           <!-- Card Header -->
           <div class="flex items-start justify-between mb-3 pb-2 border-b border-gray-100">
-            <div class="flex items-start gap-2 flex-1">
-              <!-- Selection Checkbox -->
-              <input
-                type="checkbox"
-                :value="ticket.id"
-                v-model="ticket.selected"
-                class="w-4 h-4 mt-0.5 text-blue-600 rounded border-gray-300 cursor-pointer flex-shrink-0"
-              />
-              <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+            <div class="flex flex-col gap-1.5 flex-1 min-w-0">
                 <!-- Ticket ID and Badges Row -->
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-base font-bold text-gray-900">{{ ticket.ticketId }}</span>
@@ -273,7 +265,6 @@
                   </svg>
                   <span class="font-medium text-blue-900">Assigned to: {{ ticket.assignedAgentName }}</span>
                 </div>
-              </div>
             </div>
           </div>
 
