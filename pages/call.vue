@@ -4,8 +4,8 @@
     <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
       <!-- Header Title -->
       <div class="mb-4">
-        <h1 class="text-2xl font-bold text-gray-900">Call Tickets</h1>
-        <p class="text-gray-600 mt-1">View and manage phone call support tickets</p>
+        <h1 class="text-2xl font-bold text-gray-900">Callback Requests</h1>
+        <p class="text-gray-600 mt-1">View and manage customer callback requests</p>
       </div>
 
       <!-- Search and Filter Bar -->
@@ -21,7 +21,7 @@
             type="text"
             v-model="searchQuery"
             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            placeholder="Search tickets..."
+            placeholder="Search callbacks by name, phone, or ID..."
             @input="handleSearch"
           />
         </div>
@@ -46,28 +46,11 @@
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <option value="">All Status</option>
-            <option value="created">Created</option>
-            <option value="assigned">Assigned</option>
-            <option value="in-progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          <!-- Call Type Filter Dropdown (shown when filter is active) -->
-          <select
-            v-if="showFilter"
-            v-model="callTypeFilter"
-            @change="handleSearch"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <option value="">All Call Types</option>
             <option value="inbound">Inbound</option>
-            <option value="outbound">Outbound</option>
-            <option value="missed">Missed</option>
-            <option value="voicemail">Voicemail</option>
+            <option value="pending">Pending</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -105,8 +88,8 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No call logs found</h3>
-          <p class="mt-1 text-sm text-gray-500">No call records match your search criteria.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No callbacks found</h3>
+          <p class="mt-1 text-sm text-gray-500">No callback requests match your search criteria.</p>
           <div class="mt-6">
             <button @click="clearFilters" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
               Clear Filters
@@ -124,31 +107,25 @@
             <thead class="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Call Log ID
+                  Callback ID
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer Phone
+                  Customer Name
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Agent Name
+                  Phone
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Call Type
+                  Email
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Duration
+                  Subject
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Call Date & Time
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Recording
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Related Ticket ID
+                  Request Date
                 </th>
                 <th scope="col" class="relative px-6 py-3">
                   <span class="sr-only">Actions</span>
@@ -159,33 +136,33 @@
             <!-- Table Body - Scrollable -->
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors">
-                <!-- Call Log ID -->
+                <!-- Callback ID -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {{ call.callLogId || call.id }}
+                  {{ call.callLogId || call.callbackId }}
                 </td>
 
-                <!-- Customer Phone -->
+                <!-- Customer Name -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">
+                    {{ call.name || 'N/A' }}
+                  </div>
+                </td>
+
+                <!-- Phone -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ call.phone }}
                 </td>
 
-                <!-- Agent Name -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ call.agentName || 'Not Assigned' }}
-                  </div>
-                </td>
-
-                <!-- Call Type -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getCallTypeClass(call.callType)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                    {{ call.callType || 'Unknown' }}
-                  </span>
-                </td>
-
-                <!-- Duration -->
+                <!-- Email -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ formatDuration(call.duration) || 'N/A' }}
+                  {{ call.email || 'N/A' }}
+                </td>
+
+                <!-- Subject -->
+                <td class="px-6 py-4">
+                  <div class="text-sm text-gray-900 max-w-xs truncate" :title="call.subject">
+                    {{ call.subject || 'N/A' }}
+                  </div>
                 </td>
 
                 <!-- Status -->
@@ -195,36 +172,9 @@
                   </span>
                 </td>
 
-                <!-- Call Date & Time -->
+                <!-- Request Date -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ formatDateTime(call.callDateTime || call.createdAt || call.created_at) }}
-                </td>
-
-                <!-- Recording -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <button
-                    v-if="call.recordingUrl"
-                    @click="playRecording(call.recordingUrl)"
-                    class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                  >
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                    </svg>
-                    Play
-                  </button>
-                  <span v-else class="text-gray-400">N/A</span>
-                </td>
-
-                <!-- Related Ticket ID -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <router-link
-                    v-if="call.relatedTicketId"
-                    :to="`/ticket/${call.relatedTicketId}`"
-                    class="text-blue-600 hover:text-blue-900 font-medium"
-                  >
-                    {{ call.relatedTicketId }}
-                  </router-link>
-                  <span v-else class="text-gray-400">N/A</span>
                 </td>
 
                 <!-- Actions -->
@@ -340,13 +290,9 @@ export default {
   },
 
   computed: {
-    // Filter calls based on search and status filter
+    // Filter callbacks based on search and status filter
     filteredCalls() {
       let filtered = this.calls
-
-      // Filter by call logs (could be from tickets or a separate call_logs table)
-      // For now, we'll use tickets with ticketType = 'call'
-      filtered = filtered.filter(call => call.ticketType === 'call' || call.callType)
 
       // Apply search filter
       if (this.searchQuery) {
@@ -354,6 +300,9 @@ export default {
         filtered = filtered.filter(call =>
           call.callLogId?.toLowerCase().includes(query) ||
           call.phone?.toLowerCase().includes(query) ||
+          call.name?.toLowerCase().includes(query) ||
+          call.email?.toLowerCase().includes(query) ||
+          call.subject?.toLowerCase().includes(query) ||
           call.agentName?.toLowerCase().includes(query) ||
           call.relatedTicketId?.toLowerCase().includes(query)
         )
@@ -418,13 +367,13 @@ export default {
   },
 
   methods: {
-    // Fetch call logs from API
+    // Fetch callback data from API
     async fetchCallLogs() {
       this.loading = true
       this.error = null
 
       try {
-        const response = await fetch('http://localhost:5001/tickets', {
+        const response = await fetch('http://localhost:5001/callbacks', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -438,27 +387,31 @@ export default {
 
         const result = await response.json()
 
-        // Transform ticket data to call log format
-        this.calls = (result.data || []).map(ticket => ({
-          id: ticket.id,
-          callLogId: ticket.ticketId,
-          phone: ticket.phone,
-          agentName: ticket.assignedAgentName || 'Not Assigned',
-          callType: ticket.callType || 'inbound', // Default to inbound
-          duration: ticket.duration || null, // Duration in seconds
-          status: ticket.status || 'completed',
-          callDateTime: ticket.createdAt || ticket.created_at,
-          recordingUrl: ticket.recordingUrl || null,
-          relatedTicketId: ticket.ticketId,
-          ...ticket // Keep other properties
+        // Transform callback data to call log format
+        this.calls = (result.data || []).map(callback => ({
+          id: callback.id,
+          callLogId: callback.callbackId,
+          phone: callback.phone,
+          agentName: callback.agentName || 'Not Assigned',
+          callType: callback.status === 'inbound' ? 'inbound' : 'outbound', // Determine call type from status
+          duration: callback.duration || null, // Duration in seconds (if available)
+          status: callback.status || 'pending',
+          callDateTime: callback.createdAt || callback.created_at,
+          recordingUrl: callback.recordingUrl || null,
+          relatedTicketId: callback.relatedTicketId || null,
+          name: callback.name, // Customer name
+          email: callback.email, // Customer email
+          subject: callback.subject,
+          description: callback.description,
+          productId: callback.productId
         }))
 
         // Reset to first page when filtering
         this.currentPage = 1
 
       } catch (error) {
-        console.error('Error fetching call logs:', error)
-        this.error = error.message || 'Error fetching call logs. Please try again.'
+        console.error('Error fetching callbacks:', error)
+        this.error = error.message || 'Error fetching callbacks. Please try again.'
       } finally {
         this.loading = false
       }
