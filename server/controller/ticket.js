@@ -141,7 +141,7 @@ export class ticketController {
         // Reuse the same logic but force ticketType to 'call'
         ticketController.createTicket({ ...req, body: ticketData }, res);
     }
-// fetch products for drop down option in create ticket page 
+// fetch products for drop down option in create ticket page
     static getProducts(req, res) {
         connection.query("SELECT * FROM product", (err, result) => {
             if (err) {
@@ -156,5 +156,371 @@ export class ticketController {
                 });
             }
         });
+    }
+
+    // Get all unassigned tickets
+    static getUnassignedTickets(req, res) {
+        // Check if assignedTo field exists in tickets table
+        connection.query("SELECT * FROM tickets LIMIT 1", (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "Error accessing tickets table",
+                    error: err
+                });
+            }
+
+            // Check if assignedTo field exists
+            const hasAssignedField = result.length > 0 && 'assignedTo' in result[0];
+            let whereClause = hasAssignedField ? "WHERE (t.assignedTo IS NULL OR t.assignedTo = 0)" : "";
+
+            // Try different product column names - using the correct JOIN that worked for getTickets
+            const queries = [
+                // Try with 'name' column in product table and correct productId join
+                `SELECT t.*,
+                        CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                 FROM tickets t
+                 LEFT JOIN product p ON t.productId = p.productId
+                 ${whereClause}
+                 ORDER BY t.id DESC`,
+
+                // Try with 'product_name' column in product table
+                `SELECT t.*,
+                        CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName
+                 FROM tickets t
+                 LEFT JOIN product p ON t.productId = p.productId
+                 ${whereClause}
+                 ORDER BY t.id DESC`,
+
+                // Try with 'title' column in product table
+                `SELECT t.*,
+                        CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName
+                 FROM tickets t
+                 LEFT JOIN product p ON t.productId = p.productId
+                 ${whereClause}
+                 ORDER BY t.id DESC`,
+
+                // Try with 'productName' column
+                `SELECT t.*,
+                        CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName
+                 FROM tickets t
+                 LEFT JOIN product p ON t.productId = p.productId
+                 ${whereClause}
+                 ORDER BY t.id DESC`,
+
+                // Final fallback without product join
+                `SELECT t.*, 'No Product' as productName
+                 FROM tickets t
+                 ${whereClause}
+                 ORDER BY t.id DESC`
+            ];
+
+            // Try queries in sequence
+            const tryQuery = (queryIndex) => {
+                connection.query(queries[queryIndex], (err, result) => {
+                    if (err && queryIndex < queries.length - 1) {
+                        console.log(`Query ${queryIndex + 1} failed:`, err.sqlMessage);
+                        tryQuery(queryIndex + 1);
+                    } else if (err) {
+                        console.log('All queries failed');
+                        return res.status(500).json({
+                            message: "Error fetching unassigned tickets",
+                            error: err
+                        });
+                    } else {
+                        console.log(`Query ${queryIndex + 1} succeeded`);
+                        return res.json({
+                            message: "Unassigned tickets fetched successfully",
+                            data: result
+                        });
+                    }
+                });
+            };
+
+            tryQuery(0);
+        });
+    }
+
+    // Get agents available for a specific product
+    static getAgentsByProduct(req, res) {
+        const { productId } = req.params;
+
+        // Try queries with different column names
+        const queries = [
+            // With 'name' column and status field
+            `SELECT a.*,
+                    CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'Product' END as productName
+             FROM agents a
+             LEFT JOIN product p ON a.productId = p.id
+             WHERE a.productId = ? AND (a.status = 'available' OR a.status IS NULL)`,
+
+            // With 'product_name' column
+            `SELECT a.*,
+                    CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'Product' END as productName
+             FROM agents a
+             LEFT JOIN product p ON a.productId = p.id
+             WHERE a.productId = ? AND (a.status = 'available' OR a.status IS NULL)`,
+
+            // With different status field (active)
+            `SELECT a.*,
+                    CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'Product' END as productName
+             FROM agents a
+             LEFT JOIN product p ON a.productId = p.id
+             WHERE a.productId = ? AND (a.status = 'active' OR a.status IS NULL)`,
+
+            // Without status field check
+            `SELECT a.*,
+                    CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'Product' END as productName
+             FROM agents a
+             LEFT JOIN product p ON a.productId = p.id
+             WHERE a.productId = ?`,
+
+            // Fallback without product join
+            `SELECT a.*, 'Product' as productName
+             FROM agents a
+             WHERE a.productId = ?`
+        ];
+
+        // Try queries in sequence
+        const tryQuery = (queryIndex) => {
+            connection.query(queries[queryIndex], [productId], (err, result) => {
+                if (err && queryIndex < queries.length - 1) {
+                    console.log(`Agent Query ${queryIndex + 1} failed:`, err.sqlMessage);
+                    tryQuery(queryIndex + 1);
+                } else if (err) {
+                    console.log('All agent queries failed');
+                    // Return empty array instead of error
+                    return res.json({
+                        message: "No agents found",
+                        data: []
+                    });
+                } else {
+                    console.log(`Agent Query ${queryIndex + 1} succeeded`);
+                    return res.json({
+                        message: "Agents fetched successfully",
+                        data: result
+                    });
+                }
+            });
+        };
+
+        tryQuery(0);
+    }
+
+    // Assign ticket to agent
+    static assignTicketToAgent(req, res) {
+        const { ticketId, agentId } = req.body;
+
+        if (!ticketId || !agentId) {
+            return res.status(400).json({
+                message: "Missing required fields: ticketId and agentId"
+            });
+        }
+
+        // Try different column names for assignment
+        const queries = [
+            // Update with assignedTo and assignedAt columns
+            `UPDATE tickets SET assignedTo = ?, assignedAt = NOW() WHERE id = ?`,
+            // Update with only assignedTo column
+            `UPDATE tickets SET assignedTo = ? WHERE id = ?`,
+            // Update with agent_id column
+            `UPDATE tickets SET agent_id = ?, assigned_date = NOW() WHERE id = ?`,
+            // Update with assigned field
+            `UPDATE tickets SET assigned = 1, assignedTo = ? WHERE id = ?`
+        ];
+
+        const tryUpdate = (queryIndex) => {
+            connection.query(queries[queryIndex], [agentId, ticketId], (err, result) => {
+                if (err && queryIndex < queries.length - 1) {
+                    console.log(`Update Query ${queryIndex + 1} failed:`, err.sqlMessage);
+                    tryUpdate(queryIndex + 1);
+                } else if (err) {
+                    return res.status(500).json({
+                        message: "Error assigning ticket",
+                        error: err
+                    });
+                } else if (result.affectedRows === 0) {
+                    return res.status(404).json({
+                        message: "Ticket not found"
+                    });
+                } else {
+                    return res.json({
+                        message: "Ticket assigned successfully",
+                        data: {
+                            ticketId: ticketId,
+                            agentId: agentId,
+                            assigned_at: new Date()
+                        }
+                    });
+                }
+            });
+        };
+
+        tryUpdate(0);
+    }
+
+    // Bulk assign tickets to agent
+    static bulkAssignTickets(req, res) {
+        const { ticketIds, agentId } = req.body;
+
+        if (!ticketIds || !Array.isArray(ticketIds) || ticketIds.length === 0 || !agentId) {
+            return res.status(400).json({
+                message: "Missing required fields: ticketIds (array) and agentId"
+            });
+        }
+
+        const placeholders = ticketIds.map(() => '?').join(',');
+
+        // Try different column names for assignment
+        const queries = [
+            // Update with assignedTo and assignedAt columns
+            `UPDATE tickets SET assignedTo = ?, assignedAt = NOW() WHERE id IN (${placeholders})`,
+            // Update with only assignedTo column
+            `UPDATE tickets SET assignedTo = ? WHERE id IN (${placeholders})`,
+            // Update with agent_id column
+            `UPDATE tickets SET agent_id = ?, assigned_date = NOW() WHERE id IN (${placeholders})`,
+            // Update with assigned field
+            `UPDATE tickets SET assigned = 1, assignedTo = ? WHERE id IN (${placeholders})`
+        ];
+
+        const tryBulkUpdate = (queryIndex) => {
+            connection.query(queries[queryIndex], [agentId, ...ticketIds], (err, result) => {
+                if (err && queryIndex < queries.length - 1) {
+                    console.log(`Bulk Update Query ${queryIndex + 1} failed:`, err.sqlMessage);
+                    tryBulkUpdate(queryIndex + 1);
+                } else if (err) {
+                    return res.status(500).json({
+                        message: "Error bulk assigning tickets",
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "Tickets assigned successfully",
+                        data: {
+                            assignedCount: result.affectedRows,
+                            ticketIds: ticketIds,
+                            agentId: agentId
+                        }
+                    });
+                }
+            });
+        };
+
+        tryBulkUpdate(0);
+    }
+
+    // Fetch paginated tickets
+    static async getTickets(req, res) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const offset = (page - 1) * limit;
+
+
+            // Get total count
+            const countQuery = "SELECT COUNT(*) as total FROM tickets";
+            connection.query(countQuery, (err, countResult) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error fetching ticket count",
+                        error: err
+                    });
+                }
+
+                const total = countResult[0].total;
+
+                // Try queries with different product column names and date columns
+                const queries = [
+                    // Try with 'name' column and 'createdAt'
+                    `SELECT t.*,
+                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                     FROM tickets t
+                     LEFT JOIN product p ON t.productId = p.productId
+                     ORDER BY t.createdAt DESC
+                     LIMIT ${limit} OFFSET ${offset}`,
+
+                    // Try with 'name' column and 'created_at'
+                    `SELECT t.*,
+                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                     FROM tickets t
+                     LEFT JOIN product p ON t.productId = p.productId
+                     ORDER BY t.created_at DESC
+                     LIMIT ${limit} OFFSET ${offset}`,
+
+                    // Try with 'name' column and 'id'
+                    `SELECT t.*,
+                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName
+                     FROM tickets t
+                     LEFT JOIN product p ON t.productId = p.productId
+                     ORDER BY t.id DESC
+                     LIMIT ${limit} OFFSET ${offset}`,
+
+                    // Try with 'product_name' column
+                    `SELECT t.*,
+                            CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName
+                     FROM tickets t
+                     LEFT JOIN product p ON t.productId = p.productId
+                     ORDER BY t.id DESC
+                     LIMIT ${limit} OFFSET ${offset}`,
+
+                    // Try with 'title' column
+                    `SELECT t.*,
+                            CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName
+                     FROM tickets t
+                     LEFT JOIN product p ON t.productId = p.productId
+                     ORDER BY t.id DESC
+                     LIMIT ${limit} OFFSET ${offset}`,
+
+                    // Try with 'productName' column
+                    `SELECT t.*,
+                            CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName
+                     FROM tickets t
+                     LEFT JOIN product p ON t.productId = p.productId
+                     ORDER BY t.id DESC
+                     LIMIT ${limit} OFFSET ${offset}`,
+
+                    // Final fallback without product join
+                    `SELECT t.*, 'No Product' as productName
+                     FROM tickets t
+                     ORDER BY t.id DESC
+                     LIMIT ${limit} OFFSET ${offset}`
+                ];
+
+                // Try queries in sequence
+                const tryQuery = (queryIndex) => {
+                    connection.query(queries[queryIndex], (err, result) => {
+                        if (err && queryIndex < queries.length - 1) {
+                            console.log(`Tickets Query ${queryIndex + 1} failed:`, err.sqlMessage);
+                            tryQuery(queryIndex + 1);
+                        } else if (err) {
+                            console.log('All tickets queries failed');
+                            return res.status(500).json({
+                                message: "Error fetching tickets",
+                                error: err
+                            });
+                        } else {
+                            console.log(`Tickets Query ${queryIndex + 1} succeeded`);
+                            return res.json({
+                                message: "Tickets fetched successfully",
+                                data: result,
+                                pagination: {
+                                    total: total,
+                                    page: page,
+                                    limit: limit,
+                                    totalPages: Math.ceil(total / limit)
+                                }
+                            });
+                        }
+                    });
+                };
+
+                tryQuery(0);
+            });
+        } catch (error) {
+            console.error('Error in getTickets:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
     }
 }

@@ -69,36 +69,6 @@
                     </button>
                   </div>
 
-                  <!-- Priority Filter -->
-                  <div class="mb-3">
-                    <button
-                      @click="toggleFilterSection('priority')"
-                      class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
-                    >
-                      <span>Priority</span>
-                      <img
-                        src="/chevron-right.svg"
-                        alt="expand"
-                        class="w-3 h-3 transition-transform"
-                        :class="{ 'rotate-90': expandedSections.priority }"
-                      />
-                    </button>
-                    <div v-if="expandedSections.priority" class="mt-1 space-y-1">
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="high" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">High</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="medium" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Medium</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="low" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Low</span>
-                      </label>
-                    </div>
-                  </div>
-
                   <!-- Product Filter -->
                   <div class="mb-3">
                     <button
@@ -114,51 +84,35 @@
                       />
                     </button>
                     <div v-if="expandedSections.product" class="mt-1 space-y-1">
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="Product A" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Product A</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="Product B" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Product B</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="Product C" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Product C</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="Service Package 1" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Service Package 1</span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="Service Package 2" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Service Package 2</span>
+                      <label v-for="product in products" :key="product.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" :value="product.name" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">{{ product.name }}</span>
                       </label>
                     </div>
                   </div>
 
-                  <!-- Status Filter -->
+                  <!-- Ticket Type Filter -->
                   <div>
                     <button
-                      @click="toggleFilterSection('status')"
+                      @click="toggleFilterSection('type')"
                       class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
                     >
-                      <span>Status</span>
+                      <span>Ticket Type</span>
                       <img
                         src="/chevron-right.svg"
                         alt="expand"
                         class="w-3 h-3 transition-transform"
-                        :class="{ 'rotate-90': expandedSections.status }"
+                        :class="{ 'rotate-90': expandedSections.type }"
                       />
                     </button>
-                    <div v-if="expandedSections.status" class="mt-1 space-y-1">
+                    <div v-if="expandedSections.type" class="mt-1 space-y-1">
                       <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="unresolved" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Unresolved</span>
+                        <input type="checkbox" value="freshdesk" v-model="activeFilters.type" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Freshdesk</span>
                       </label>
                       <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input type="checkbox" value="pending" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                        <span class="text-sm">Pending</span>
+                        <input type="checkbox" value="call" v-model="activeFilters.type" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Call</span>
                       </label>
                     </div>
                   </div>
@@ -177,11 +131,11 @@
             >
               <option value="">Select an agent...</option>
               <option
-                v-for="agent in availableAgents"
+                v-for="agent in allAvailableAgents"
                 :key="agent.id"
                 :value="agent.id"
               >
-                {{ agent.name }} - {{ agent.specialization }}
+                {{ agent.name }}
               </option>
             </select>
 
@@ -224,8 +178,14 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="loading" class="max-w-4xl mx-auto text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Loading tickets...</p>
+    </div>
+
     <!-- Tickets Container - Centered -->
-    <div class="max-w-4xl mx-auto">
+    <div v-else class="max-w-4xl mx-auto">
       <div class="grid gap-4">
         <!-- Ticket Card -->
         <div
@@ -244,25 +204,13 @@
                 v-model="ticket.selected"
                 class="w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer"
               />
-              <span class="text-lg font-bold text-gray-900">{{ ticket.id }}</span>
+              <span class="text-lg font-bold text-gray-900">{{ ticket.ticketId }}</span>
               <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                :class="getPriorityClass(ticket.priority)"
+                class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
               >
-                {{ ticket.priority }}
-              </span>
-              <span
-                class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium"
-                :class="getStatusClass(ticket.status)"
-              >
-                {{ ticket.status }}
+                {{ ticket.ticketType || 'freshdesk' }}
               </span>
             </div>
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
-            >
-              {{ ticket.type }}
-            </span>
           </div>
 
           <!-- Card Body -->
@@ -270,21 +218,27 @@
             <!-- Customer Info -->
             <div>
               <p class="text-xs font-semibold text-gray-500 mb-1">Customer</p>
-              <p class="text-sm font-medium text-gray-900">{{ ticket.customerName }}</p>
-              <p class="text-xs text-gray-500">{{ ticket.customerContact }}</p>
+              <p class="text-sm font-medium text-gray-900">{{ ticket.name }}</p>
+              <p class="text-xs text-gray-500">{{ ticket.email || ticket.phone }}</p>
             </div>
 
             <!-- Product Info -->
             <div>
               <p class="text-xs font-semibold text-gray-500 mb-1">Product</p>
-              <p class="text-sm text-gray-900">{{ ticket.productCategory }}</p>
+              <p class="text-sm text-gray-900">{{ ticket.productName || 'No Product' }}</p>
             </div>
+          </div>
+
+          <!-- Subject -->
+          <div class="mb-4">
+            <p class="text-xs font-semibold text-gray-500 mb-1">Subject</p>
+            <p class="text-sm text-gray-900">{{ ticket.subject }}</p>
           </div>
 
           <!-- Issue Description -->
           <div class="mb-4">
-            <p class="text-xs font-semibold text-gray-500 mb-1">Issue Description</p>
-            <p class="text-sm text-gray-600">{{ ticket.notes }}</p>
+            <p class="text-xs font-semibold text-gray-500 mb-1">Description</p>
+            <p class="text-sm text-gray-600">{{ ticket.description }}</p>
           </div>
 
           <!-- Assignment Actions -->
@@ -297,19 +251,31 @@
               Assign Ticket
             </button>
             <div v-else class="space-y-3">
-              <select
-                v-model="ticket.selectedAgent"
-                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select an agent...</option>
-                <option
-                  v-for="agent in availableAgents"
-                  :key="agent.id"
-                  :value="agent.id"
+              <!-- Loading agents for this product -->
+              <div v-if="ticket.loadingAgents" class="text-center py-2">
+                <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span class="ml-2 text-sm text-gray-600">Loading agents...</span>
+              </div>
+              <!-- Agent selection -->
+              <div v-else>
+                <p class="text-xs font-medium text-gray-700 mb-2">Available agents for {{ ticket.productName }}:</p>
+                <select
+                  v-model="ticket.selectedAgent"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {{ agent.name }} - {{ agent.specialization }}
-                </option>
-              </select>
+                  <option value="">Select an agent...</option>
+                  <option
+                    v-for="agent in ticket.availableAgents"
+                    :key="agent.id"
+                    :value="agent.id"
+                  >
+                    {{ agent.name }}
+                  </option>
+                </select>
+                <div v-if="ticket.availableAgents && ticket.availableAgents.length === 0" class="text-xs text-gray-500 mt-1">
+                  No available agents for this product
+                </div>
+              </div>
               <div class="flex gap-2">
                 <button
                   @click="assignTicket(ticket)"
@@ -333,7 +299,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-if="filteredTickets.length === 0" class="text-center py-12">
+    <div v-if="!loading && filteredTickets.length === 0" class="text-center py-12">
       <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
@@ -348,7 +314,19 @@
           <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
-          <span>Ticket assigned successfully!</span>
+          <span>{{ successMessage }}</span>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Error Message -->
+    <transition name="fade">
+      <div v-if="showError" class="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>{{ errorMessage }}</span>
         </div>
       </div>
     </transition>
@@ -368,23 +346,25 @@ export default {
       // Search and filters
       searchQuery: '',
       showFilterDropdown: false,
+      loading: false,
 
       // Active filters
       activeFilters: {
-        priority: [],
         products: [],
-        status: []
+        type: []
       },
 
       // Expanded sections state
       expandedSections: {
-        priority: false,
         product: false,
-        status: false
+        type: false
       },
 
       // States
       showSuccess: false,
+      showError: false,
+      successMessage: '',
+      errorMessage: '',
       ignoreNextClick: false,
       bulkAssignAgent: null,
       isBulkAssigning: false,
@@ -392,102 +372,10 @@ export default {
       // Refs
       filterDropdownRef: null,
 
-      // Available agents
-      availableAgents: [
-        { id: 1, name: 'Sarah Smith', specialization: 'Technical Support' },
-        { id: 2, name: 'Mike Johnson', specialization: 'Billing Specialist' },
-        { id: 3, name: 'Emily Davis', specialization: 'General Support' },
-        { id: 4, name: 'David Lee', specialization: 'Product Expert' },
-        { id: 5, name: 'Grace Chen', specialization: 'Technical Support' }
-      ],
-
-      // Sample tickets
-      tickets: [
-        {
-          id: 'T001',
-          customerName: 'John Doe',
-          customerContact: 'john@example.com',
-          productCategory: 'Product A',
-          type: 'technical',
-          status: 'unresolved',
-          priority: 'high',
-          notes: 'Customer experiencing login issues with the mobile app',
-          showAssignment: false,
-          selectedAgent: null,
-          isAssigning: false,
-          selected: false
-        },
-        {
-          id: 'T002',
-          customerName: 'Jane Wilson',
-          customerContact: '+1 (555) 123-4567',
-          productCategory: 'Service Package 1',
-          type: 'billing',
-          status: 'pending',
-          priority: 'medium',
-          notes: 'Billing inquiry about subscription renewal',
-          showAssignment: false,
-          selectedAgent: null,
-          isAssigning: false,
-          selected: false
-        },
-        {
-          id: 'T003',
-          customerName: 'Bob Anderson',
-          customerContact: 'bob.anderson@company.com',
-          productCategory: 'Product B',
-          type: 'general',
-          status: 'unresolved',
-          priority: 'low',
-          notes: 'General inquiry about product features and capabilities',
-          showAssignment: false,
-          selectedAgent: null,
-          isAssigning: false,
-          selected: false
-        },
-        {
-          id: 'T004',
-          customerName: 'Alice Brown',
-          customerContact: '+1 (555) 987-6543',
-          productCategory: 'Product C',
-          type: 'technical',
-          status: 'pending',
-          priority: 'high',
-          notes: 'Customer cannot access dashboard after recent update',
-          showAssignment: false,
-          selectedAgent: null,
-          isAssigning: false,
-          selected: false
-        },
-        {
-          id: 'T005',
-          customerName: 'Charlie Green',
-          customerContact: 'charlie@startup.io',
-          productCategory: 'Service Package 2',
-          type: 'feature',
-          status: 'unresolved',
-          priority: 'low',
-          notes: 'Request for API documentation in Spanish language',
-          showAssignment: false,
-          selectedAgent: null,
-          isAssigning: false,
-          selected: false
-        },
-        {
-          id: 'T006',
-          customerName: 'David Martinez',
-          customerContact: '+1 (555) 246-8135',
-          productCategory: 'Product A',
-          type: 'billing',
-          status: 'pending',
-          priority: 'medium',
-          notes: 'Dispute about recent charge on credit card',
-          showAssignment: false,
-          selectedAgent: null,
-          isAssigning: false,
-          selected: false
-        }
-      ]
+      // Data from backend
+      tickets: [],
+      products: [],
+      allAvailableAgents: []
     }
   },
 
@@ -499,26 +387,27 @@ export default {
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase()
         result = result.filter(ticket =>
-          ticket.id.toLowerCase().includes(query) ||
-          ticket.customerName.toLowerCase().includes(query) ||
-          ticket.customerContact.toLowerCase().includes(query) ||
-          ticket.notes.toLowerCase().includes(query)
+          ticket.ticketId.toLowerCase().includes(query) ||
+          ticket.name.toLowerCase().includes(query) ||
+          (ticket.email && ticket.email.toLowerCase().includes(query)) ||
+          (ticket.phone && ticket.phone.toLowerCase().includes(query)) ||
+          ticket.subject.toLowerCase().includes(query) ||
+          ticket.description.toLowerCase().includes(query)
         )
-      }
-
-      // Filter by priority
-      if (this.activeFilters.priority.length > 0) {
-        result = result.filter(ticket => this.activeFilters.priority.includes(ticket.priority))
       }
 
       // Filter by products
       if (this.activeFilters.products.length > 0) {
-        result = result.filter(ticket => this.activeFilters.products.includes(ticket.productCategory))
+        result = result.filter(ticket =>
+          ticket.productName && this.activeFilters.products.includes(ticket.productName)
+        )
       }
 
-      // Filter by status
-      if (this.activeFilters.status.length > 0) {
-        result = result.filter(ticket => this.activeFilters.status.includes(ticket.status))
+      // Filter by ticket type
+      if (this.activeFilters.type.length > 0) {
+        result = result.filter(ticket =>
+          this.activeFilters.type.includes(ticket.ticketType || 'freshdesk')
+        )
       }
 
       return result
@@ -528,18 +417,13 @@ export default {
     activeFilterChips() {
       const chips = []
 
-      this.activeFilters.priority.forEach(priority => {
-        const priorityLabel = priority.charAt(0).toUpperCase() + priority.slice(1)
-        chips.push({ key: `priority-${priority}`, label: priorityLabel })
-      })
-
       this.activeFilters.products.forEach(product => {
         chips.push({ key: `product-${product}`, label: product })
       })
 
-      this.activeFilters.status.forEach(status => {
-        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1)
-        chips.push({ key: `status-${status}`, label: statusLabel })
+      this.activeFilters.type.forEach(type => {
+        const typeLabel = type.charAt(0).toUpperCase() + type.slice(1)
+        chips.push({ key: `type-${type}`, label: typeLabel })
       })
 
       return chips
@@ -568,13 +452,96 @@ export default {
   },
 
   methods: {
+    // Fetch data from backend
+    async fetchTickets() {
+      this.loading = true
+      try {
+        const response = await $fetch('http://localhost:5001/unassigned-tickets')
+        if (response.data) {
+          // Add reactive properties to each ticket
+          this.tickets = response.data.map(ticket => ({
+            ...ticket,
+            selected: false,
+            showAssignment: false,
+            selectedAgent: null,
+            isAssigning: false,
+            loadingAgents: false,
+            availableAgents: null
+          }))
+        }
+      } catch (error) {
+        console.error('Error fetching tickets:', error)
+        this.showError = true
+        this.errorMessage = 'Failed to load tickets'
+        setTimeout(() => {
+          this.showError = false
+        }, 3000)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchProducts() {
+      try {
+        const response = await $fetch('http://localhost:5001/products')
+        if (response.data) {
+          this.products = response.data
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error)
+      }
+    },
+
+    async fetchAllAvailableAgents() {
+      try {
+        // This would ideally be a new endpoint to get all available agents
+        // For now, we'll fetch agents for each product as needed
+        const agents = []
+        for (const product of this.products) {
+          try {
+            const response = await $fetch(`http://localhost:5001/agents/product/${product.id}`)
+            if (response.data) {
+              agents.push(...response.data)
+            }
+          } catch (error) {
+            console.error(`Error fetching agents for product ${product.id}:`, error)
+          }
+        }
+        this.allAvailableAgents = agents
+      } catch (error) {
+        console.error('Error fetching agents:', error)
+      }
+    },
+
+    async fetchAgentsForProduct(ticket) {
+      if (!ticket.productId) {
+        ticket.availableAgents = []
+        ticket.loadingAgents = false
+        return
+      }
+
+      ticket.loadingAgents = true
+      try {
+        const response = await $fetch(`http://localhost:5001/agents/product/${ticket.productId}`)
+        if (response.data) {
+          ticket.availableAgents = response.data
+        } else {
+          ticket.availableAgents = []
+        }
+      } catch (error) {
+        console.error('Error fetching agents:', error)
+        ticket.availableAgents = []
+      } finally {
+        ticket.loadingAgents = false
+      }
+    },
+
     // Toggle filter dropdown
     toggleFilterDropdown(event) {
       event.preventDefault()
       event.stopPropagation()
       this.ignoreNextClick = true
       this.showFilterDropdown = !this.showFilterDropdown
-      // Reset the flag after a short delay
       setTimeout(() => {
         this.ignoreNextClick = false
       }, 100)
@@ -590,17 +557,13 @@ export default {
       const [type, value] = chipKey.split('-')
 
       switch(type) {
-        case 'priority':
-          const priorityIndex = this.activeFilters.priority.indexOf(value)
-          if (priorityIndex > -1) this.activeFilters.priority.splice(priorityIndex, 1)
-          break
         case 'product':
           const productIndex = this.activeFilters.products.findIndex(p => p.includes(value))
           if (productIndex > -1) this.activeFilters.products.splice(productIndex, 1)
           break
-        case 'status':
-          const statusIndex = this.activeFilters.status.findIndex(s => s.includes(value))
-          if (statusIndex > -1) this.activeFilters.status.splice(statusIndex, 1)
+        case 'type':
+          const typeIndex = this.activeFilters.type.findIndex(t => t.includes(value))
+          if (typeIndex > -1) this.activeFilters.type.splice(typeIndex, 1)
           break
       }
     },
@@ -608,9 +571,8 @@ export default {
     // Clear all filters
     clearFilters() {
       this.activeFilters = {
-        priority: [],
         products: [],
-        status: []
+        type: []
       }
     },
 
@@ -637,54 +599,51 @@ export default {
       this.isBulkAssigning = true
 
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
-
-        // Find the agent details
-        const agent = this.availableAgents.find(a => a.id === this.bulkAssignAgent)
-
-        // Assign each selected ticket
-        const assignedTickets = []
-        this.selectedTickets.forEach(ticket => {
-          // Here you would send the data to your backend
-          console.log('Assigning ticket:', {
-            ticketId: ticket.id,
-            agentId: agent.id,
-            agentName: agent.name,
-            assignedAt: new Date().toISOString()
-          })
-
-          // Store assigned ticket for removal
-          assignedTickets.push(ticket)
-        })
-
-        // Show success message
-        this.showSuccess = true
-        setTimeout(() => {
-          this.showSuccess = false
-        }, 3000)
-
-        // Remove assigned tickets from list
-        assignedTickets.forEach(ticket => {
-          const index = this.tickets.indexOf(ticket)
-          if (index > -1) {
-            this.tickets.splice(index, 1)
+        const ticketIds = this.selectedTickets.map(t => t.id)
+        const response = await $fetch('http://localhost:5001/bulk-assign', {
+          method: 'POST',
+          body: {
+            ticketIds: ticketIds,
+            agentId: this.bulkAssignAgent
           }
         })
 
-        // Clear selection and agent
-        this.clearSelection()
+        if (response.message) {
+          this.showSuccess = true
+          this.successMessage = `Successfully assigned ${response.data?.assignedCount || ticketIds.length} tickets`
+          setTimeout(() => {
+            this.showSuccess = false
+          }, 3000)
 
+          // Remove assigned tickets from list
+          this.selectedTickets.forEach(ticket => {
+            const index = this.tickets.indexOf(ticket)
+            if (index > -1) {
+              this.tickets.splice(index, 1)
+            }
+          })
+
+          // Clear selection and agent
+          this.clearSelection()
+        }
       } catch (error) {
         console.error('Error assigning tickets:', error)
+        this.showError = true
+        this.errorMessage = 'Failed to assign tickets'
+        setTimeout(() => {
+          this.showError = false
+        }, 3000)
       } finally {
         this.isBulkAssigning = false
       }
     },
 
     // Show assignment form for a ticket
-    showAssignmentForm(ticket) {
+    async showAssignmentForm(ticket) {
       ticket.showAssignment = true
+      if (ticket.productId && !ticket.availableAgents) {
+        await this.fetchAgentsForProduct(ticket)
+      }
     },
 
     // Cancel assignment
@@ -700,65 +659,48 @@ export default {
       ticket.isAssigning = true
 
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // Find the agent details
-        const agent = this.availableAgents.find(a => a.id === ticket.selectedAgent)
-
-        // Here you would send the data to your backend
-        console.log('Assigning ticket:', {
-          ticketId: ticket.id,
-          agentId: agent.id,
-          agentName: agent.name,
-          assignedAt: new Date().toISOString()
+        const response = await $fetch('http://localhost:5001/assign', {
+          method: 'POST',
+          body: {
+            ticketId: ticket.id,
+            agentId: ticket.selectedAgent
+          }
         })
 
-        // Show success message
-        this.showSuccess = true
-        setTimeout(() => {
-          this.showSuccess = false
-        }, 3000)
+        if (response.message) {
+          this.showSuccess = true
+          this.successMessage = 'Ticket assigned successfully'
+          setTimeout(() => {
+            this.showSuccess = false
+          }, 3000)
 
-        // Remove ticket from list after successful assignment
-        const index = this.tickets.indexOf(ticket)
-        if (index > -1) {
-          this.tickets.splice(index, 1)
+          // Remove ticket from list after successful assignment
+          const index = this.tickets.indexOf(ticket)
+          if (index > -1) {
+            this.tickets.splice(index, 1)
+          }
         }
-
       } catch (error) {
         console.error('Error assigning ticket:', error)
+        this.showError = true
+        this.errorMessage = 'Failed to assign ticket'
+        setTimeout(() => {
+          this.showError = false
+        }, 3000)
       } finally {
         ticket.isAssigning = false
       }
-    },
-
-    // Get priority class
-    getPriorityClass(priority) {
-      const classes = {
-        'high': 'bg-red-100 text-red-800',
-        'medium': 'bg-yellow-100 text-yellow-800',
-        'low': 'bg-green-100 text-green-800'
-      }
-      return classes[priority] || 'bg-gray-100 text-gray-800'
-    },
-
-    // Get status class
-    getStatusClass(status) {
-      const classes = {
-        'unresolved': 'bg-red-100 text-red-700',
-        'pending': 'bg-orange-100 text-orange-700',
-        'in-progress': 'bg-blue-100 text-blue-700',
-        'resolved': 'bg-green-100 text-green-700',
-        'closed': 'bg-gray-100 text-gray-700'
-      }
-      return classes[status] || 'bg-gray-100 text-gray-700'
     }
   },
 
-  mounted() {
+  async mounted() {
     // Add click event listener for closing dropdown
     document.addEventListener('click', this.handleClickOutside)
+
+    // Fetch initial data
+    await this.fetchTickets()
+    await this.fetchProducts()
+    await this.fetchAllAvailableAgents()
   },
 
   beforeUnmount() {

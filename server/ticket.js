@@ -6,6 +6,11 @@ router.post("/new-tickets", ticketController.createTicket);
 router.post("/call-tickets", ticketController.createCallTicket);
 
 router.get("/products", ticketController.getProducts);
+router.get("/tickets", ticketController.getTickets);
+router.get("/unassigned-tickets", ticketController.getUnassignedTickets);
+router.get("/agents/product/:productId", ticketController.getAgentsByProduct);
+router.post("/assign", ticketController.assignTicketToAgent);
+router.post("/bulk-assign", ticketController.bulkAssignTickets);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");
