@@ -9,146 +9,199 @@
     <!-- Search and Filter Section -->
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-4 mb-6">
       <div class="flex flex-col gap-3">
-        <!-- First Row: Search Bar and Filter Button -->
-        <div class="flex items-center gap-3">
-          <!-- Search Bar -->
-          <div class="relative w-80">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search by ticket ID, customer, keywords..."
-              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            />
-          </div>
+        <!-- First Row: Search Bar, Filter, and Assign Controls -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <!-- Select All Checkbox -->
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                :checked="allTicketsSelected"
+                :indeterminate="someTicketsSelected"
+                @change="toggleSelectAll"
+                class="w-4 h-4 text-blue-600 rounded border-gray-300"
+              />
+              <span class="text-sm font-medium text-gray-700">
+                {{ selectedTickets.length > 0 ? `${selectedTickets.length} selected` : 'Select All' }}
+              </span>
+            </label>
 
-          <!-- Filter Button -->
-          <div class="relative" ref="filterDropdownRef">
-            <button
-              @click="toggleFilterDropdown($event)"
-              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-              :class="{ 'bg-blue-50 border-blue-500': hasActiveFilters }"
-            >
-              <img src="/filter.svg" alt="filter" class="w-4 h-4" />
-              <span class="text-sm font-medium">Filter</span>
-            </button>
+            <!-- Search Bar -->
+            <div class="relative w-80">
+              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search by ticket ID, customer, keywords..."
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
 
-            <!-- Filter Dropdown -->
-            <div
-              v-if="showFilterDropdown"
-              class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-96 overflow-y-auto"
-            >
-              <div class="p-3">
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
-                  <button
-                    v-if="hasActiveFilters"
-                    @click="clearFilters"
-                    onclick="event.stopPropagation()"
-                    class="text-xs text-blue-600 hover:text-blue-700"
-                  >
-                    Clear All
-                  </button>
-                </div>
+            <!-- Filter Button -->
+            <div class="relative" ref="filterDropdownRef">
+              <button
+                @click="toggleFilterDropdown($event)"
+                class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                :class="{ 'bg-blue-50 border-blue-500': hasActiveFilters }"
+              >
+                <img src="/filter.svg" alt="filter" class="w-4 h-4" />
+                <span class="text-sm font-medium">Filter</span>
+              </button>
 
-                <!-- Priority Filter -->
-                <div class="mb-3">
-                  <button
-                    @click="toggleFilterSection('priority')"
-                    class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
-                  >
-                    <span>Priority</span>
-                    <img
-                      src="/chevron-right.svg"
-                      alt="expand"
-                      class="w-3 h-3 transition-transform"
-                      :class="{ 'rotate-90': expandedSections.priority }"
-                    />
-                  </button>
-                  <div v-if="expandedSections.priority" class="mt-1 space-y-1">
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="high" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">High</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="medium" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Medium</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="low" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Low</span>
-                    </label>
+              <!-- Filter Dropdown -->
+              <div
+                v-if="showFilterDropdown"
+                class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-96 overflow-y-auto"
+              >
+                <div class="p-3">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
+                    <button
+                      v-if="hasActiveFilters"
+                      @click="clearFilters"
+                      onclick="event.stopPropagation()"
+                      class="text-xs text-blue-600 hover:text-blue-700"
+                    >
+                      Clear All
+                    </button>
                   </div>
-                </div>
 
-                <!-- Product Filter -->
-                <div class="mb-3">
-                  <button
-                    @click="toggleFilterSection('product')"
-                    class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
-                  >
-                    <span>Product</span>
-                    <img
-                      src="/chevron-right.svg"
-                      alt="expand"
-                      class="w-3 h-3 transition-transform"
-                      :class="{ 'rotate-90': expandedSections.product }"
-                    />
-                  </button>
-                  <div v-if="expandedSections.product" class="mt-1 space-y-1">
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="Product A" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Product A</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="Product B" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Product B</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="Product C" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Product C</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="Service Package 1" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Service Package 1</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="Service Package 2" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Service Package 2</span>
-                    </label>
+                  <!-- Priority Filter -->
+                  <div class="mb-3">
+                    <button
+                      @click="toggleFilterSection('priority')"
+                      class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                    >
+                      <span>Priority</span>
+                      <img
+                        src="/chevron-right.svg"
+                        alt="expand"
+                        class="w-3 h-3 transition-transform"
+                        :class="{ 'rotate-90': expandedSections.priority }"
+                      />
+                    </button>
+                    <div v-if="expandedSections.priority" class="mt-1 space-y-1">
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="high" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">High</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="medium" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Medium</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="low" v-model="activeFilters.priority" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Low</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
 
-                <!-- Status Filter -->
-                <div>
-                  <button
-                    @click="toggleFilterSection('status')"
-                    class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
-                  >
-                    <span>Status</span>
-                    <img
-                      src="/chevron-right.svg"
-                      alt="expand"
-                      class="w-3 h-3 transition-transform"
-                      :class="{ 'rotate-90': expandedSections.status }"
-                    />
-                  </button>
-                  <div v-if="expandedSections.status" class="mt-1 space-y-1">
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="unresolved" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Unresolved</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input type="checkbox" value="pending" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                      <span class="text-sm">Pending</span>
-                    </label>
+                  <!-- Product Filter -->
+                  <div class="mb-3">
+                    <button
+                      @click="toggleFilterSection('product')"
+                      class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                    >
+                      <span>Product</span>
+                      <img
+                        src="/chevron-right.svg"
+                        alt="expand"
+                        class="w-3 h-3 transition-transform"
+                        :class="{ 'rotate-90': expandedSections.product }"
+                      />
+                    </button>
+                    <div v-if="expandedSections.product" class="mt-1 space-y-1">
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="Product A" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Product A</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="Product B" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Product B</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="Product C" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Product C</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="Service Package 1" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Service Package 1</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="Service Package 2" v-model="activeFilters.products" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Service Package 2</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Status Filter -->
+                  <div>
+                    <button
+                      @click="toggleFilterSection('status')"
+                      class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                    >
+                      <span>Status</span>
+                      <img
+                        src="/chevron-right.svg"
+                        alt="expand"
+                        class="w-3 h-3 transition-transform"
+                        :class="{ 'rotate-90': expandedSections.status }"
+                      />
+                    </button>
+                    <div v-if="expandedSections.status" class="mt-1 space-y-1">
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="unresolved" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Unresolved</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" value="pending" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                        <span class="text-sm">Pending</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Assign Controls (visible when tickets are selected) -->
+          <div v-if="selectedTickets.length > 0" class="flex items-center gap-3">
+            <!-- Agent Selection for Bulk Assign -->
+            <select
+              v-model="bulkAssignAgent"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Select agent"
+            >
+              <option value="">Select an agent...</option>
+              <option
+                v-for="agent in availableAgents"
+                :key="agent.id"
+                :value="agent.id"
+              >
+                {{ agent.name }} - {{ agent.specialization }}
+              </option>
+            </select>
+
+            <!-- Bulk Assign Button -->
+            <button
+              @click="bulkAssignTickets"
+              :disabled="!bulkAssignAgent || isBulkAssigning"
+              class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              <span v-if="!isBulkAssigning">Assign {{ selectedTickets.length }} Ticket(s)</span>
+              <span v-else>Assigning...</span>
+            </button>
+
+            <!-- Clear Selection -->
+            <button
+              @click="clearSelection"
+              class="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Clear Selection
+            </button>
           </div>
         </div>
 
@@ -179,10 +232,18 @@
           v-for="ticket in filteredTickets"
           :key="ticket.id"
           class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+          :class="{ 'ring-2 ring-blue-500 border-blue-500': ticket.selected }"
         >
           <!-- Card Header -->
           <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <div class="flex items-center gap-3">
+              <!-- Selection Checkbox -->
+              <input
+                type="checkbox"
+                :value="ticket.id"
+                v-model="ticket.selected"
+                class="w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+              />
               <span class="text-lg font-bold text-gray-900">{{ ticket.id }}</span>
               <span
                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -325,6 +386,8 @@ export default {
       // States
       showSuccess: false,
       ignoreNextClick: false,
+      bulkAssignAgent: null,
+      isBulkAssigning: false,
 
       // Refs
       filterDropdownRef: null,
@@ -351,7 +414,8 @@ export default {
           notes: 'Customer experiencing login issues with the mobile app',
           showAssignment: false,
           selectedAgent: null,
-          isAssigning: false
+          isAssigning: false,
+          selected: false
         },
         {
           id: 'T002',
@@ -479,6 +543,22 @@ export default {
     // Check if any filters are active
     hasActiveFilters() {
       return this.activeFilterChips.length > 0
+    },
+
+    // Get selected tickets
+    selectedTickets() {
+      return this.tickets.filter(ticket => ticket.selected)
+    },
+
+    // Check if all tickets are selected
+    allTicketsSelected() {
+      return this.filteredTickets.length > 0 && this.filteredTickets.every(ticket => ticket.selected)
+    },
+
+    // Check if some (but not all) tickets are selected
+    someTicketsSelected() {
+      const selected = this.filteredTickets.filter(ticket => ticket.selected).length
+      return selected > 0 && selected < this.filteredTickets.length
     }
   },
 
@@ -526,6 +606,74 @@ export default {
         priority: [],
         products: [],
         status: []
+      }
+    },
+
+    // Toggle select all tickets
+    toggleSelectAll() {
+      const allSelected = this.allTicketsSelected
+      this.filteredTickets.forEach(ticket => {
+        ticket.selected = !allSelected
+      })
+    },
+
+    // Clear ticket selection
+    clearSelection() {
+      this.tickets.forEach(ticket => {
+        ticket.selected = false
+      })
+      this.bulkAssignAgent = null
+    },
+
+    // Bulk assign tickets
+    async bulkAssignTickets() {
+      if (!this.bulkAssignAgent || this.selectedTickets.length === 0) return
+
+      this.isBulkAssigning = true
+
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
+        // Find the agent details
+        const agent = this.availableAgents.find(a => a.id === this.bulkAssignAgent)
+
+        // Assign each selected ticket
+        const assignedTickets = []
+        this.selectedTickets.forEach(ticket => {
+          // Here you would send the data to your backend
+          console.log('Assigning ticket:', {
+            ticketId: ticket.id,
+            agentId: agent.id,
+            agentName: agent.name,
+            assignedAt: new Date().toISOString()
+          })
+
+          // Store assigned ticket for removal
+          assignedTickets.push(ticket)
+        })
+
+        // Show success message
+        this.showSuccess = true
+        setTimeout(() => {
+          this.showSuccess = false
+        }, 3000)
+
+        // Remove assigned tickets from list
+        assignedTickets.forEach(ticket => {
+          const index = this.tickets.indexOf(ticket)
+          if (index > -1) {
+            this.tickets.splice(index, 1)
+          }
+        })
+
+        // Clear selection and agent
+        this.clearSelection()
+
+      } catch (error) {
+        console.error('Error assigning tickets:', error)
+      } finally {
+        this.isBulkAssigning = false
       }
     },
 
