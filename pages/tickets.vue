@@ -536,7 +536,8 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const response = await $fetch('http://localhost:5001/tickets?limit=1000')
+        // Fetch only assigned tickets
+        const response = await $fetch('http://localhost:5001/tickets?status=assigned&limit=1000')
         if (response.data) {
           this.tickets = response.data.map(ticket => ({
             id: ticket.ticketId || ticket.id,
@@ -546,7 +547,7 @@ export default {
             agentName: ticket.assignedAgentName || ticket.agentName || '-',
             productCategory: ticket.productName || 'No Product',
             type: ticket.ticketType || 'general',
-            status: ticket.status || 'created',
+            status: ticket.status || 'assigned',
             createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
             resolvedDate: ticket.resolvedAt || ticket.resolved_at || null,
             csatRating: ticket.csatRating || ticket.csat_rating || null,

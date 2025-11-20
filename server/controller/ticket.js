@@ -466,10 +466,19 @@ export class ticketController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const offset = (page - 1) * limit;
+            const status = req.query.status;
 
+            // Build WHERE clause for status filter
+            let whereClause = '';
+            if (status) {
+                whereClause = `WHERE t.status = '${status}'`;
+            }
 
-            // Get total count
-            const countQuery = "SELECT COUNT(*) as total FROM tickets";
+            // Get total count with status filter
+            const countQuery = status
+                ? `SELECT COUNT(*) as total FROM tickets t WHERE t.status = '${status}'`
+                : "SELECT COUNT(*) as total FROM tickets";
+
             connection.query(countQuery, (err, countResult) => {
                 if (err) {
                     return res.status(500).json({
@@ -491,6 +500,7 @@ export class ticketController {
                      LEFT JOIN product p ON t.productId = p.productId
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.createdAt DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
@@ -503,6 +513,7 @@ export class ticketController {
                      LEFT JOIN product p ON t.productId = p.productId
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.created_at DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
@@ -515,6 +526,7 @@ export class ticketController {
                      LEFT JOIN product p ON t.productId = p.productId
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
@@ -527,6 +539,7 @@ export class ticketController {
                      LEFT JOIN product p ON t.productId = p.productId
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
@@ -539,6 +552,7 @@ export class ticketController {
                      LEFT JOIN product p ON t.productId = p.productId
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
@@ -551,6 +565,7 @@ export class ticketController {
                      LEFT JOIN product p ON t.productId = p.productId
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
@@ -561,6 +576,7 @@ export class ticketController {
                      FROM tickets t
                      LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
+                     ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`
                 ];
