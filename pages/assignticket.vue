@@ -277,83 +277,86 @@
             </div>
           </div>
 
-          <!-- Assignment Actions -->
-          <div v-if="!ticket.assignedAgentName">
-            <button
-              v-if="!ticket.showAssignment"
-              @click="showAssignmentForm(ticket)"
-              class="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
-            >
-              Assign Ticket
-            </button>
-            <div v-else class="space-y-2 mt-2">
-              <!-- Loading agents for this product -->
-              <div v-if="ticket.loadingAgents" class="text-center py-2">
-                <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                <span class="ml-2 text-xs text-gray-600">Loading agents...</span>
-              </div>
-              <!-- Agent selection -->
-              <div v-else>
-                <p class="text-xs text-gray-600 mb-1.5">Select agent for {{ ticket.productName }}:</p>
-                <div class="w-full max-w-md">
-                  <div class="relative" :ref="`ticketAgentDropdown-${ticket.id}`">
-                    <button
-                      @click="toggleTicketAgentDropdown(ticket)"
-                      class="w-full px-2.5 py-1.5 pr-8 text-xs bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all text-left"
-                    >
-                      <span v-if="!ticket.selectedAgent" class="text-gray-400">Select agent...</span>
-                      <span v-else class="flex items-center gap-1.5">
-                        <span>{{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.agentName || ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.name }}</span>
-                        <span v-if="ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                          {{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team }}
-                        </span>
-                      </span>
-                    </button>
-                    <!-- Custom dropdown arrow -->
-                    <div class="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                      <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </div>
-                    <!-- Dropdown options -->
-                    <div
-                      v-if="ticket.showAgentDropdown"
-                      class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto"
-                    >
-                      <div
-                        v-for="agent in ticket.availableAgents"
-                        :key="agent.id"
-                        @click="selectTicketAgent(ticket, agent.id)"
-                        class="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      >
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                          <span class="text-xs text-gray-900">{{ agent.agentName || agent.name }}</span>
-                          <span v-if="agent.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                            {{ agent.team }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div v-if="ticket.availableAgents && ticket.availableAgents.length === 0" class="text-xs text-gray-500 mt-1">
-                  No available agents for this product
+          <!-- Assignment Actions - Always Visible for ALL Cards -->
+          <div class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+            <!-- Checkbox for bulk selection -->
+            <input
+              type="checkbox"
+              :value="ticket.id"
+              v-model="ticket.selected"
+              class="w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+            />
+
+            <!-- Current Assignment Status -->
+            <div v-if="ticket.assignedAgentName" class="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <span class="text-sm font-medium text-green-800">{{ ticket.assignedAgentName }}</span>
+            </div>
+
+            <!-- Agent Dropdown - Always Visible -->
+            <div class="flex items-center gap-2 flex-1">
+              <div class="relative flex-1 max-w-xs">
+                <select
+                  v-model="ticket.selectedAgent"
+                  @change="onAgentChange(ticket)"
+                  class="w-full px-3 py-2 pr-8 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer"
+                  :disabled="ticket.isAssigning"
+                >
+                  <option value="">Change agent...</option>
+                  <option v-for="agent in getAgentsForProduct(ticket.productId)" :key="agent.id" :value="agent.id">
+                    {{ agent.agentName || agent.name }}
+                    <span v-if="agent.team">({{ agent.team }})</span>
+                  </option>
+                </select>
+                <!-- Custom dropdown arrow -->
+                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
                 </div>
               </div>
-              <div class="flex gap-2">
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2">
+                <!-- New Assignment Button -->
                 <button
+                  v-if="!ticket.assignedAgentName && ticket.selectedAgent && ticket.selectedAgent !== ticket.currentAgentId"
                   @click="assignTicket(ticket)"
                   :disabled="!ticket.selectedAgent || ticket.isAssigning"
-                  class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
-                  <span v-if="!ticket.isAssigning">Submit</span>
+                  <svg v-if="ticket.isAssigning" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span v-if="!ticket.isAssigning">Assign</span>
                   <span v-else>Assigning...</span>
                 </button>
+
+                <!-- Reassign Button -->
                 <button
-                  @click="cancelAssignment(ticket)"
-                  class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                  v-if="ticket.assignedAgentName && ticket.selectedAgent && ticket.selectedAgent !== ticket.currentAgentId"
+                  @click="reassignTicket(ticket)"
+                  :disabled="ticket.isReassigning || ticket.selectedAgent === ticket.currentAgentId"
+                  class="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
-                  Cancel
+                  <svg v-if="ticket.isReassigning" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span v-if="!ticket.isReassigning">Reassign</span>
+                  <span v-else>Reassigning...</span>
+                </button>
+
+                <!-- Clear Selection Button -->
+                <button
+                  v-if="ticket.selectedAgent"
+                  @click="clearAgentSelection(ticket)"
+                  class="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Clear
                 </button>
               </div>
             </div>
@@ -527,12 +530,10 @@ export default {
           this.tickets = response.data.map(ticket => ({
             ...ticket,
             selected: false,
-            showAssignment: false,
-            selectedAgent: null,
+            selectedAgent: ticket.assignedAgentId || null, // Set to current assigned agent if exists
+            currentAgentId: ticket.assignedAgentId || null, // Track currently assigned agent
             isAssigning: false,
-            loadingAgents: false,
-            availableAgents: null,
-            showAgentDropdown: false
+            isReassigning: false
           }))
         }
       } catch (error) {
@@ -768,13 +769,13 @@ export default {
 
           // Update ticket status and assigned agent info
           ticket.status = 'assigned'
-          const assignedAgent = ticket.availableAgents.find(a => a.id == ticket.selectedAgent)
+          const agents = this.getAgentsForProduct(ticket.productId)
+          const assignedAgent = agents.find(a => a.id == ticket.selectedAgent)
           if (assignedAgent) {
             ticket.assignedAgentName = assignedAgent.agentName || assignedAgent.name
           }
+          ticket.currentAgentId = ticket.selectedAgent
           ticket.importAction = 'single'
-          ticket.showAssignment = false
-          ticket.selected = false
         }
       } catch (error) {
         console.error('Error assigning ticket:', error)
@@ -786,7 +787,99 @@ export default {
       } finally {
         ticket.isAssigning = false
       }
-    }
+    },
+
+    // Get agents for a product (cached)
+    getAgentsForProduct(productId) {
+      if (!productId) return []
+
+      // Return cached agents if available
+      const cacheKey = `agents-${productId}`
+      if (this.agentsCache && this.agentsCache[cacheKey]) {
+        return this.agentsCache[cacheKey]
+      }
+
+      // Initialize cache if not exists
+      if (!this.agentsCache) {
+        this.agentsCache = {}
+      }
+
+      // Return empty array for now, will be populated when dropdown is opened
+      this.agentsCache[cacheKey] = []
+
+      // Fetch agents asynchronously
+      this.fetchAgentsForProductAsync(productId)
+
+      return this.agentsCache[cacheKey]
+    },
+
+    // Async method to fetch agents for a product
+    async fetchAgentsForProductAsync(productId) {
+      if (!productId) return
+
+      try {
+        const response = await $fetch(`http://localhost:5001/agents/product/${productId}`)
+        const cacheKey = `agents-${productId}`
+        if (this.agentsCache) {
+          this.agentsCache[cacheKey] = response.data || []
+        }
+      } catch (error) {
+        console.error('Error fetching agents:', error)
+      }
+    },
+
+    // Handle agent dropdown change
+    onAgentChange(ticket) {
+      // Don't auto-assign on change, let user click the button
+    },
+
+    // Clear agent selection
+    clearAgentSelection(ticket) {
+      ticket.selectedAgent = null
+    },
+
+    // Reassign ticket to different agent
+    async reassignTicket(ticket) {
+      if (!ticket.selectedAgent || ticket.selectedAgent === ticket.currentAgentId) return
+
+      ticket.isReassigning = true
+
+      try {
+        const response = await $fetch('http://localhost:5001/assign', {
+          method: 'POST',
+          body: {
+            ticketId: ticket.id,
+            agentId: ticket.selectedAgent
+          }
+        })
+
+        if (response.message) {
+          this.showSuccess = true
+          this.successMessage = 'Ticket reassigned successfully'
+          setTimeout(() => {
+            this.showSuccess = false
+          }, 3000)
+
+          // Update ticket info
+          const agents = this.getAgentsForProduct(ticket.productId)
+          const newAgent = agents.find(a => a.id == ticket.selectedAgent)
+          if (newAgent) {
+            ticket.assignedAgentName = newAgent.agentName || newAgent.name
+          }
+          ticket.currentAgentId = ticket.selectedAgent
+          ticket.importAction = 'reassigned'
+        }
+      } catch (error) {
+        console.error('Error reassigning ticket:', error)
+        this.showError = true
+        this.errorMessage = 'Failed to reassign ticket'
+        setTimeout(() => {
+          this.showError = false
+        }, 3000)
+      } finally {
+        ticket.isReassigning = false
+      }
+    },
   },
 
   async mounted() {
