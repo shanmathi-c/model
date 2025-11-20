@@ -218,100 +218,91 @@
         <div
           v-for="ticket in filteredTickets"
           :key="ticket.id"
-          class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+          class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
           :class="{ 'ring-2 ring-blue-500 border-blue-500': ticket.selected }"
         >
           <!-- Card Header -->
-          <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-            <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-start justify-between mb-3 pb-2 border-b border-gray-100">
+            <div class="flex items-start gap-2 flex-1">
               <!-- Selection Checkbox -->
               <input
                 type="checkbox"
                 :value="ticket.id"
                 v-model="ticket.selected"
-                class="w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+                class="w-4 h-4 mt-0.5 text-blue-600 rounded border-gray-300 cursor-pointer flex-shrink-0"
               />
-              <span class="text-lg font-bold text-gray-900">{{ ticket.ticketId }}</span>
-              <span
-                class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
-              >
-                {{ ticket.ticketType || 'freshdesk' }}
-              </span>
-              <span
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                :class="ticket.status === 'assigned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
-              >
-                {{ ticket.status || 'Created' }}
-              </span>
-              <!-- Assigned Agent Info -->
-              <span v-if="ticket.assignedAgentName" class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs">
-                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                <span class="font-medium text-blue-900">{{ ticket.assignedAgentName }}</span>
-              </span>
-              <!-- Import Action Info -->
-              <span v-if="ticket.importAction" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                :class="ticket.importAction === 'bulk' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'">
-                {{ ticket.importAction === 'bulk' ? 'Bulk' : 'Single' }}
-              </span>
+              <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+                <!-- Ticket ID and Badges Row -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-base font-bold text-gray-900">{{ ticket.ticketId }}</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
+                    {{ ticket.ticketType || 'freshdesk' }}
+                  </span>
+                  <span
+                    class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="ticket.status === 'assigned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
+                  >
+                    {{ ticket.status || 'Created' }}
+                  </span>
+                  <span v-if="ticket.importAction" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="ticket.importAction === 'bulk' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'">
+                    {{ ticket.importAction === 'bulk' ? 'Bulk' : 'Single' }}
+                  </span>
+                </div>
+                <!-- Subject -->
+                <p class="text-sm font-medium text-gray-900 line-clamp-1">{{ ticket.subject }}</p>
+                <!-- Customer and Product Info -->
+                <div class="flex items-center gap-3 text-xs text-gray-600">
+                  <span class="flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    {{ ticket.name }}
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    {{ ticket.productName || 'No Product' }}
+                  </span>
+                </div>
+                <!-- Assigned Agent Info -->
+                <div v-if="ticket.assignedAgentName" class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs w-fit">
+                  <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="font-medium text-blue-900">Assigned to: {{ ticket.assignedAgentName }}</span>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <!-- Card Body -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <!-- Customer Info -->
-            <div>
-              <p class="text-xs font-semibold text-gray-500 mb-1">Customer</p>
-              <p class="text-sm font-medium text-gray-900">{{ ticket.name }}</p>
-              <p class="text-xs text-gray-500">{{ ticket.email || ticket.phone }}</p>
-            </div>
-
-            <!-- Product Info -->
-            <div>
-              <p class="text-xs font-semibold text-gray-500 mb-1">Product</p>
-              <p class="text-sm text-gray-900">{{ ticket.productName || 'No Product' }}</p>
-            </div>
-          </div>
-
-          <!-- Subject -->
-          <div class="mb-4">
-            <p class="text-xs font-semibold text-gray-500 mb-1">Subject</p>
-            <p class="text-sm text-gray-900">{{ ticket.subject }}</p>
-          </div>
-
-          <!-- Issue Description -->
-          <div class="mb-4">
-            <p class="text-xs font-semibold text-gray-500 mb-1">Description</p>
-            <p class="text-sm text-gray-600">{{ ticket.description }}</p>
           </div>
 
           <!-- Assignment Actions -->
-          <div class="pt-4 border-t border-gray-100">
+          <div v-if="!ticket.assignedAgentName">
             <button
               v-if="!ticket.showAssignment"
               @click="showAssignmentForm(ticket)"
-              class="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              class="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
             >
               Assign Ticket
             </button>
-            <div v-else class="space-y-3">
+            <div v-else class="space-y-2 mt-2">
               <!-- Loading agents for this product -->
               <div v-if="ticket.loadingAgents" class="text-center py-2">
-                <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span class="ml-2 text-sm text-gray-600">Loading agents...</span>
+                <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                <span class="ml-2 text-xs text-gray-600">Loading agents...</span>
               </div>
               <!-- Agent selection -->
               <div v-else>
-                <p class="text-xs font-medium text-gray-700 mb-2">Available agents for {{ ticket.productName }}:</p>
-                <div class="w-full max-w-lg">
+                <p class="text-xs text-gray-600 mb-1.5">Select agent for {{ ticket.productName }}:</p>
+                <div class="w-full max-w-md">
                   <div class="relative" :ref="`ticketAgentDropdown-${ticket.id}`">
                     <button
                       @click="toggleTicketAgentDropdown(ticket)"
-                      class="w-full px-3 py-2 pr-10 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-left"
+                      class="w-full px-2.5 py-1.5 pr-8 text-xs bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all text-left"
                     >
                       <span v-if="!ticket.selectedAgent" class="text-gray-400">Select agent...</span>
-                      <span v-else class="flex items-center gap-2">
+                      <span v-else class="flex items-center gap-1.5">
                         <span>{{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.agentName || ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.name }}</span>
                         <span v-if="ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                           {{ ticket.availableAgents.find(a => a.id == ticket.selectedAgent)?.team }}
@@ -319,24 +310,24 @@
                       </span>
                     </button>
                     <!-- Custom dropdown arrow -->
-                    <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                      <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>
                     <!-- Dropdown options -->
                     <div
                       v-if="ticket.showAgentDropdown"
-                      class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto"
                     >
                       <div
                         v-for="agent in ticket.availableAgents"
                         :key="agent.id"
                         @click="selectTicketAgent(ticket, agent.id)"
-                        class="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        class="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       >
-                        <div class="flex items-center gap-2 flex-wrap">
-                          <span class="text-sm text-gray-900">{{ agent.agentName || agent.name }}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="text-xs text-gray-900">{{ agent.agentName || agent.name }}</span>
                           <span v-if="agent.team" class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                             {{ agent.team }}
                           </span>
@@ -353,14 +344,14 @@
                 <button
                   @click="assignTicket(ticket)"
                   :disabled="!ticket.selectedAgent || ticket.isAssigning"
-                  class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   <span v-if="!ticket.isAssigning">Submit</span>
                   <span v-else>Assigning...</span>
                 </button>
                 <button
                   @click="cancelAssignment(ticket)"
-                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
