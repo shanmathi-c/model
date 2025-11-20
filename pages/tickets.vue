@@ -216,7 +216,7 @@
     </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto bg-gray-50" style="height: calc(100vh - 400px);">
+    <div class="flex-1 overflow-auto bg-gray-50" style="height: calc(100vh - 340px);">
       <div class="p-6 min-h-full">
         <!-- Table View -->
         <div class="bg-white rounded-lg shadow overflow-hidden" style="min-height: 400px;">
@@ -356,8 +356,8 @@
     </div>
 
     <!-- Fixed Pagination Controls -->
-    <div class="flex-shrink-0 px-6 py-4 bg-white border-t border-gray-200 sticky bottom-0">
-      <div class="flex flex-col gap-3">
+    <div class="flex-shrink-0 px-4 py-2 bg-white border-t border-gray-200 sticky bottom-0">
+      <div class="flex flex-col gap-2">
         <!-- Info row -->
         <div class="text-sm text-gray-700">
           Showing <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span> to
@@ -371,7 +371,7 @@
           <button
             @click="previousPage"
             :disabled="currentPage === 1"
-            class="px-4 py-2 text-sm border rounded-md transition-colors mr-2"
+            class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
             :class="currentPage === 1
               ? 'border-gray-200 text-gray-400 cursor-not-allowed'
               : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
@@ -383,7 +383,7 @@
           <template v-for="page in pageNumbers" :key="page">
             <button
               @click="goToPage(page)"
-              class="px-3 py-2 text-sm border rounded-md transition-colors mx-1"
+              class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
               :class="page === currentPage
                 ? 'border-blue-500 bg-blue-500 text-white'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
@@ -396,7 +396,7 @@
           <button
             @click="nextPage"
             :disabled="currentPage === totalPages"
-            class="px-4 py-2 text-sm border rounded-md transition-colors ml-2"
+            class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
             :class="currentPage === totalPages
               ? 'border-gray-200 text-gray-400 cursor-not-allowed'
               : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
