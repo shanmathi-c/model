@@ -5,6 +5,13 @@ const router = express.Router();
 router.post("/new-tickets", ticketController.createTicket);
 router.post("/call-tickets", ticketController.createCallTicket);
 
+// Callback routes
+router.post("/callback", ticketController.createCallback);
+router.get("/callbacks", ticketController.getCallbacks);
+router.get("/callback/:callbackId", ticketController.getCallbackById);
+router.put("/callback/:callbackId/status", ticketController.updateCallbackStatus);
+router.delete("/callback/:callbackId", ticketController.deleteCallback);
+
 router.get("/products", ticketController.getProducts);
 router.get("/tickets", ticketController.getTickets);
 router.get("/unassigned-tickets", ticketController.getUnassignedTickets);

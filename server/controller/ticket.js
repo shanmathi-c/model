@@ -575,4 +575,210 @@ export class ticketController {
             });
         }
     }
+
+    // Callback-specific methods
+
+    // Generate callback ID in format C001, C002, etc.
+    static generateCallbackId() {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "SELECT callbackId FROM callback ORDER BY id DESC LIMIT 1",
+                (err, result) => {
+                    if (err) {
+                        // If table doesn't exist or error, start with C001
+                        resolve('C001');
+                        return;
+                    }
+
+                    if (result.length === 0) {
+                        // No callbacks yet, start with C001
+                        resolve('C001');
+                    } else {
+                        // Extract the numeric part from last callback ID
+                        const lastCallbackId = result[0].callbackId;
+                        const match = lastCallbackId.match(/C(\d+)/);
+
+                        if (match) {
+                            const lastNumber = parseInt(match[1]);
+                            const newNumber = lastNumber + 1;
+                            // Pad with leading zeros to maintain 3 digits
+                            const newCallbackId = `C${String(newNumber).padStart(3, '0')}`;
+                            resolve(newCallbackId);
+                        } else {
+                            // If format is different, start with C001
+                            resolve('C001');
+                        }
+                    }
+                }
+            );
+        });
+    }
+
+    // Create a new callback request
+    static async createCallback(req, res) {
+        const { productId, name, email, countryCode, phone, subject, description } = req.body;
+
+        // Validate required fields
+        if (!name || !phone || !subject || !description) {
+            return res.status(400).json({
+                message: "Missing required fields",
+                required: ['name', 'phone', 'subject', 'description']
+            });
+        }
+
+        try {
+            // Generate unique callback ID
+            const callbackId = await ticketController.generateCallbackId();
+
+            // Combine country code and phone
+            const fullPhone = countryCode ? countryCode + ' ' + phone : phone;
+
+            // Include all form data in callback entry
+            const callbackData = {
+                callbackId: callbackId,
+                productId: productId || null,
+                name: name,
+                email: email || null,
+                phone: fullPhone,
+                subject: subject,
+                description: description,
+                status: 'pending'
+            };
+
+            connection.query("INSERT INTO callback SET ?", callbackData, (err, result) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error creating callback request",
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "Callback request created successfully",
+                        data: {
+                            id: result.insertId,
+                            callbackId: callbackId,
+                            status: 'pending',
+                            allData: callbackData
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Error in createCallback:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Get all callback requests
+    static getCallbacks(req, res) {
+        connection.query(
+            "SELECT * FROM callback ORDER BY createdAt DESC",
+            (err, result) => {
+                if (err) {
+                    return res.json({
+                        message: "Error fetching callbacks",
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "Callbacks fetched successfully",
+                        data: result
+                    });
+                }
+            }
+        );
+    }
+
+    // Get callback by ID
+    static getCallbackById(req, res) {
+        const { callbackId } = req.params;
+        connection.query(
+            "SELECT * FROM callback WHERE callbackId = ?",
+            [callbackId],
+            (err, result) => {
+                if (err) {
+                    return res.json({
+                        message: "Error fetching callback",
+                        error: err
+                    });
+                } else if (result.length === 0) {
+                    return res.status(404).json({
+                        message: "Callback not found"
+                    });
+                } else {
+                    return res.json({
+                        message: "Callback fetched successfully",
+                        data: result[0]
+                    });
+                }
+            }
+        );
+    }
+
+    // Update callback status
+    static updateCallbackStatus(req, res) {
+        const { callbackId } = req.params;
+        const { status } = req.body;
+
+        if (!['pending', 'scheduled', 'completed', 'cancelled'].includes(status)) {
+            return res.status(400).json({
+                message: "Invalid status",
+                validStatuses: ['pending', 'scheduled', 'completed', 'cancelled']
+            });
+        }
+
+        connection.query(
+            "UPDATE callback SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE callbackId = ?",
+            [status, callbackId],
+            (err, result) => {
+                if (err) {
+                    return res.json({
+                        message: "Error updating callback status",
+                        error: err
+                    });
+                } else if (result.affectedRows === 0) {
+                    return res.status(404).json({
+                        message: "Callback not found"
+                    });
+                } else {
+                    return res.json({
+                        message: "Callback status updated successfully",
+                        data: {
+                            callbackId: callbackId,
+                            status: status
+                        }
+                    });
+                }
+            }
+        );
+    }
+
+    // Delete callback
+    static deleteCallback(req, res) {
+        const { callbackId } = req.params;
+
+        connection.query(
+            "DELETE FROM callback WHERE callbackId = ?",
+            [callbackId],
+            (err, result) => {
+                if (err) {
+                    return res.json({
+                        message: "Error deleting callback",
+                        error: err
+                    });
+                } else if (result.affectedRows === 0) {
+                    return res.status(404).json({
+                        message: "Callback not found"
+                    });
+                } else {
+                    return res.json({
+                        message: "Callback deleted successfully"
+                    });
+                }
+            }
+        );
+    }
 }
