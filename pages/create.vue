@@ -1,6 +1,16 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 p-4 flex justify-center items-center relative">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-8 md:p-10 max-h-[95vh] overflow-y-auto">
+  <div class="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 p-4 flex justify-center items-center">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-8 md:p-10 max-h-[95vh] overflow-y-auto relative">
+      <!-- Callback Request Button -->
+      <button
+        @click="showCallbackModal = true"
+        class="absolute top-4 right-4 z-50 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-green-500/25"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+        <span class="font-medium">Request Callback</span>
+      </button>
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-1">Create Support Ticket</h1>
         <p class="text-gray-600 text-sm">Fill out the form below and we'll get back to you as soon as possible</p>
@@ -241,14 +251,149 @@
         </div>
       </div>
     </div>
+
+    <!-- Callback Modal -->
+    <div v-if="showCallbackModal" class="fixed inset-0 z-50 flex items-center justify-center">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black bg-opacity-50" @click="closeCallbackModal"></div>
+
+      <!-- Modal Content -->
+      <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-gray-900">Request a Callback</h3>
+            <button @click="closeCallbackModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="px-6 py-6">
+          <p class="text-gray-600 mb-6">Enter your phone number and preferred time, and we'll call you back as soon as possible.</p>
+
+          <form @submit.prevent="submitCallbackRequest">
+            <!-- Phone Number -->
+            <div class="mb-4" :class="{ 'has-error': callbackErrors.phone }">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+              <div class="flex gap-0">
+                <select
+                  v-model="callbackData.countryCode"
+                  class="px-3 py-2 border-2 border-gray-200 border-r-0 rounded-l-lg text-sm transition-all duration-200 bg-gray-50 min-w-[100px] cursor-pointer focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20"
+                  :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20': callbackErrors.phone }"
+                  required
+                >
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+86">🇨🇳 +86</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+39">🇮🇹 +39</option>
+                  <option value="+34">🇪🇸 +34</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+7">🇷🇺 +7</option>
+                  <option value="+55">🇧🇷 +55</option>
+                  <option value="+52">🇲🇽 +52</option>
+                  <option value="+27">🇿🇦 +27</option>
+                  <option value="+82">🇰🇷 +82</option>
+                  <option value="+31">🇳🇱 +31</option>
+                  <option value="+46">🇸🇪 +46</option>
+                  <option value="+47">🇳🇴 +47</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+65">🇸🇬 +65</option>
+                </select>
+                <input
+                  type="tel"
+                  v-model="callbackData.phone"
+                  class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-r-lg text-sm transition-all duration-200 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20"
+                  :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20': callbackErrors.phone }"
+                  placeholder="123-456-7890"
+                  required
+                  @input="handleCallbackPhoneInput"
+                />
+              </div>
+              <span v-if="callbackErrors.phone" class="text-red-500 text-xs mt-1 block">{{ callbackErrors.phone }}</span>
+            </div>
+
+            <!-- Preferred Time -->
+            <div class="mb-4" :class="{ 'has-error': callbackErrors.preferredTime }">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time *</label>
+              <select
+                v-model="callbackData.preferredTime"
+                class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm transition-all duration-200 bg-gray-50 appearance-none cursor-pointer focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20"
+                :class="{ 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500 focus:ring-opacity-20': callbackErrors.preferredTime }"
+                required
+              >
+                <option value="">Select preferred time</option>
+                <option value="asap">As soon as possible</option>
+                <option value="morning">Morning (9 AM - 12 PM)</option>
+                <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                <option value="evening">Evening (5 PM - 8 PM)</option>
+              </select>
+              <span v-if="callbackErrors.preferredTime" class="text-red-500 text-xs mt-1 block">{{ callbackErrors.preferredTime }}</span>
+            </div>
+
+            <!-- Reason for Call -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Reason for Call (Optional)</label>
+              <textarea
+                v-model="callbackData.reason"
+                class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm transition-all duration-200 bg-gray-50 resize-vertical focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20"
+                rows="3"
+                placeholder="Brief description of what you need help with..."
+                maxlength="500"
+              ></textarea>
+            </div>
+
+            <!-- Error Message -->
+            <div v-if="callbackErrors.general" class="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+              {{ callbackErrors.general }}
+            </div>
+
+            <!-- Success Message -->
+            <div v-if="callbackSuccess" class="mb-4 bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg text-sm">
+              {{ callbackSuccess }}
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3">
+              <button
+                type="button"
+                @click="closeCallbackModal"
+                class="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium text-sm transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/25 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                :disabled="isSubmittingCallback"
+              >
+                <span v-if="!isSubmittingCallback">Request Callback</span>
+                <span v-else class="flex items-center justify-center gap-2">
+                  <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Submitting...
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
+<script setup>
 definePageMeta({
   layout: false
 })
+</script>
 
+<script>
 export default {
   name: 'CreateTicket',
 
@@ -293,7 +438,26 @@ export default {
       // UI states
       isOffline: false,
       lastSaveTime: null,
-      autoSaveEnabled: true
+      autoSaveEnabled: true,
+
+      // Auto-save interval ref (will be set in setupAutoSave)
+      autoSaveInterval: null,
+
+      // Callback modal state
+      showCallbackModal: false,
+      isSubmittingCallback: false,
+      callbackSuccess: '',
+      callbackData: {
+        countryCode: '+1',
+        phone: '',
+        preferredTime: '',
+        reason: ''
+      },
+      callbackErrors: {
+        phone: '',
+        preferredTime: '',
+        general: ''
+      }
     }
   },
 
@@ -318,6 +482,29 @@ export default {
 
     // Handle page visibility
     this.setupVisibilityHandler()
+  },
+
+  beforeUnmount() {
+    // Cleanup when component unmounts
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval)
+      this.autoSaveInterval = null
+    }
+
+    if (this.onlineHandler) {
+      window.removeEventListener('online', this.onlineHandler)
+    }
+
+    if (this.offlineHandler) {
+      window.removeEventListener('offline', this.offlineHandler)
+    }
+
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler)
+    }
+
+    // Save form data before leaving
+    this.saveFormData()
   },
 
   methods: {
@@ -347,7 +534,6 @@ export default {
           throw new Error('Invalid products data format')
         }
 
-        
       } catch (error) {
         console.error('Error fetching products:', error)
 
@@ -436,7 +622,7 @@ export default {
 
         // Store NEW ticket details using stored form data
         this.ticketDetails = {
-          ticketId: result.data.ticketId,
+          ticketId: result.data && result.data.ticketId ? result.data.ticketId : null,
           name: formDataForSubmission.name,
           email: formDataForSubmission.email,
           phone: formDataForSubmission.phone,
@@ -642,9 +828,11 @@ export default {
 
     // Retry logic
     shouldRetry(error) {
-      return error.message.includes('Failed to fetch') ||
-             error.message.includes('Network error') ||
-             error.message.includes('timeout')
+      return (error && error.message && (
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('Network error') ||
+        error.message.includes('timeout')
+      ))
     },
 
     async retrySubmission() {
@@ -692,9 +880,12 @@ export default {
 
           // Only load if less than an hour old
           if (Date.now() - parsed.timestamp < oneHour) {
-            // Restore all fields except product
-            const { product, ...otherData } = parsed
+            // Restore all fields; user previously stored productId
+            const { productId, ...otherData } = parsed
             this.formData = { ...this.formData, ...otherData }
+            if (productId !== undefined) {
+              this.formData.productId = productId
+            }
           }
         }
       } catch (error) {
@@ -755,29 +946,6 @@ export default {
       document.addEventListener('visibilitychange', this.visibilityHandler)
     },
 
-    // Cleanup on unmount
-    beforeDestroy() {
-      if (this.autoSaveInterval) {
-        clearInterval(this.autoSaveInterval)
-      }
-
-      if (this.onlineHandler) {
-        window.removeEventListener('online', this.onlineHandler)
-      }
-
-      if (this.offlineHandler) {
-        window.removeEventListener('offline', this.offlineHandler)
-      }
-
-      if (this.visibilityHandler) {
-        document.removeEventListener('visibilitychange', this.visibilityHandler)
-      }
-
-      // Save form data before leaving
-      this.saveFormData()
-    },
-
-    
     // Handle phone input with formatting
     handlePhoneInput(event) {
       this.clearError('phone')
@@ -796,21 +964,158 @@ export default {
     // Format time for display
     formatTime(date) {
       if (!date) return ''
+      // ensure date is a Date object
+      const d = (date instanceof Date) ? date : new Date(date)
       const now = new Date()
-      const diff = now - date
+      const diff = now - d
 
       if (diff < 60000) {
         return 'Just now'
       } else if (diff < 3600000) {
-        return `${Math.floor(diff / 60000)} minute${Math.floor(diff / 60000) > 1 ? 's' : ''} ago`
+        const mins = Math.floor(diff / 60000)
+        return `${mins} minute${mins > 1 ? 's' : ''} ago`
       } else {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
+    },
+
+    // Callback modal methods
+    closeCallbackModal() {
+      this.showCallbackModal = false
+      this.callbackSuccess = ''
+      this.clearCallbackErrors()
+      this.resetCallbackData()
+    },
+
+    resetCallbackData() {
+      this.callbackData = {
+        countryCode: '+1',
+        phone: '',
+        preferredTime: '',
+        reason: ''
+      }
+    },
+
+    clearCallbackErrors() {
+      this.callbackErrors = {
+        phone: '',
+        preferredTime: '',
+        general: ''
+      }
+    },
+
+    handleCallbackPhoneInput(event) {
+      this.callbackErrors.phone = ''
+      let value = event.target.value
+      value = value.replace(/[^\d\s\-\(\)]/g, '')
+      this.callbackData.phone = value
+
+      this.$nextTick(() => {
+        const cleanPhone = this.callbackData.phone.replace(/\D/g, '')
+        const countryCode = this.callbackData.countryCode
+
+        if (countryCode === '+1' && cleanPhone.length === 10) {
+          this.callbackData.phone = `(${cleanPhone.slice(0, 3)}) ${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6)}`
+        }
+      })
+    },
+
+    async submitCallbackRequest() {
+      this.clearCallbackErrors()
+      this.callbackSuccess = ''
+
+      // Validate callback form
+      if (!this.validateCallbackForm()) {
+        return
+      }
+
+      this.isSubmittingCallback = true
+
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+        const callbackPayload = {
+          name: this.formData.name || 'Anonymous',
+          phone: this.callbackData.countryCode + ' ' + this.cleanPhoneNumber(this.callbackData.phone),
+          email: this.formData.email || '',
+          preferredTime: this.callbackData.preferredTime,
+          reason: this.callbackData.reason || 'General callback request',
+          type: 'callback',
+          ticketType: 'freshdesk'
+        }
+
+        const response = await fetch('http://localhost:5001/new-tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(callbackPayload),
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId)
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.message || `Server error: ${response.status}`)
+        }
+
+        const result = await response.json()
+
+        this.callbackSuccess = `Callback request submitted successfully! We will call you at ${callbackPayload.phone}. Reference ID: ${result.data && result.data.ticketId ? result.data.ticketId : ''}`
+
+        // Reset form after 3 seconds and close modal
+        setTimeout(() => {
+          this.closeCallbackModal()
+        }, 3000)
+
+      } catch (error) {
+        console.error('Error submitting callback request:', error)
+
+        if (error.name === 'AbortError') {
+          this.callbackErrors.general = 'Request timed out. Please try again.'
+        } else if (error.message.includes('Failed to fetch')) {
+          this.callbackErrors.general = 'Network error. Please check your connection and try again.'
+        } else {
+          this.callbackErrors.general = error.message || 'Error submitting callback request. Please try again.'
+        }
+      } finally {
+        this.isSubmittingCallback = false
+      }
+    },
+
+    validateCallbackForm() {
+      let isValid = true
+
+      // Phone validation
+      if (!this.callbackData.phone.trim()) {
+        this.callbackErrors.phone = 'Phone number is required'
+        isValid = false
+      } else {
+        const cleanPhone = this.cleanPhoneNumber(this.callbackData.phone)
+        if (cleanPhone.length < 7) {
+          this.callbackErrors.phone = 'Phone number must be at least 7 digits'
+          isValid = false
+        } else if (cleanPhone.length > 15) {
+          this.callbackErrors.phone = 'Phone number is too long'
+          isValid = false
+        }
+      }
+
+      // Preferred time validation
+      if (!this.callbackData.preferredTime) {
+        this.callbackErrors.preferredTime = 'Please select a preferred time'
+        isValid = false
+      }
+
+      return isValid
     }
   },
 
   computed: {
-    // Check if form is valid
+    // Check if form is valid (computed)
     isFormValid() {
       return (
         this.formData.productId &&
@@ -824,17 +1129,17 @@ export default {
       )
     },
 
-    // Get selected product label
+    // Get selected product label (use productId)
     selectedProductLabel() {
       const productMap = {
-        'product-a': 'Product A',
-        'product-b': 'Product B',
-        'product-c': 'Product C',
-        'service-1': 'Service Package 1',
-        'service-2': 'Service Package 2',
-        'other': 'Other'
+        '1': 'Product A',
+        '2': 'Product B',
+        '3': 'Service Package 1',
+        '4': 'Service Package 2',
+        '5': 'Other'
       }
-      return productMap[this.formData.product] || ''
+      // If your product IDs are numeric, ensure string conversion for lookup
+      return productMap[String(this.formData.productId)] || ''
     }
   },
 
