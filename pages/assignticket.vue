@@ -428,7 +428,8 @@ export default {
           notes: 'Billing inquiry about subscription renewal',
           showAssignment: false,
           selectedAgent: null,
-          isAssigning: false
+          isAssigning: false,
+          selected: false
         },
         {
           id: 'T003',
@@ -441,7 +442,8 @@ export default {
           notes: 'General inquiry about product features and capabilities',
           showAssignment: false,
           selectedAgent: null,
-          isAssigning: false
+          isAssigning: false,
+          selected: false
         },
         {
           id: 'T004',
@@ -454,7 +456,8 @@ export default {
           notes: 'Customer cannot access dashboard after recent update',
           showAssignment: false,
           selectedAgent: null,
-          isAssigning: false
+          isAssigning: false,
+          selected: false
         },
         {
           id: 'T005',
@@ -467,7 +470,8 @@ export default {
           notes: 'Request for API documentation in Spanish language',
           showAssignment: false,
           selectedAgent: null,
-          isAssigning: false
+          isAssigning: false,
+          selected: false
         },
         {
           id: 'T006',
@@ -480,7 +484,8 @@ export default {
           notes: 'Dispute about recent charge on credit card',
           showAssignment: false,
           selectedAgent: null,
-          isAssigning: false
+          isAssigning: false,
+          selected: false
         }
       ]
     }
