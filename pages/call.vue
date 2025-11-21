@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-gray-50 flex flex-col ">
+  <div class="h-screen bg-gray-50 flex flex-col">
     <!-- Fixed Header Section - Sticky -->
     <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
       <!-- Header Title -->
@@ -339,8 +339,15 @@
 
                 <!-- Customer -->
                 <td v-if="visibleColumns.customerPhone" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <div class="font-medium text-gray-900">
-                    {{ call.phone || 'N/A' }}
+                  <div class="flex items-center gap-2">
+                    <img
+                      v-if="call.phone && call.phone !== 'N/A'"
+                      src="/phone-call.svg"
+                      alt="Call"
+                      class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
+                      @click="openCallModal(call)"
+                    />
+                    <span class="font-medium text-gray-900">{{ call.phone || 'N/A' }}</span>
                   </div>
                 </td>
 
@@ -482,8 +489,180 @@
         </div>
       </div>
     </div>
-  </div>
-  </div>
+    </div>
+
+    <!-- Call Modal -->
+    <div v-if="showCallModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900">Call Management</h3>
+          <button
+            @click="closeCallModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div v-if="selectedCall" class="p-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Column - Agent & Customer Information -->
+            <div class="space-y-4">
+              <!-- Customer Information -->
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-900 text-sm mb-2">Customer Information</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="font-medium text-blue-800">{{ selectedCall.customerName || 'Unknown Customer' }}</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    <span>{{ selectedCall.phone || 'N/A' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Agent Information -->
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="font-semibold text-green-900 text-sm mb-2">Agent Information</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="font-medium text-green-800">{{ selectedCall.agentName || 'Not Assigned' }}</span>
+                  </div>
+                  <div v-if="selectedCall.agentPhone" class="flex items-center gap-2 text-green-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    <span>{{ selectedCall.agentPhone }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column - Call Controls -->
+            <div class="space-y-4">
+              <h4 class="font-semibold text-gray-900 text-lg">Call Controls</h4>
+
+              <!-- Call Status Display -->
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <!-- Pending State -->
+                <div v-if="callStatus === 'pending' || callStatus === 'ended' || callStatus === 'cancelled' || callStatus === 'disconnected'">
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-700">Ready to Call</p>
+                      <p class="text-xs text-gray-500">Click "Connect Call" to start the call</p>
+                    </div>
+                  </div>
+
+                  <!-- Connect/Cancel Buttons - Show only when call is not active -->
+                  <div class="flex gap-3">
+                    <button
+                      @click="startCall"
+                      class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                      </svg>
+                      Connect Call
+                    </button>
+                    <button
+                      @click="disconnectCall"
+                      class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Connected State -->
+                <div v-else-if="callStatus === 'connected'" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 bg-green-600 rounded-full animate-pulse"></div>
+                    <div>
+                      <p class="text-sm font-medium text-green-800">Call Connected</p>
+                      <p class="text-xs text-green-600">Currently speaking with {{ selectedCall.customerName }}</p>
+                    </div>
+                  </div>
+                  <!-- Call Control Buttons in Connected State -->
+                  <div class="flex gap-3 mt-3">
+                    <button
+                      @click="endCall"
+                      class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 8l2 2m0 0l2 2m-2-2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L5 12"></path>
+                      </svg>
+                      End Call
+                    </button>
+                    <button
+                      @click="disconnectCall"
+                      class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 8l2 2m0 0l2 2m-2-2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L5 12"></path>
+                      </svg>
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Missed State -->
+                <div v-else-if="callStatus === 'missed'" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p class="text-sm font-medium text-red-800">Call Missed</p>
+                  <p class="text-xs text-red-600">The call was disconnected before being connected</p>
+                </div>
+              </div>
+
+              <!-- Additional Call Information -->
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 text-sm mb-2">Call Details</h5>
+                <div class="space-y-1 text-xs text-gray-600">
+                  <div class="flex justify-between">
+                    <span>Call Log ID:</span>
+                    <span class="font-medium">{{ selectedCall.callId || selectedCall.callLogId || 'N/A' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Call Type:</span>
+                    <span class="font-medium">{{ selectedCall.callType ? selectedCall.callType.charAt(0).toUpperCase() + selectedCall.callType.slice(1) : 'N/A' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Related Ticket ID:</span>
+                    <span class="font-medium">{{ selectedCall.ticketId || 'N/A' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Current Status:</span>
+                    <span :class="getStatusClass(selectedCall.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                      {{ formatStatus(selectedCall.status) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script>
@@ -555,7 +734,12 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 10
+      itemsPerPage: 10,
+
+      // Call Modal
+      showCallModal: false,
+      selectedCall: null,
+      callStatus: 'pending'
     }
   },
 
@@ -1017,6 +1201,174 @@ export default {
           this.showDisplayDropdown = false;
         }
       }
+    },
+
+    // Open call modal for making a call
+    openCallModal(call) {
+      console.log('Opening call modal for:', call.phone)
+      this.selectedCall = call
+      this.callStatus = 'pending'
+      this.showCallModal = true
+    },
+
+    // Close call modal
+    closeCallModal() {
+      this.showCallModal = false
+      this.selectedCall = null
+      this.callStatus = 'pending'
+    },
+
+    // Start call
+    async startCall() {
+      if (!this.selectedCall) return
+
+      try {
+        this.callStatus = 'connected'
+        console.log('Call started with:', this.selectedCall.phone)
+
+        // Create new call log entry when call is connected from calls page
+        const callData = {
+          callbackId: this.selectedCall.ticketId || 0,
+          ticketId: this.selectedCall.ticketId || 0,
+          agentId: this.extractAgentIdFromName(this.selectedCall.agentName),
+          agentName: this.selectedCall.agentName || 'Unknown Agent',
+          agentNumber: this.selectedCall.agentPhone || this.generateAgentPhone(this.extractAgentIdFromName(this.selectedCall.agentName)),
+          customerPhone: this.selectedCall.phone,
+          customerName: this.selectedCall.customerName,
+          productId: this.selectedCall.productId || null,
+          subject: `Follow-up call for ${this.selectedCall.customerName}`,
+          callType: 'inbound', // Calls from calls page are inbound (customer callback)
+          ticketStatus: this.selectedCall.ticketStatus || 'in-progress'
+        }
+
+        console.log('Creating new call log from calls page:', callData)
+
+        const response = await fetch('http://localhost:3000/api/calls/create-call-log', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(callData)
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to create call log')
+        }
+
+        const result = await response.json()
+        console.log('Call log created successfully:', result)
+
+        // Update the selected call with the new call log ID
+        if (this.selectedCall) {
+          this.selectedCall.newCallLogId = result.callId
+        }
+
+      } catch (error) {
+        console.error('Error starting call:', error)
+        this.callStatus = 'pending'
+      }
+    },
+
+    // End call
+    async endCall() {
+      if (!this.selectedCall) return
+
+      try {
+        this.callStatus = 'ended'
+        console.log('Call ended with:', this.selectedCall.phone)
+
+        // Update the call log with end time - use new call log ID if available, otherwise existing call ID
+        const callIdToUpdate = this.selectedCall.newCallLogId || this.selectedCall.id
+        if (callIdToUpdate) {
+          const response = await fetch(`http://localhost:3000/api/calls/${callIdToUpdate}/end`, {
+            method: 'PUT'
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to end call')
+          }
+
+          console.log('Call ended successfully')
+        }
+
+      } catch (error) {
+        console.error('Error ending call:', error)
+        this.callStatus = 'connected'
+      }
+    },
+
+    // Disconnect call
+    async disconnectCall() {
+      if (!this.selectedCall) return
+
+      try {
+        console.log('Call disconnected for:', this.selectedCall.phone)
+
+        // If disconnecting from pending state, mark as missed
+        if (this.callStatus === 'pending') {
+          this.callStatus = 'missed'
+
+          // Create missed call log entry
+          const callData = {
+            callbackId: this.selectedCall.ticketId || 0,
+            ticketId: this.selectedCall.ticketId || 0,
+            agentId: this.extractAgentIdFromName(this.selectedCall.agentName),
+            agentName: this.selectedCall.agentName || 'Unknown Agent',
+            agentNumber: this.selectedCall.agentPhone || this.generateAgentPhone(this.extractAgentIdFromName(this.selectedCall.agentName)),
+            customerPhone: this.selectedCall.phone,
+            customerName: this.selectedCall.customerName,
+            productId: this.selectedCall.productId || null,
+            subject: `Missed call for ${this.selectedCall.customerName}`,
+            callType: 'inbound',
+            ticketStatus: this.selectedCall.ticketStatus || 'missed'
+          }
+
+          console.log('Creating missed call log:', callData)
+
+          const response = await fetch('http://localhost:3000/api/calls/create-call-log', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(callData)
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to create missed call log')
+          }
+
+          const result = await response.json()
+          console.log('Missed call log created successfully:', result)
+        } else if (this.callStatus === 'connected') {
+          // If disconnecting from connected state, end the call first
+          await this.endCall()
+          this.callStatus = 'disconnected'
+        } else {
+          this.callStatus = 'disconnected'
+        }
+
+        // Keep modal open to show the missed/disconnected status
+        // User can close it manually
+
+      } catch (error) {
+        console.error('Error disconnecting call:', error)
+      }
+    },
+
+    // Helper method to extract agent ID from agent name
+    extractAgentIdFromName(agentName) {
+      if (!agentName) return 1
+      const match = agentName.match(/agent-(\d+)/i)
+      if (match) {
+        return parseInt(match[1])
+      }
+      // If no agent ID found in name, return a default ID
+      return 1
+    },
+
+    // Helper method to generate agent phone
+    generateAgentPhone(agentId) {
+      return `+91-90000${agentId.toString().padStart(3, '0')}`
     }
   }
 }
