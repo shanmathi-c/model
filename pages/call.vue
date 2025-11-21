@@ -27,10 +27,11 @@
         </div>
 
         <!-- Filter Button -->
-        <div class="flex gap-2">
+        <div ref="filterDropdownRef" class="relative">
           <button
-            @click="toggleFilter"
+            @click="toggleFilterDropdown"
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            :class="{ 'bg-blue-50 border-blue-500': hasActiveFilters }"
           >
             <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -38,20 +39,132 @@
             Filter
           </button>
 
-          <!-- Status Filter Dropdown (shown when filter is active) -->
-          <select
-            v-if="showFilter"
-            v-model="statusFilter"
-            @change="handleSearch"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          <!-- Filter Dropdown -->
+          <div
+            v-if="showFilterDropdown"
+            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
+            style="z-index: 50;"
           >
-            <option value="">All Status</option>
-            <option value="inbound">Inbound</option>
-            <option value="pending">Pending</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            <div class="p-3">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
+                <button
+                  v-if="hasActiveFilters"
+                  @click="clearFilters"
+                  onclick="event.stopPropagation()"
+                  class="text-xs text-blue-600 hover:text-blue-700"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <!-- Call Type Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('callType')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Call Type</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.callType }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.callType" class="mt-1 space-y-1 pl-2">
+                  <label v-for="type in callTypeOptions" :key="type.value" class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
+                    <input type="checkbox" :value="type.value" v-model="activeFilters.callTypes" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                    <span>{{ type.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Status Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('status')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Status</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.status }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.status" class="mt-1 space-y-1 pl-2">
+                  <label v-for="status in statusOptions" :key="status.value" class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
+                    <input type="checkbox" :value="status.value" v-model="activeFilters.status" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                    <span>{{ status.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Agent Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('agent')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Agent</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.agent }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.agent" class="mt-1 space-y-1 pl-2 max-h-32 overflow-y-auto">
+                  <label v-for="agent in agentOptions" :key="agent" class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
+                    <input type="checkbox" :value="agent" v-model="activeFilters.agents" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                    <span>{{ agent }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Duration Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('duration')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Duration</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.duration }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.duration" class="mt-1 pl-2">
+                  <select v-model="activeFilters.duration" class="w-full text-xs border border-gray-300 rounded p-1.5 focus:ring-1 focus:ring-blue-500">
+                    <option value="">All Durations</option>
+                    <option value="short">Under 1 min</option>
+                    <option value="medium">1-5 min</option>
+                    <option value="long">Over 5 min</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Display Settings Button -->
@@ -110,6 +223,26 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Active Filter Chips (Below search bar) -->
+      <div v-if="hasActiveFilters" class="flex gap-1.5 flex-wrap items-center mt-2 px-6">
+        <span
+          v-for="chip in activeFilterChips"
+          :key="chip.key"
+          class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200 shadow-sm"
+        >
+          {{ chip.label }}
+          <button
+            @click.stop="removeFilter(chip.key)"
+            class="hover:text-blue-900 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </span>
       </div>
     </div>
 
@@ -364,7 +497,44 @@ export default {
       statusFilter: '',
       callTypeFilter: '',
       showFilter: false,
+      showFilterDropdown: false,
       showDisplayDropdown: false,
+
+      // Filter options
+      callTypeOptions: [
+        { value: 'inbound', label: 'Inbound' },
+        { value: 'outbound', label: 'Outbound' },
+        { value: 'missed', label: 'Missed' },
+        { value: 'voicemail', label: 'Voicemail' }
+      ],
+      statusOptions: [
+        { value: 'created', label: 'Created' },
+        { value: 'assigned', label: 'Assigned' },
+        { value: 'in-progress', label: 'In Progress' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'scheduled', label: 'Scheduled' }
+      ],
+
+      // Active filters
+      activeFilters: {
+        callTypes: [],
+        status: [],
+        agents: [],
+        duration: ''
+      },
+
+      // Available agents (will be populated from data)
+      agentOptions: [],
+
+      // Expanded sections state
+      expandedSections: {
+        callType: false,
+        status: false,
+        agent: false,
+        duration: false
+      },
 
       // Display settings
       columnOptions: [
@@ -387,6 +557,72 @@ export default {
   },
 
   computed: {
+    // Check if there are active filters
+    hasActiveFilters() {
+      return this.activeFilters.callTypes.length > 0 ||
+             this.activeFilters.status.length > 0 ||
+             this.activeFilters.agents.length > 0 ||
+             this.activeFilters.duration !== ''
+    },
+
+    // Generate active filter chips
+    activeFilterChips() {
+      const chips = []
+
+      // Call type chips
+      this.activeFilters.callTypes.forEach(callType => {
+        const option = this.callTypeOptions.find(opt => opt.value === callType)
+        if (option) {
+          chips.push({
+            key: `callType-${callType}`,
+            label: option.label,
+            type: 'callType',
+            value: callType
+          })
+        }
+      })
+
+      // Status chips
+      this.activeFilters.status.forEach(status => {
+        const option = this.statusOptions.find(opt => opt.value === status)
+        if (option) {
+          chips.push({
+            key: `status-${status}`,
+            label: option.label,
+            type: 'status',
+            value: status
+          })
+        }
+      })
+
+      // Agent chips
+      this.activeFilters.agents.forEach(agent => {
+        chips.push({
+          key: `agent-${agent}`,
+          label: agent,
+          type: 'agent',
+          value: agent
+        })
+      })
+
+      // Duration chip
+      if (this.activeFilters.duration) {
+        const durationLabels = {
+          'short': 'Under 1 min',
+          'medium': '1-5 min',
+          'long': 'Over 5 min'
+        }
+        chips.push({
+          key: `duration-${this.activeFilters.duration}`,
+          label: durationLabels[this.activeFilters.duration] || this.activeFilters.duration,
+          type: 'duration',
+          value: this.activeFilters.duration
+        })
+      }
+
+      return chips
+    },
+
     // Filter callbacks based on search and status filter
     filteredCalls() {
       let filtered = this.calls
@@ -405,14 +641,44 @@ export default {
         )
       }
 
-      // Apply status filter
-      if (this.statusFilter) {
-        filtered = filtered.filter(call => call.status === this.statusFilter)
+      // Apply call type filters
+      if (this.activeFilters.callTypes.length > 0) {
+        filtered = filtered.filter(call =>
+          this.activeFilters.callTypes.includes(call.callType)
+        )
       }
 
-      // Apply call type filter
-      if (this.callTypeFilter) {
-        filtered = filtered.filter(call => call.callType === this.callTypeFilter)
+      // Apply status filters
+      if (this.activeFilters.status.length > 0) {
+        filtered = filtered.filter(call =>
+          this.activeFilters.status.includes(call.status)
+        )
+      }
+
+      // Apply agent filters
+      if (this.activeFilters.agents.length > 0) {
+        filtered = filtered.filter(call =>
+          this.activeFilters.agents.includes(call.agentName)
+        )
+      }
+
+      // Apply duration filter
+      if (this.activeFilters.duration) {
+        filtered = filtered.filter(call => {
+          if (!call.duration) return false
+          const duration = call.duration
+
+          switch(this.activeFilters.duration) {
+            case 'short':
+              return duration < 60 // Less than 1 minute
+            case 'medium':
+              return duration >= 60 && duration <= 300 // 1-5 minutes
+            case 'long':
+              return duration > 300 // More than 5 minutes
+            default:
+              return true
+          }
+        })
       }
 
       return filtered
@@ -515,6 +781,10 @@ export default {
           productId: callback.productId
         }))
 
+        // Extract unique agent names for filter dropdown
+        const uniqueAgents = [...new Set(this.calls.map(call => call.agentName).filter(name => name && name !== 'Not Assigned'))]
+        this.agentOptions = uniqueAgents.sort()
+
         // Reset to first page when filtering
         this.currentPage = 1
 
@@ -533,22 +803,50 @@ export default {
     },
 
     // Toggle filter dropdown
-    toggleFilter() {
-      this.showFilter = !this.showFilter
-      if (!this.showFilter) {
-        this.statusFilter = ''
-        this.callTypeFilter = ''
-        this.fetchCallLogs()
+    toggleFilterDropdown() {
+      this.showFilterDropdown = !this.showFilterDropdown
+    },
+
+    // Toggle filter section
+    toggleFilterSection(section) {
+      this.expandedSections[section] = !this.expandedSections[section]
+    },
+
+    // Remove individual filter
+    removeFilter(chipKey) {
+      const [type, value] = chipKey.split('-')
+
+      switch(type) {
+        case 'callType':
+          const callTypeIndex = this.activeFilters.callTypes.indexOf(value)
+          if (callTypeIndex > -1) this.activeFilters.callTypes.splice(callTypeIndex, 1)
+          break
+        case 'status':
+          const statusIndex = this.activeFilters.status.indexOf(value)
+          if (statusIndex > -1) this.activeFilters.status.splice(statusIndex, 1)
+          break
+        case 'agent':
+          const agentIndex = this.activeFilters.agents.findIndex(a => a.includes(value))
+          if (agentIndex > -1) this.activeFilters.agents.splice(agentIndex, 1)
+          break
+        case 'duration':
+          this.activeFilters.duration = ''
+          break
       }
+      this.currentPage = 1
     },
 
     // Clear all filters
     clearFilters() {
       this.searchQuery = ''
-      this.statusFilter = ''
-      this.callTypeFilter = ''
-      this.showFilter = false
-      this.fetchCallLogs()
+      this.activeFilters = {
+        callTypes: [],
+        status: [],
+        agents: [],
+        duration: ''
+      }
+      this.showFilterDropdown = false
+      this.currentPage = 1
     },
 
     // Pagination methods
@@ -681,6 +979,14 @@ export default {
     // Handle click outside to close dropdowns
     handleClickOutside(event) {
       const clickedElement = event.target;
+
+      // Close filter dropdown if clicking outside
+      if (this.showFilterDropdown) {
+        const filterDropdown = this.$refs.filterDropdownRef;
+        if (filterDropdown && !filterDropdown.contains(clickedElement)) {
+          this.showFilterDropdown = false;
+        }
+      }
 
       // Close display dropdown if clicking outside
       if (this.showDisplayDropdown) {
