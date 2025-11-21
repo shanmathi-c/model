@@ -265,6 +265,7 @@
                           src="/phone-call.svg"
                           alt="Call"
                           class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
+                          @click="openCallModal(ticket)"
                         />
                       </div>
                     </div>
@@ -278,6 +279,7 @@
                         src="/phone-call.svg"
                         alt="Call"
                         class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
+                        @click="openCallModal(ticket)"
                       />
                       <span class="text-sm text-gray-900">{{ ticket.phone || '-' }}</span>
                     </div>
@@ -377,6 +379,166 @@
             <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
             <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
           </div>
+    </div>
+
+    <!-- Call Modal -->
+    <div v-if="showCallModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900">Call Details</h3>
+          <button
+            @click="closeCallModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div v-if="selectedTicket" class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left Column - Ticket Information -->
+            <div class="space-y-4">
+              <h4 class="font-semibold text-gray-900 text-lg">Ticket Information</h4>
+
+              <!-- Ticket ID -->
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Ticket ID:</span>
+                <span class="text-sm font-mono font-semibold text-blue-600">{{ selectedTicket.id }}</span>
+              </div>
+
+              <!-- Customer Name -->
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Customer Name:</span>
+                <span class="text-sm font-medium text-gray-900">{{ selectedTicket.customerName }}</span>
+              </div>
+
+              <!-- Phone -->
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Phone:</span>
+                <span class="text-sm font-medium text-gray-900">{{ selectedTicket.customerContact || '-' }}</span>
+              </div>
+
+              <!-- Status -->
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Status:</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      :class="getStatusBadgeClass(selectedTicket.status)">
+                  {{ selectedTicket.status }}
+                </span>
+              </div>
+
+              <!-- Product -->
+              <div v-if="selectedTicket.productName" class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Product:</span>
+                <span class="text-sm text-gray-900">{{ selectedTicket.productName }}</span>
+              </div>
+
+              <!-- Issue Type -->
+              <div v-if="selectedTicket.issueType" class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Issue Type:</span>
+                <span class="text-sm text-gray-900">{{ selectedTicket.issueType }}</span>
+              </div>
+            </div>
+
+            <!-- Right Column - Agent & Call Controls -->
+            <div class="space-y-4">
+              <h4 class="font-semibold text-gray-900 text-lg">Call Controls</h4>
+
+              <!-- Agent Assignment Section -->
+              <div v-if="assignedAgent" class="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                <h4 class="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  Assigned Agent
+                </h4>
+                <div class="space-y-2">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-indigo-700">Agent Name:</span>
+                    <span class="text-sm font-medium text-indigo-900">{{ selectedTicket.agentName || 'Not Assigned' }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-indigo-700">Call Status:</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          :class="getCallStatusClass()">
+                      {{ getCallStatusText() }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Call Control Buttons -->
+              <div class="space-y-3">
+                <!-- Connect/Cancel Buttons - Show only when call is not active -->
+                <div v-if="callStatus === 'pending' || callStatus === 'ended' || callStatus === 'cancelled' || callStatus === 'disconnected'" class="flex gap-3">
+                  <button
+                    @click="startCall"
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    Connect Call
+                  </button>
+                  <button
+                    @click="disconnectCall"
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Disconnect
+                  </button>
+                </div>
+
+                <!-- Connected State -->
+                <div v-else-if="callStatus === 'connected'" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 bg-green-600 rounded-full animate-pulse"></div>
+                    <div>
+                      <p class="text-sm font-medium text-green-800">Call Connected</p>
+                      <p class="text-xs text-green-600">Currently speaking with {{ selectedTicket.customerName }}</p>
+                    </div>
+                  </div>
+                  <!-- Call Control Buttons in Connected State -->
+                  <div class="flex gap-3 mt-3">
+                    <button
+                      @click="endCall"
+                      class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 8l2 2m0 0l2 2m-2-2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L5 12"></path>
+                      </svg>
+                      End Call
+                    </button>
+                    <button
+                      @click="disconnectCall"
+                      class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 8l2 2m0 0l2 2m-2-2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L5 12"></path>
+                      </svg>
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Missed State -->
+                <div v-else-if="callStatus === 'missed'" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p class="text-sm font-medium text-red-800">Call Missed</p>
+                  <p class="text-xs text-red-600">The call was disconnected before being connected</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Fixed Pagination Controls -->
@@ -482,6 +644,12 @@ export default {
         fcr: false
       },
 
+      // Call modal state
+      showCallModal: false,
+      selectedTicket: null,
+      callStatus: 'pending',
+      assignedAgent: null,
+
       // Compact column options
       columnOptions: [
         { key: 'ticketId', label: 'ID' },
@@ -544,7 +712,7 @@ export default {
           this.tickets = response.data.map(ticket => ({
             id: ticket.ticketId || ticket.id,
             customerName: ticket.name || '-',
-            customerContact: ticket.email || ticket.phone || '-',
+            customerContact: ticket.email || '-',
             phone: ticket.phone || '-',
             agentName: ticket.assignedAgentName || ticket.agentName || '-',
             productCategory: ticket.productName || 'No Product',
@@ -758,6 +926,87 @@ export default {
 
       // Check if the number starts with any valid prefix
       return validStartingDigits.some(prefix => cleanNumber.startsWith(prefix))
+    },
+
+    // Call modal methods
+    openCallModal(ticket) {
+      this.selectedTicket = ticket
+      this.assignedAgent = ticket.agentName
+      this.callStatus = 'pending'
+      this.showCallModal = true
+    },
+
+    closeCallModal() {
+      this.showCallModal = false
+      this.selectedTicket = null
+      this.assignedAgent = null
+      this.callStatus = 'pending'
+    },
+
+    startCall() {
+      this.callStatus = 'connected'
+    },
+
+    endCall() {
+      this.callStatus = 'ended'
+    },
+
+    disconnectCall() {
+      this.callStatus = 'missed'
+      alert('Call is missed')
+    },
+
+    getCallStatusClass() {
+      switch (this.callStatus) {
+        case 'pending':
+          return 'bg-gray-100 text-gray-800'
+        case 'connecting':
+          return 'bg-yellow-100 text-yellow-800'
+        case 'connected':
+          return 'bg-green-100 text-green-800'
+        case 'ended':
+          return 'bg-blue-100 text-blue-800'
+        case 'missed':
+          return 'bg-red-100 text-red-800'
+        default:
+          return 'bg-gray-100 text-gray-800'
+      }
+    },
+
+    getCallStatusText() {
+      switch (this.callStatus) {
+        case 'pending':
+          return 'Pending'
+        case 'connecting':
+          return 'Connecting...'
+        case 'connected':
+          return 'Connected'
+        case 'ended':
+          return 'Ended'
+        case 'missed':
+          return 'Missed'
+        default:
+          return 'Unknown'
+      }
+    },
+
+    getStatusBadgeClass(status) {
+      switch (status?.toLowerCase()) {
+        case 'created':
+          return 'bg-gray-100 text-gray-800'
+        case 'assigned':
+          return 'bg-yellow-100 text-yellow-800'
+        case 'in-progress':
+          return 'bg-blue-100 text-blue-800'
+        case 'pending':
+          return 'bg-yellow-100 text-yellow-800'
+        case 'resolved':
+          return 'bg-green-100 text-green-800'
+        case 'closed':
+          return 'bg-gray-100 text-gray-800'
+        default:
+          return 'bg-gray-100 text-gray-800'
+      }
     }
   },
 
