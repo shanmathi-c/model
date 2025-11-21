@@ -380,7 +380,7 @@
 
             <!-- Call Control Buttons -->
             <div v-if="assignedAgent" class="space-y-3">
-              <!-- Connect/Cancel Buttons - Always Visible -->
+              <!-- Connect/Cancel Buttons - Show only when call is not active -->
               <div v-if="callStatus === 'pending' || callStatus === 'ended' || callStatus === 'cancelled' || callStatus === 'disconnected'" class="flex gap-3">
                 <button
                   @click="startCall"
@@ -423,6 +423,17 @@
                   </svg>
                   Cancel Connection
                 </button>
+              </div>
+
+              <!-- Missed State - No buttons available -->
+              <div v-else-if="callStatus === 'missed'" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div>
+                    <p class="text-sm font-medium text-red-800">Call Missed</p>
+                    <p class="text-xs text-red-600">The call was disconnected</p>
+                  </div>
+                </div>
               </div>
 
               <!-- Connected State -->
@@ -1450,7 +1461,7 @@ export default {
 
     // End call
     async endCall() {
-      this.callStatus = 'ended'
+      this.callStatus = 'closed' // Set to closed to disable all buttons
 
       try {
         // Update call log with end time and duration
@@ -1497,7 +1508,7 @@ export default {
 
     // End call
     async endCall() {
-      this.callStatus = 'ended'
+      this.callStatus = 'closed' // Set to closed to disable all buttons
 
       try {
         // Update call log with end time and duration
@@ -1544,7 +1555,7 @@ export default {
 
     // Disconnect call
     async disconnectCall() {
-      this.callStatus = 'disconnected'
+      this.callStatus = 'missed' // Set to missed to hide all buttons
 
       try {
         // Mark call as missed in calls table (null start/end times)
@@ -1582,6 +1593,9 @@ export default {
       } catch (error) {
         console.error('Error in disconnectCall:', error)
       }
+
+      // Show alert message that call is missed
+      alert('Call is missed')
     },
 
     // Cancel callback

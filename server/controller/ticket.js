@@ -986,9 +986,9 @@ export class ticketController {
                     // Format end time
                     const formattedEndTime = endTime.toISOString().slice(0, 19).replace('T', ' ');
 
-                    // Update call log with end time and duration
+                    // Update call log with end time but keep status as pending
                     connection.query(
-                        "UPDATE calls SET endTime = ?, callStatus = 'completed', ticketStatus = 'resolved' WHERE callId = ?",
+                        "UPDATE calls SET endTime = ?, callStatus = 'pending', ticketStatus = 'resolved' WHERE callId = ?",
                         [formattedEndTime, callId],
                         (err, updateResult) => {
                             if (err) {
@@ -1004,7 +1004,7 @@ export class ticketController {
                                         endTime: formattedEndTime,
                                         duration: duration, // Return duration for frontend
                                         recordingUrl: callLog.recordingUrl,
-                                        callStatus: 'completed',
+                                        callStatus: 'pending',
                                         ticketStatus: 'resolved'
                                     }
                                 });
