@@ -223,9 +223,9 @@
     </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto" style="height: calc(130vh - 360px);">
+    <div class="flex-1 overflow-auto scrollbar-thin" style="height: calc(130vh - 360px);">
         <!-- Table View -->
-        <div class="overflow-x-auto" style="height: 100%;">
+        <div class="overflow-x-auto scrollbar-thin" style="height: 100%;">
           <table class="w-full" style="min-width: 1200px;">
               <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
@@ -874,41 +874,43 @@ export default {
 </script>
 
 <style scoped>
-/* Force scrollbar visibility */
-.overflow-auto::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+/* Thin scrollbar for all elements */
+::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
 }
 
-.overflow-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
+::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
-.overflow-auto::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
+::-webkit-scrollbar-thumb {
+  background: #d1d5db !important;
+  border-radius: 2px !important;
 }
 
-.overflow-auto::-webkit-scrollbar-thumb:hover {
-  background: #555;
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af !important;
 }
 
 /* For Firefox */
-.overflow-auto {
-  scrollbar-width: auto;
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #d1d5db transparent !important;
 }
 
-/* Ensure horizontal scrollbar for table */
+/* Specific overrides */
+.overflow-auto::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+
 .overflow-x-auto::-webkit-scrollbar {
-  height: 12px;
+  height: 4px !important;
 }
 
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
 }
 </style>
