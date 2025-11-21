@@ -826,43 +826,7 @@ export class ticketController {
         );
     }
 
-    // Generate unique call log ID
-    static generateCallLogId() {
-        return new Promise((resolve, reject) => {
-            // Get the latest call log ID
-            connection.query(
-                "SELECT callLogId FROM calls ORDER BY id DESC LIMIT 1",
-                (err, result) => {
-                    if (err) {
-                        // If table doesn't exist or error, start with CL001
-                        resolve('CL001');
-                        return;
-                    }
-
-                    if (result.length === 0) {
-                        // No calls yet, start with CL001
-                        resolve('CL001');
-                    } else {
-                        // Extract the numeric part from last call log ID
-                        const lastCallLogId = result[0].callLogId;
-                        const match = lastCallLogId.match(/CL(\d+)/);
-
-                        if (match) {
-                            const lastNumber = parseInt(match[1]);
-                            const newNumber = lastNumber + 1;
-                            // Pad with leading zeros to maintain 3 digits
-                            const newCallLogId = `CL${String(newNumber).padStart(3, '0')}`;
-                            resolve(newCallLogId);
-                        } else {
-                            // If format is different, start with CL001
-                            resolve('CL001');
-                        }
-                    }
-                }
-            );
-        });
-    }
-
+    
     // Generate recording URL
     static generateRecordingUrl(callId) {
         const timestamp = Date.now();
@@ -871,56 +835,116 @@ export class ticketController {
     }
 
     // Create new call log
-    static async createCallLog(req, res) {
+    static createCallLog(req, res) {
         const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject } = req.body;
 
         try {
-            // Generate unique call ID (CL001 format)
-            const callId = await ticketController.generateCallLogId();
-
-            // Generate recording URL (pending status)
-            const recordingUrl = ticketController.generateRecordingUrl(callId);
+            // Generate recording URL (pending status) - will use insertId after database insertion
+            const tempCallId = 'temp';
+            const recordingUrl = ticketController.generateRecordingUrl(tempCallId);
 
             // Get current timestamp
             const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            // Insert call log with correct field names
-            const callLogData = {
-                id: callId,
-                ticketId: callbackId, // Use callbackId as ticketId for reference
-                userPhone: customerPhone,
-                productId: productId || null,
-                agentId: agentId,
-                agentPhone: agentNumber,
-                callStatus: 'ongoing',
-                ticketStatus: 'in-progress', // Initial status
-                recordingUrl: recordingUrl,
-                callType: 'outbound', // Agent calling customer
-                reason: subject || 'Callback request from customer', // Use callback subject as reason
-                callDescription: subject || 'Callback request from customer', // Use callback subject as description
-                startTime: startTime,
-                endTime: startTime // Set endTime to startTime initially, will be updated when call ends
-            };
+            // First, get all existing C-format callIds to determine the next one
+            connection.query(
+                "SELECT callId FROM calls WHERE callId REGEXP '^C[0-9]+$' ORDER BY CAST(SUBSTRING(callId, 2) AS UNSIGNED) DESC",
+                (err, callIdResult) => {
+                    let nextCallId;
 
-            connection.query("INSERT INTO calls SET ?", callLogData, (err, result) => {
-                if (err) {
-                    console.error('Error creating call log:', err);
-                    return res.status(500).json({
-                        message: "Error creating call log",
-                        error: err
-                    });
-                } else {
-                    return res.json({
-                        message: "Call log created successfully",
-                        data: {
-                            callId: callId,
-                            startTime: startTime,
-                            recordingUrl: recordingUrl,
-                            callStatus: 'ongoing'
+                    if (err) {
+                        console.error('Error getting next callId:', err);
+                        nextCallId = 'C001';
+                    } else if (callIdResult.length === 0) {
+                        // No C-format calls yet, start with C001
+                        console.log('No C-format calls found, starting with C001');
+                        nextCallId = 'C001';
+                    } else {
+                        console.log('Found existing C-format calls:', callIdResult.map(r => r.callId));
+                        // Extract numeric part from last callId and increment
+                        const lastCallId = callIdResult[0].callId;
+                        const match = lastCallId.match(/C(\d+)/);
+                        if (match) {
+                            const lastNumber = parseInt(match[1]);
+                            const newNumber = lastNumber + 1;
+                            // Pad with leading zeros to maintain 3 digits
+                            nextCallId = `C${String(newNumber).padStart(3, '0')}`;
+                            console.log(`Last call ID: ${lastCallId}, Next call ID: ${nextCallId}`);
+                        } else {
+                            // If format is different, start with C001
+                            nextCallId = 'C001';
                         }
-                    });
+                    }
+
+                    // Continue with insertion
+                    insertCallLog(nextCallId);
                 }
-            });
+            );
+
+            // Helper function to insert call log
+            function insertCallLog(nextCallId) {
+                // Use explicit SQL to ensure callId is saved as string
+                const insertQuery = `
+                    INSERT INTO calls (
+                        callId, ticketId, userPhone, productId, agentId, agentPhone,
+                        callStatus, ticketStatus, recordingUrl, callType, reason,
+                        callDescription, startTime, endTime
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+
+                const values = [
+                    nextCallId, // callId as string
+                    callbackId, // ticketId as string
+                    customerPhone,
+                    productId || null,
+                    agentId,
+                    agentNumber,
+                    'pending',
+                    'in-progress',
+                    'pending',
+                    'outbound',
+                    subject || 'Callback request from customer',
+                    subject || 'Callback request from customer',
+                    startTime,
+                    startTime
+                ];
+
+                connection.query(insertQuery, values, (err, result) => {
+                    if (err) {
+                        console.error('Error creating call log:', err);
+                        return res.status(500).json({
+                            message: "Error creating call log",
+                            error: err
+                        });
+                    } else {
+                        // Get the auto-generated ID from the database
+                        const insertedId = result.insertId;
+                        // Generate new recording URL with the callId
+                        const finalRecordingUrl = `/recordings/${nextCallId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}.mp3`;
+
+                        // Update the recording URL in the database
+                        connection.query(
+                            "UPDATE calls SET recordingUrl = ? WHERE id = ?",
+                            [finalRecordingUrl, insertedId],
+                            (updateErr) => {
+                                if (updateErr) {
+                                    console.error('Error updating recording URL:', updateErr);
+                                }
+                            }
+                        );
+
+                        return res.json({
+                            message: "Call log created successfully",
+                            data: {
+                                callId: nextCallId, // Return the callId we set
+                                startTime: startTime,
+                                recordingUrl: finalRecordingUrl,
+                                callStatus: 'pending'
+                            }
+                        });
+                    }
+                });
+            }
 
         } catch (error) {
             console.error('Error in createCallLog:', error);
