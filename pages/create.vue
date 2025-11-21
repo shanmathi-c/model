@@ -267,9 +267,21 @@
 
     <!-- Success Modal -->
     <div v-if="showSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-      <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto transform transition-all animate-slideUp">
+      <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto transform transition-all animate-slideUp relative">
+        <!-- Close Button - Top Right -->
+        <button
+          @click="closeSuccessModal"
+          class="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+          title="Close"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
         <!-- Success Icon and Title -->
-        <div class="text-center mb-6">
+        <div class="text-center mb-6 pr-12">
           <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -368,8 +380,8 @@
 
             <!-- Call Control Buttons -->
             <div v-if="assignedAgent" class="space-y-3">
-              <!-- Start/End/Cancel Buttons - Always Visible -->
-              <div v-if="callStatus === 'pending' || callStatus === 'ended' || callStatus === 'cancelled'" class="flex gap-3">
+              <!-- Connect/Cancel Buttons - Always Visible -->
+              <div v-if="callStatus === 'pending' || callStatus === 'ended' || callStatus === 'cancelled' || callStatus === 'disconnected'" class="flex gap-3">
                 <button
                   @click="startCall"
                   class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
@@ -377,7 +389,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                   </svg>
-                  Start Call
+                  Connect Call
                 </button>
                 <button
                   @click="cancelCallback"
@@ -422,39 +434,30 @@
                     <p class="text-xs text-green-600">You are now connected with {{ getAgentName() }}</p>
                   </div>
                 </div>
-                <button
-                  @click="endCall"
-                  class="w-full mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
-                  End Call
-                </button>
+                <!-- Call Control Buttons in Connected State -->
+                <div class="mt-3 flex gap-3">
+                  <button
+                    @click="endCall"
+                    class="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    End Call
+                  </button>
+                  <button
+                    @click="disconnectCall"
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-1M8 21a2 2 0 002-2v-1c0-8.284-6.716-15-15-15h-1a2 2 0 00-2 2v1"></path>
+                    </svg>
+                    Disconnect
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex gap-3">
-          <button
-            @click="printCallbackDetails"
-            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            Print
-          </button>
-          <button
-            @click="closeSuccessModal"
-            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>
@@ -1279,7 +1282,8 @@ export default {
         'connecting': 'bg-blue-100 text-blue-800',
         'connected': 'bg-green-100 text-green-800',
         'ended': 'bg-gray-100 text-gray-800',
-        'cancelled': 'bg-red-100 text-red-800'
+        'cancelled': 'bg-red-100 text-red-800',
+        'disconnected': 'bg-red-100 text-red-800'
       }
       return statusClasses[this.callStatus] || 'bg-gray-100 text-gray-800'
     },
@@ -1291,7 +1295,8 @@ export default {
         'connecting': 'Connecting...',
         'connected': 'Connected',
         'ended': 'Ended',
-        'cancelled': 'Cancelled'
+        'cancelled': 'Cancelled',
+        'disconnected': 'Disconnected'
       }
       return statusTexts[this.callStatus] || 'Unknown'
     },
@@ -1357,6 +1362,50 @@ export default {
           })
         }).catch(error => {
           console.error('Error updating callback status:', error)
+        })
+      }
+    },
+
+    // End call
+    endCall() {
+      this.callStatus = 'ended'
+
+      // Update callback status in backend
+      if (this.ticketDetails && this.ticketDetails.callbackId) {
+        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: 'completed',
+            agentName: this.getAgentName(),
+            callDuration: Math.floor(Math.random() * 600) // Random duration in seconds
+          })
+        }).catch(error => {
+          console.error('Error updating callback status:', error)
+        })
+      }
+    },
+
+    // Disconnect call
+    disconnectCall() {
+      this.callStatus = 'disconnected'
+
+      // Update callback status in backend - marked as disconnected
+      if (this.ticketDetails && this.ticketDetails.callbackId) {
+        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: 'disconnected',
+            agentName: this.getAgentName(),
+            reason: 'User disconnected the call'
+          })
+        }).catch(error => {
+          console.error('Error disconnecting call:', error)
         })
       }
     },
