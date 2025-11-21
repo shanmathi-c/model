@@ -968,11 +968,16 @@ export default {
           customerName: this.selectedTicket.customerName,
           productId: this.selectedTicket.productId || null,
           subject: `Call for ticket ${this.selectedTicket.id} - ${this.selectedTicket.productCategory || 'No Product'}`,
-          callType: 'inbound'
+          callType: 'outbound', // Calls from tickets page are outbound (support calling customer)
         }
 
         console.log('Sending call data:', callData); // Debug log to see what's being sent
-        console.log('Selected ticket agentId:', this.selectedTicket.agentId); // Specific debug for agentId
+        console.log('Selected ticket details:', {
+          agentId: this.selectedTicket.agentId,
+          agentName: this.selectedTicket.agentName,
+          callType: 'outbound', // Confirming it's set to outbound
+          subject: callData.subject
+        }); // Enhanced debug info
 
         const response = await $fetch('http://localhost:5001/calls', {
           method: 'POST',

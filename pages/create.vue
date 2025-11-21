@@ -1428,14 +1428,15 @@ export default {
           },
           body: JSON.stringify({
             callbackId: this.ticketDetails.callbackId,
-            ticketId: null, // No ticketId from callback form
+            ticketId: 0, // No ticketId from callback form, use 0
             agentId: this.assignedAgent.id || this.assignedAgent.agentId,
             agentName: this.getAgentName(),
             agentNumber: this.getAgentPhone(),
             customerPhone: this.ticketDetails.phone,
             customerName: this.ticketDetails.name,
             productId: this.ticketDetails.productId || null,
-            subject: this.ticketDetails.subject || 'Callback request from customer'
+            subject: this.ticketDetails.subject || 'Callback request from customer',
+            callType: 'inbound' // Customer requests callback, so inbound
           })
         })
 

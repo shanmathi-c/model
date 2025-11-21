@@ -915,6 +915,9 @@ export class ticketController {
 
             // Helper function to insert call log
             function insertCallLog(nextCallId) {
+                // Calculate the correct ticketId to use
+                const actualTicketId = ticketId === 0 ? 0 : (ticketId || callbackId);
+
                 // Use explicit SQL to ensure callId is saved as string
                 const insertQuery = `
                     INSERT INTO calls (
@@ -926,7 +929,7 @@ export class ticketController {
 
                 const values = [
                     nextCallId, // callId as string
-                    ticketId || callbackId, // ticketId as string - prioritize ticketId from frontend
+                    actualTicketId, // Use the correctly calculated ticketId
                     customerPhone, // userPhone from frontend
                     productId || null, // productId from frontend
                     agentId, // agentId from frontend
@@ -941,7 +944,6 @@ export class ticketController {
                     startTime // Set endTime to startTime initially, will be updated when call ends
                 ];
 
-                const actualTicketId = ticketId || callbackId;
                 console.log('Inserting call with values:', {
                     callId: nextCallId,
                     ticketId: actualTicketId,
