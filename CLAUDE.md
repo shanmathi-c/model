@@ -1,1 +1,2 @@
 - dont add new files use exiting files for backend routes , index.js , controller
+- dont add test file and sql file

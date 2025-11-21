@@ -29,4 +29,7 @@ router.post("/bulk-assign", ticketController.bulkAssignTickets);
 router.get("/", (req, res) => {
     res.send("get tickets!");
 });
+
+router.post("/fix-assign-ticket-ids", ticketController.fixAssignTicketIds);
+
 export default router;

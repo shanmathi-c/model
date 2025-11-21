@@ -183,7 +183,7 @@ export class ticketController {
                         at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
-                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                  LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
@@ -195,7 +195,7 @@ export class ticketController {
                         at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
-                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                  LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
@@ -207,7 +207,7 @@ export class ticketController {
                         at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
-                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                  LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
@@ -219,7 +219,7 @@ export class ticketController {
                         at.importAction
                  FROM tickets t
                  LEFT JOIN product p ON t.productId = p.productId
-                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                  LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`,
@@ -229,7 +229,7 @@ export class ticketController {
                         a.agentName as assignedAgentName,
                         at.importAction
                  FROM tickets t
-                 LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                 LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                  LEFT JOIN agents a ON at.agentId = a.id
                  ${whereClause}
                  ORDER BY t.id DESC`
@@ -337,10 +337,31 @@ export class ticketController {
             });
         }
 
+        // First, get the proper ticketId format from tickets table
+        const getTicketQuery = `SELECT id, ticketId FROM tickets WHERE id = ? OR ticketId = ?`;
+
+        connection.query(getTicketQuery, [ticketId, ticketId], (getErr, ticketResult) => {
+            if (getErr) {
+                return res.status(500).json({
+                    message: "Error fetching ticket",
+                    error: getErr
+                });
+            }
+
+            if (ticketResult.length === 0) {
+                return res.status(404).json({
+                    message: "Ticket not found"
+                });
+            }
+
+            // Use the formatted ticketId (T001, T002, etc.) from the tickets table
+            const formattedTicketId = ticketResult[0].ticketId || `T${String(ticketResult[0].id).padStart(3, '0')}`;
+            const numericTicketId = ticketResult[0].id;
+
         // Step 1: Check if ticket is already assigned
         const checkQuery = `SELECT * FROM \`assign-ticket\` WHERE ticketId = ?`;
 
-        connection.query(checkQuery, [ticketId], (checkErr, checkResult) => {
+        connection.query(checkQuery, [formattedTicketId], (checkErr, checkResult) => {
             if (checkErr) {
                 return res.status(500).json({
                     message: "Error checking existing assignment",
@@ -355,12 +376,12 @@ export class ticketController {
             if (checkResult.length > 0) {
                 // Ticket already assigned, update the existing record
                 assignmentQuery = `UPDATE \`assign-ticket\` SET agentId = ?, status = 'assigned', importAction = 'single' WHERE ticketId = ?`;
-                queryParams = [agentId, ticketId];
+                queryParams = [agentId, formattedTicketId];
                 isUpdate = true;
             } else {
-                // First time assignment, insert new record
+                // First time assignment, insert new record with formatted ticketId
                 assignmentQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES (?, ?, 'assigned', 'single')`;
-                queryParams = [ticketId, agentId];
+                queryParams = [formattedTicketId, agentId];
                 isUpdate = false;
             }
 
@@ -373,14 +394,14 @@ export class ticketController {
                     });
                 }
 
-                // Step 3: Update ticket status to 'assigned'
+                // Step 3: Update ticket status to 'assigned' using numeric ID
                 const updateStatusQuery = `UPDATE tickets SET status = 'assigned' WHERE id = ?`;
 
-                connection.query(updateStatusQuery, [ticketId], (updateErr, updateResult) => {
+                connection.query(updateStatusQuery, [numericTicketId], (updateErr, updateResult) => {
                     if (updateErr) {
                         // Rollback for insert case only
                         if (!isUpdate) {
-                            connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId = ? AND agentId = ?`, [ticketId, agentId]);
+                            connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId = ? AND agentId = ?`, [formattedTicketId, agentId]);
                         }
                         return res.status(500).json({
                             message: "Error updating ticket status",
@@ -391,7 +412,7 @@ export class ticketController {
                     if (updateResult.affectedRows === 0) {
                         // Rollback for insert case only
                         if (!isUpdate) {
-                            connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId = ? AND agentId = ?`, [ticketId, agentId]);
+                            connection.query(`DELETE FROM \`assign-ticket\` WHERE ticketId = ? AND agentId = ?`, [formattedTicketId, agentId]);
                         }
                         return res.status(404).json({
                             message: "Ticket not found"
@@ -401,7 +422,7 @@ export class ticketController {
                     return res.json({
                         message: isUpdate ? "Ticket reassigned successfully" : "Ticket assigned successfully",
                         data: {
-                            ticketId: ticketId,
+                            ticketId: formattedTicketId,
                             agentId: agentId,
                             action: isUpdate ? 'reassigned' : 'assigned',
                             importAction: 'single'
@@ -409,6 +430,7 @@ export class ticketController {
                     });
                 });
             });
+        });
         });
     }
 
@@ -422,39 +444,68 @@ export class ticketController {
             });
         }
 
-        // Step 1: Insert multiple records with ON DUPLICATE KEY UPDATE to handle existing assignments
-        // Use correct column names based on your database
-        const assignValuesWithStatus = ticketIds.map(ticketId => `(${ticketId}, ${agentId}, 'assigned', 'bulk')`).join(',');
-        const insertQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES ${assignValuesWithStatus}
-                             ON DUPLICATE KEY UPDATE agentId = VALUES(agentId), status = 'assigned', importAction = 'bulk'`;
+        // First, get all tickets with their proper formatted ticketId
+        const placeholders = ticketIds.map(() => '?').join(',');
+        const getTicketsQuery = `SELECT id, ticketId FROM tickets WHERE id IN (${placeholders}) OR ticketId IN (${placeholders})`;
+        const queryParams = [...ticketIds, ...ticketIds];
 
-        connection.query(insertQuery, (insertErr, insertResult) => {
-            if (insertErr) {
+        connection.query(getTicketsQuery, queryParams, (getErr, ticketResults) => {
+            if (getErr) {
                 return res.status(500).json({
-                    message: "Error creating assignment records",
-                    error: insertErr
+                    message: "Error fetching tickets",
+                    error: getErr
                 });
             }
 
-            // Step 2: Update ticket status to 'assigned' for all tickets
-            const placeholders = ticketIds.map(() => '?').join(',');
-            const updateStatusQuery = `UPDATE tickets SET status = 'assigned' WHERE id IN (${placeholders})`;
+            if (ticketResults.length === 0) {
+                return res.status(404).json({
+                    message: "No tickets found"
+                });
+            }
 
-            connection.query(updateStatusQuery, ticketIds, (updateErr, updateResult) => {
-                if (updateErr) {
+            // Map to get formatted ticketIds and numeric IDs
+            const ticketMappings = ticketResults.map(ticket => ({
+                numericId: ticket.id,
+                formattedId: ticket.ticketId || `T${String(ticket.id).padStart(3, '0')}`
+            }));
+
+            // Build the values for bulk insert with formatted ticketIds
+            const assignValuesWithStatus = ticketMappings.map(mapping =>
+                `('${mapping.formattedId}', ${agentId}, 'assigned', 'bulk')`
+            ).join(',');
+
+            const insertQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES ${assignValuesWithStatus}
+                                 ON DUPLICATE KEY UPDATE agentId = VALUES(agentId), status = 'assigned', importAction = 'bulk'`;
+
+            connection.query(insertQuery, (insertErr, insertResult) => {
+                if (insertErr) {
                     return res.status(500).json({
-                        message: "Error updating ticket statuses",
-                        error: updateErr
+                        message: "Error creating assignment records",
+                        error: insertErr
                     });
                 }
 
-                return res.json({
-                    message: "Tickets assigned successfully",
-                    data: {
-                        assignedCount: updateResult.affectedRows,
-                        ticketIds: ticketIds,
-                        agentId: agentId
+                // Update ticket status to 'assigned' using numeric IDs
+                const numericIds = ticketMappings.map(m => m.numericId);
+                const updatePlaceholders = numericIds.map(() => '?').join(',');
+                const updateStatusQuery = `UPDATE tickets SET status = 'assigned' WHERE id IN (${updatePlaceholders})`;
+
+                connection.query(updateStatusQuery, numericIds, (updateErr, updateResult) => {
+                    if (updateErr) {
+                        return res.status(500).json({
+                            message: "Error updating ticket statuses",
+                            error: updateErr
+                        });
                     }
+
+                    return res.json({
+                        message: "Tickets assigned successfully",
+                        data: {
+                            assignedCount: updateResult.affectedRows,
+                            ticketIds: ticketMappings.map(m => m.formattedId),
+                            agentId: agentId
+                        }
+                    });
                 });
             });
         });
@@ -498,7 +549,7 @@ export class ticketController {
                             at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.createdAt DESC
@@ -511,7 +562,7 @@ export class ticketController {
                             at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.created_at DESC
@@ -524,7 +575,7 @@ export class ticketController {
                             at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -537,7 +588,7 @@ export class ticketController {
                             at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -550,7 +601,7 @@ export class ticketController {
                             at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -563,7 +614,7 @@ export class ticketController {
                             at.importAction
                      FROM tickets t
                      LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -574,7 +625,7 @@ export class ticketController {
                             a.agentName as assignedAgentName,
                             at.importAction
                      FROM tickets t
-                     LEFT JOIN \`assign-ticket\` at ON t.id = at.ticketId
+                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
                      LEFT JOIN agents a ON at.agentId = a.id
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1196,5 +1247,66 @@ export class ticketController {
                 }
             }
         );
+    }
+
+    // Fix existing numeric ticketIds to T001 format in assign-ticket table
+    static fixAssignTicketIds(req, res) {
+        // First, check what we have
+        const checkQuery = `
+            SELECT at.ticketId, t.ticketId as formatted_ticketId, t.id
+            FROM \`assign-ticket\` at
+            LEFT JOIN tickets t ON (at.ticketId = t.id OR at.ticketId = t.ticketId)
+        `;
+
+        connection.query(checkQuery, (checkErr, checkResult) => {
+            if (checkErr) {
+                return res.status(500).json({
+                    message: "Error checking existing assign-ticket data",
+                    error: checkErr
+                });
+            }
+
+            // Update assign-ticket table to use formatted ticketIds (T001, T002, etc.)
+            const updateQuery = `
+                UPDATE \`assign-ticket\` at
+                INNER JOIN tickets t ON (at.ticketId = t.id OR at.ticketId = CAST(t.id AS CHAR))
+                SET at.ticketId = COALESCE(t.ticketId, CONCAT('T', LPAD(t.id, 3, '0')))
+                WHERE at.ticketId REGEXP '^[0-9]+$'
+            `;
+
+            connection.query(updateQuery, (updateErr, updateResult) => {
+                if (updateErr) {
+                    return res.status(500).json({
+                        message: "Error updating assign-ticket IDs",
+                        error: updateErr
+                    });
+                }
+
+                // Verify the update
+                const verifyQuery = `
+                    SELECT ticketId, agentId, status, importAction
+                    FROM \`assign-ticket\`
+                    ORDER BY ticketId
+                `;
+
+                connection.query(verifyQuery, (verifyErr, verifyResult) => {
+                    if (verifyErr) {
+                        return res.status(500).json({
+                            message: "Error verifying the update",
+                            error: verifyErr
+                        });
+                    }
+
+                    return res.json({
+                        message: "Assign ticket IDs fixed successfully",
+                        data: {
+                            updatedRows: updateResult.affectedRows,
+                            beforeUpdate: checkResult,
+                            afterUpdate: verifyResult
+                        }
+                    });
+                });
+            });
+        });
     }
 }
