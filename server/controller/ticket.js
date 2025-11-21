@@ -1115,19 +1115,60 @@ export class ticketController {
 
     // Get all call logs
     static getCallLogs(req, res) {
-        // Fetch data directly from calls table only
-        const query = `SELECT * FROM calls ORDER BY createdAt DESC`;
+        // Fetch data ONLY from calls table, with customer names via subqueries
+        // Using DISTINCT and subqueries to prevent any duplicates
+        const query = `
+            SELECT DISTINCT
+                   c.id,
+                   c.callId,
+                   c.ticketId,
+                   c.userPhone,
+                   c.productId,
+                   c.agentId,
+                   c.agentPhone,
+                   c.callStatus,
+                   c.ticketStatus,
+                   c.recordingUrl,
+                   c.callType,
+                   c.reason,
+                   c.callDescription,
+                   c.startTime,
+                   c.endTime,
+                   c.createdAt,
+                   (SELECT name FROM tickets
+                    WHERE (ticketId = c.ticketId COLLATE utf8mb4_unicode_ci
+                           OR id = c.ticketId
+                           OR phone = c.userPhone COLLATE utf8mb4_unicode_ci)
+                    LIMIT 1) AS ticketCustomerName,
+                   (SELECT name FROM callback
+                    WHERE phone = c.userPhone COLLATE utf8mb4_unicode_ci
+                    LIMIT 1) AS callbackCustomerName
+            FROM calls c
+            ORDER BY c.createdAt DESC
+        `;
 
         connection.query(query, (err, result) => {
                 if (err) {
+                    console.error('Error in getCallLogs query:', err);
                     return res.json({
                         message: "Error fetching call logs",
                         error: err
                     });
                 } else {
+                    // Process results to combine customer names
+                    const processedResult = result.map(row => ({
+                        ...row,
+                        customerName: row.ticketCustomerName || row.callbackCustomerName || 'Unknown Customer',
+                        // Remove the temporary fields
+                        ticketCustomerName: undefined,
+                        callbackCustomerName: undefined
+                    }));
+
+                    console.log(`Fetched ${processedResult.length} call logs from calls table`);
+
                     return res.json({
                         message: "Call logs fetched successfully",
-                        data: result
+                        data: processedResult
                     });
                 }
             }

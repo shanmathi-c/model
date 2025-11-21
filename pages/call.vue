@@ -348,8 +348,8 @@
                       @click="openCallModal(call)"
                     />
                     <div class="flex flex-col">
-                      <span class="font-medium text-gray-900">{{ call.phone || 'N/A' }}</span>
-                      <span class="text-xs text-gray-500">Customer</span>
+                      <span class="font-medium text-gray-900">{{ call.customerName || 'Unknown' }}</span>
+                      <span class="text-xs text-gray-500">{{ call.phone || 'N/A' }}</span>
                     </div>
                   </div>
                 </td>
@@ -525,7 +525,7 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs text-gray-600 mb-1">Name</label>
-                  <p class="text-sm font-medium text-gray-900">{{ ticketForm.phone ? 'Customer' : 'Unknown' }}</p>
+                  <p class="text-sm font-medium text-gray-900">{{ ticketForm.customerName || 'Unknown' }}</p>
                 </div>
                 <div>
                   <label class="block text-xs text-gray-600 mb-1">Phone</label>
@@ -649,7 +649,7 @@
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                       <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    <span class="font-medium text-blue-800">Customer</span>
+                    <span class="font-medium text-blue-800">{{ selectedCall.customerName || 'Unknown Customer' }}</span>
                   </div>
                   <div class="flex items-center gap-2 text-blue-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -727,7 +727,7 @@
                     <div class="w-3 h-3 bg-green-600 rounded-full animate-pulse"></div>
                     <div>
                       <p class="text-sm font-medium text-green-800">Call Connected</p>
-                      <p class="text-xs text-green-600">Currently speaking with {{ selectedCall.customerName }}</p>
+                      <p class="text-xs text-green-600">Currently speaking with {{ selectedCall.customerName || 'Customer' }}</p>
                     </div>
                   </div>
                   <!-- Call Control Buttons in Connected State -->
@@ -1098,7 +1098,7 @@ export default {
           callId: call.callId, // C001, C002, etc.
           callLogId: call.callId, // For backward compatibility
           phone: call.userPhone,
-          customerName: 'Customer', // Default customer name since we're only fetching from calls table
+          customerName: call.customerName || 'Unknown Customer', // Customer name from conditional joins
           agentName: call.agentId ? `Agent ${call.agentId}` : 'Not Assigned',
           agentPhone: call.agentPhone, // Agent phone from database
           callType: call.callType || 'outbound', // inbound/outbound from database
@@ -1220,7 +1220,7 @@ export default {
     viewCallDetails(call) {
       // Populate the ticket form with call information
       this.ticketForm = {
-        customerName: 'Customer', // Default customer name
+        customerName: call.customerName || 'Unknown Customer', // Use actual customer name from the call
         phone: call.phone || '',
         email: '',
         productId: call.productId || '',
@@ -1387,9 +1387,9 @@ export default {
           agentName: this.selectedCall.agentName || 'Unknown Agent',
           agentNumber: this.selectedCall.agentPhone || this.generateAgentPhone(this.extractAgentIdFromName(this.selectedCall.agentName)),
           customerPhone: this.selectedCall.phone,
-          customerName: this.selectedCall.customerName,
+          customerName: this.selectedCall.customerName || 'Customer',
           productId: this.selectedCall.productId || null,
-          subject: `Follow-up call for ${this.selectedCall.customerName}`,
+          subject: `Follow-up call for ${this.selectedCall.customerName || 'Customer'}`,
           callType: 'inbound', // Calls from calls page are inbound (customer callback)
           ticketStatus: this.selectedCall.ticketStatus || 'in-progress'
         }
@@ -1469,9 +1469,9 @@ export default {
             agentName: this.selectedCall.agentName || 'Unknown Agent',
             agentNumber: this.selectedCall.agentPhone || this.generateAgentPhone(this.extractAgentIdFromName(this.selectedCall.agentName)),
             customerPhone: this.selectedCall.phone,
-            customerName: this.selectedCall.customerName,
+            customerName: this.selectedCall.customerName || 'Customer',
             productId: this.selectedCall.productId || null,
-            subject: `Missed call for ${this.selectedCall.customerName}`,
+            subject: `Missed call for ${this.selectedCall.customerName || 'Customer'}`,
             callType: 'inbound',
             ticketStatus: this.selectedCall.ticketStatus || 'missed'
           }
