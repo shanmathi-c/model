@@ -300,7 +300,7 @@
                   Call Log ID
                 </th>
                 <th v-if="visibleColumns.customerPhone" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer Phone
+                  Customer
                 </th>
                 <th v-if="visibleColumns.agentName" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Agent Name
@@ -323,8 +323,8 @@
                 <th v-if="visibleColumns.relatedTicketId" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Related Ticket ID
                 </th>
-                <th scope="col" class="relative px-6 py-3">
-                  <span class="sr-only">Actions</span>
+                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -337,14 +337,19 @@
                   {{ call.callId || call.callLogId || 'N/A' }}
                 </td>
 
-                <!-- Customer Phone -->
+                <!-- Customer -->
                 <td v-if="visibleColumns.customerPhone" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ call.phone || 'N/A' }}
+                  <div class="font-medium text-gray-900">
+                    {{ call.phone || 'N/A' }}
+                  </div>
                 </td>
 
                 <!-- Agent Name -->
                 <td v-if="visibleColumns.agentName" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ call.agentName || 'Not Assigned' }}
+                  <div class="space-y-1">
+                    <div class="font-medium text-gray-900">{{ call.agentName || 'Not Assigned' }}</div>
+                    <div class="text-xs text-gray-500">{{ call.agentPhone || 'N/A' }}</div>
+                  </div>
                 </td>
 
                 <!-- Call Type -->
@@ -393,12 +398,12 @@
                 </td>
 
                 <!-- Actions -->
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button @click="viewCallDetails(call)" class="text-blue-600 hover:text-blue-900 mr-3">
-                    View
-                  </button>
-                  <button @click="editCall(call)" class="text-indigo-600 hover:text-indigo-900">
-                    Edit
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <button @click="viewCallDetails(call)" class="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50 transition-colors" title="View Details">
+                    <!-- Plus Circle Icon -->
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </button>
                 </td>
               </tr>
@@ -537,7 +542,7 @@ export default {
       // Display settings
       columnOptions: [
         { key: 'callLogId', label: 'Call Log ID' },
-        { key: 'customerPhone', label: 'Customer Phone' },
+        { key: 'customerPhone', label: 'Customer' },
         { key: 'agentName', label: 'Agent Name' },
         { key: 'callType', label: 'Call Type' },
         { key: 'duration', label: 'Duration' },
@@ -767,7 +772,9 @@ export default {
           callId: call.callId, // C001, C002, etc.
           callLogId: call.callId, // For backward compatibility
           phone: call.userPhone,
+          customerName: call.customerName, // Customer name from database
           agentName: call.agentId ? `Agent ${call.agentId}` : 'Not Assigned',
+          agentPhone: call.agentPhone, // Agent phone from database
           callType: call.callType || 'outbound', // inbound/outbound from database
           duration: this.calculateDuration(call.startTime, call.endTime), // Calculate duration
           status: call.callStatus || 'pending', // Use callStatus from calls table
