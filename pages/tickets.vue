@@ -1,24 +1,27 @@
 <template>
-  <div class="flex flex-col h-screen overflow-hidden">
-    <!-- Fixed Header -->
-    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-      <h1 class="text-2xl font-bold text-gray-900 mb-4">Support Tickets</h1>
+  <div class="h-screen bg-gray-50 flex flex-col ">
+    <!-- Fixed Header Section - Sticky -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
+      <!-- Header Title -->
+      <div class="mb-4">
+        <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
+        <p class="text-gray-600 mt-1">View and manage support tickets</p>
+      </div>
 
-      <!-- Search and Filters -->
-      <div class="flex flex-col gap-3">
-        <!-- First Row: Search Bar and Buttons -->
-        <div class="flex items-center gap-3">
+      <!-- Search and Filter Bar -->
+      <div class="flex items-center gap-3">
           <!-- Search Bar -->
-          <div class="relative w-80">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
+          <div class="relative w-96 max-w-full">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+              </svg>
+            </div>
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search by ticket ID, customer phone, keywords..."
-              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
           </div>
 
@@ -26,23 +29,25 @@
         <div ref="filterDropdownRef" class="relative">
           <button
             @click="toggleFilterDropdown"
-            class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             :class="{ 'bg-blue-50 border-blue-500': hasActiveFilters }"
           >
-            <img src="/filter.svg" alt="filter" class="w-4 h-4" />
-            <span class="text-sm font-medium">Filter</span>
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter
           </button>
 
   
           <!-- Dropdown -->
           <div
             v-if="showFilterDropdown"
-            class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto"
+            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
             style="z-index: 50;"
           >
-            <div class="p-2">
+            <div class="p-3">
               <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xs font-semibold text-gray-900">Filters</h3>
+                <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
                 <button
                   v-if="hasActiveFilters"
                   @click="clearFilters"
@@ -218,7 +223,7 @@
     </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto" style="height: calc(100vh - 340px);">
+    <div class="flex-1 overflow-auto" style="height: calc(130vh - 360px);">
         <!-- Table View -->
         <div class="overflow-x-auto" style="height: 100%;">
           <table class="w-full" style="min-width: 1200px;">
@@ -375,7 +380,7 @@
     </div>
 
     <!-- Fixed Pagination Controls -->
-    <div class="flex-shrink-0 px-4 py-2 bg-white border-t border-gray-200 sticky bottom-0">
+    <div class="flex-shrink-0 px-4 py-4 mt-4 bg-white border-t border-gray-200 sticky bottom-0">
       <div class="flex flex-col gap-2">
         <!-- Info row -->
         <div class="text-sm text-gray-700">
@@ -425,7 +430,6 @@
         </div>
       </div>
     </div>
-  </div>
   </div>
   </div>
 </template>
