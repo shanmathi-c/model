@@ -131,16 +131,182 @@ export class ticketController {
     }
     }
 
-    static createCallTicket(req, res) {
-        // Add ticketType: 'call' for call page tickets
-        const ticketData = {
-            ...req.body,
-            ticketType: 'call'
-        };
+    static async createCallTicket(req, res) {
+        const { productId, userId, name, email, countryCode, phone, subject, description, agentId, callType } = req.body;
 
-        // Reuse the same logic but force ticketType to 'call'
-        ticketController.createTicket({ ...req, body: ticketData }, res);
+        // Validate required fields
+        if (!name || !phone || !subject || !description) {
+            return res.status(400).json({
+                message: "Missing required fields",
+                required: ['name', 'phone', 'subject', 'description']
+            });
+        }
+
+        try {
+            // Generate unique ticket ID
+            const ticketId = await ticketController.generateTicketId();
+
+            // Generate or use existing userId
+            let finalUserId;
+            if (userId) {
+                finalUserId = parseInt(userId);
+            } else {
+                // Generate a new sequential userId
+                finalUserId = await ticketController.generateUserId();
+            }
+
+            // Combine country code and phone into a single phone field
+            const fullPhone = countryCode ? countryCode + ' ' + phone : phone;
+
+            // First, create the ticket in tickets table
+            const dbTicketData = {
+                ticketId: ticketId,
+                productId: productId || null,
+                userId: finalUserId,
+                name: name,
+                email: email || null,
+                phone: fullPhone,
+                subject: subject,
+                description: description,
+                status: 'assigned',
+                ticketType: 'call'
+            };
+
+            connection.query("INSERT INTO tickets SET ?", dbTicketData, async (err, result) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error creating ticket",
+                        error: err
+                    });
+                }
+
+                // Get the numeric ID of the created ticket
+                const numericTicketId = result.insertId;
+
+                try {
+                    // Step 2: Create entry in assign-ticket table if agentId is provided
+                    if (agentId) {
+                        const assignData = {
+                            ticketId: ticketId,
+                            agentId: agentId,
+                            status: 'assigned',
+                            importAction: 'call'
+                        };
+
+                        await new Promise((resolve, reject) => {
+                            connection.query("INSERT INTO `assign-ticket` SET ?", assignData, (assignErr, assignResult) => {
+                                if (assignErr) {
+                                    reject(assignErr);
+                                } else {
+                                    resolve(assignResult);
+                                }
+                            });
+                        });
+
+                        // Update ticket status to 'assigned'
+                        await new Promise((resolve, reject) => {
+                            connection.query("UPDATE tickets SET status = 'assigned' WHERE id = ?", [numericTicketId], (updateErr, updateResult) => {
+                                if (updateErr) {
+                                    reject(updateErr);
+                                } else {
+                                    resolve(updateResult);
+                                }
+                            });
+                        });
+                    }
+
+                    // Step 3: Create entry in calls table
+                    const callId = await ticketController.generateCallId();
+
+                    const callData = {
+                        callId: callId,
+                        ticketId: ticketId,
+                        userPhone: fullPhone,
+                        productId: productId || null,
+                        agentId: agentId || null,
+                        agentPhone: null, // Will be filled later if agent is assigned
+                        callStatus: 'created',
+                        ticketStatus: 'assigned',
+                        recordingUrl: null,
+                        callType: callType || 'inbound',
+                        reason: subject,
+                        callDescription: description,
+                        startTime: null,
+                        endTime: null
+                    };
+
+                    await new Promise((resolve, reject) => {
+                        connection.query("INSERT INTO calls SET ?", callData, (callErr, callResult) => {
+                            if (callErr) {
+                                reject(callErr);
+                            } else {
+                                resolve(callResult);
+                            }
+                        });
+                    });
+
+                    return res.json({
+                        message: "Call ticket created successfully",
+                        data: {
+                            ticketId: ticketId,
+                            userId: finalUserId,
+                            numericId: numericTicketId,
+                            callId: callId,
+                            agentId: agentId || null,
+                            status: 'assigned',
+                            ticketType: 'call'
+                        }
+                    });
+
+                } catch (error) {
+                    console.error('Error in createCallTicket additional steps:', error);
+                    return res.status(500).json({
+                        message: "Error creating additional records",
+                        error: error.message
+                    });
+                }
+            });
+
+        } catch (error) {
+            console.error('Error in createCallTicket:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
     }
+
+    // Generate call ID in format C001, C002, etc.
+    static generateCallId() {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "SELECT callId FROM calls WHERE callId REGEXP '^C[0-9]+$' ORDER BY CAST(SUBSTRING(callId, 2) AS UNSIGNED) DESC LIMIT 1",
+                (err, result) => {
+                    if (err) {
+                        resolve('C001');
+                        return;
+                    }
+
+                    if (result.length === 0) {
+                        resolve('C001');
+                    } else {
+                        const lastCallId = result[0].callId;
+                        const match = lastCallId.match(/C(\d+)/);
+
+                        if (match) {
+                            const lastNumber = parseInt(match[1]);
+                            const newNumber = lastNumber + 1;
+                            const newCallId = `C${String(newNumber).padStart(3, '0')}`;
+                            resolve(newCallId);
+                        } else {
+                            resolve('C001');
+                        }
+                    }
+                }
+            );
+        });
+    }
+
 // fetch products for drop down option in create ticket page
     static getProducts(req, res) {
         connection.query("SELECT * FROM product", (err, result) => {
