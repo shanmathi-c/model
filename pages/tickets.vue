@@ -37,7 +37,8 @@
           <!-- Dropdown -->
           <div
             v-if="showFilterDropdown"
-            class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-96 overflow-y-auto"
+            class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto"
+            style="z-index: 50;"
           >
             <div class="p-2">
               <div class="flex items-center justify-between mb-2">
@@ -157,7 +158,8 @@
           <!-- Display Dropdown -->
           <div
             v-if="showDisplayDropdown"
-            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
+            style="z-index: 50;"
           >
             <div class="p-3">
               <div class="flex items-center justify-between mb-2">

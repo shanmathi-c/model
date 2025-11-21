@@ -53,6 +53,63 @@
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
+
+        <!-- Display Settings Button -->
+        <div ref="displayDropdownRef" class="relative">
+          <button
+            @click="toggleDisplayDropdown"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            title="Display Settings"
+          >
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="text-sm font-medium">Display</span>
+          </button>
+
+          <!-- Display Dropdown -->
+          <div
+            v-if="showDisplayDropdown"
+            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
+            style="z-index: 50;"
+          >
+            <div class="p-3">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-gray-900">Show Columns</h3>
+                <div class="flex gap-1">
+                  <button
+                    @click="selectAllColumns"
+                    class="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    All
+                  </button>
+                  <span class="text-gray-300">|</span>
+                  <button
+                    @click="deselectAllColumns"
+                    class="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label
+                  v-for="col in columnOptions"
+                  :key="col.key"
+                  class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded text-xs"
+                >
+                  <input
+                    type="checkbox"
+                    v-model="visibleColumns[col.key]"
+                    class="w-3 h-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <span class="text-gray-700">{{ col.label }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -106,26 +163,32 @@
             <!-- Table Header - Fixed -->
             <thead class="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Callback ID
+                <th v-if="visibleColumns.callLogId" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Call Log ID
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer Name
+                <th v-if="visibleColumns.customerPhone" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer Phone
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
+                <th v-if="visibleColumns.agentName" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Agent Name
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
+                <th v-if="visibleColumns.callType" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Call Type
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
+                <th v-if="visibleColumns.duration" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Duration
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th v-if="visibleColumns.status" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Request Date
+                <th v-if="visibleColumns.callDateTime" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Call Date & Time
+                </th>
+                <th v-if="visibleColumns.recording" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Recording
+                </th>
+                <th v-if="visibleColumns.relatedTicketId" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Related Ticket ID
                 </th>
                 <th scope="col" class="relative px-6 py-3">
                   <span class="sr-only">Actions</span>
@@ -136,45 +199,64 @@
             <!-- Table Body - Scrollable -->
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors">
-                <!-- Callback ID -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {{ call.callLogId || call.callbackId }}
+                <!-- Call Log ID -->
+                <td v-if="visibleColumns.callLogId" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {{ call.callLogId || call.callbackId || 'N/A' }}
                 </td>
 
-                <!-- Customer Name -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ call.name || 'N/A' }}
-                  </div>
+                <!-- Customer Phone -->
+                <td v-if="visibleColumns.customerPhone" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ call.phone || 'N/A' }}
                 </td>
 
-                <!-- Phone -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ call.phone }}
+                <!-- Agent Name -->
+                <td v-if="visibleColumns.agentName" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ call.agentName || 'Not Assigned' }}
                 </td>
 
-                <!-- Email -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ call.email || 'N/A' }}
+                <!-- Call Type -->
+                <td v-if="visibleColumns.callType" class="px-6 py-4 whitespace-nowrap">
+                  <span :class="getCallTypeClass(call.callType)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                    {{ call.callType ? call.callType.charAt(0).toUpperCase() + call.callType.slice(1) : 'N/A' }}
+                  </span>
                 </td>
 
-                <!-- Subject -->
-                <td class="px-6 py-4">
-                  <div class="text-sm text-gray-900 max-w-xs truncate" :title="call.subject">
-                    {{ call.subject || 'N/A' }}
-                  </div>
+                <!-- Duration -->
+                <td v-if="visibleColumns.duration" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ formatDuration(call.duration) }}
                 </td>
 
                 <!-- Status -->
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td v-if="visibleColumns.status" class="px-6 py-4 whitespace-nowrap">
                   <span :class="getStatusClass(call.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
                     {{ formatStatus(call.status) }}
                   </span>
                 </td>
 
-                <!-- Request Date -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <!-- Call Date & Time -->
+                <td v-if="visibleColumns.callDateTime" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ formatDateTime(call.callDateTime || call.createdAt || call.created_at) }}
+                </td>
+
+                <!-- Recording -->
+                <td v-if="visibleColumns.recording" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <button
+                    v-if="call.recordingUrl"
+                    @click="playRecording(call.recordingUrl)"
+                    class="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                    title="Play Recording"
+                  >
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <span v-else class="text-gray-400">N/A</span>
+                </td>
+
+                <!-- Related Ticket ID -->
+                <td v-if="visibleColumns.relatedTicketId" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ call.relatedTicketId || 'N/A' }}
                 </td>
 
                 <!-- Actions -->
@@ -282,6 +364,21 @@ export default {
       statusFilter: '',
       callTypeFilter: '',
       showFilter: false,
+      showDisplayDropdown: false,
+
+      // Display settings
+      columnOptions: [
+        { key: 'callLogId', label: 'Call Log ID' },
+        { key: 'customerPhone', label: 'Customer Phone' },
+        { key: 'agentName', label: 'Agent Name' },
+        { key: 'callType', label: 'Call Type' },
+        { key: 'duration', label: 'Duration' },
+        { key: 'status', label: 'Status' },
+        { key: 'callDateTime', label: 'Call Date & Time' },
+        { key: 'recording', label: 'Recording' },
+        { key: 'relatedTicketId', label: 'Related Ticket ID' }
+      ],
+      visibleColumns: {},
 
       // Pagination
       currentPage: 1,
@@ -362,8 +459,20 @@ export default {
     }
   },
 
+  created() {
+    // Initialize visible columns
+    this.visibleColumns = Object.fromEntries(this.columnOptions.map(col => [col.key, true]))
+  },
+
   mounted() {
     this.fetchCallLogs()
+    // Add click event listener
+    document.addEventListener('click', this.handleClickOutside);
+  },
+
+  beforeDestroy() {
+    // Clean up event listener
+    document.removeEventListener('click', this.handleClickOutside);
   },
 
   methods: {
@@ -548,6 +657,38 @@ export default {
     // Format date (legacy method)
     formatDate(dateString) {
       return this.formatDateTime(dateString)
+    },
+
+    // Toggle display dropdown
+    toggleDisplayDropdown() {
+      this.showDisplayDropdown = !this.showDisplayDropdown
+    },
+
+    // Select all columns
+    selectAllColumns() {
+      Object.keys(this.visibleColumns).forEach(key => {
+        this.visibleColumns[key] = true
+      })
+    },
+
+    // Deselect all columns
+    deselectAllColumns() {
+      Object.keys(this.visibleColumns).forEach(key => {
+        this.visibleColumns[key] = false
+      })
+    },
+
+    // Handle click outside to close dropdowns
+    handleClickOutside(event) {
+      const clickedElement = event.target;
+
+      // Close display dropdown if clicking outside
+      if (this.showDisplayDropdown) {
+        const displayDropdown = this.$refs.displayDropdownRef;
+        if (displayDropdown && !displayDropdown.contains(clickedElement)) {
+          this.showDisplayDropdown = false;
+        }
+      }
     }
   }
 }
