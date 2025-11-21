@@ -1115,9 +1115,18 @@ export class ticketController {
 
     // Get all call logs
     static getCallLogs(req, res) {
-        connection.query(
-            "SELECT * FROM calls ORDER BY createdAt DESC",
-            (err, result) => {
+        // Join calls with callbacks and tickets tables to get customer names
+        // Using COLLATE to handle different collations between tables
+        const query = `
+            SELECT c.*,
+                   COALESCE(cb.name, t.name) AS customerName
+            FROM calls c
+            LEFT JOIN callback cb ON c.userPhone COLLATE utf8mb4_unicode_ci = cb.phone COLLATE utf8mb4_unicode_ci
+            LEFT JOIN tickets t ON c.userPhone COLLATE utf8mb4_unicode_ci = t.phone COLLATE utf8mb4_unicode_ci
+            ORDER BY c.createdAt DESC
+        `;
+
+        connection.query(query, (err, result) => {
                 if (err) {
                     return res.json({
                         message: "Error fetching call logs",

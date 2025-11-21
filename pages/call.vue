@@ -347,7 +347,10 @@
                       class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
                       @click="openCallModal(call)"
                     />
-                    <span class="font-medium text-gray-900">{{ call.phone || 'N/A' }}</span>
+                    <div class="flex flex-col">
+                      <span class="font-medium text-gray-900">{{ call.customerName || 'Unknown' }}</span>
+                      <span class="text-xs text-gray-500">{{ call.phone || 'N/A' }}</span>
+                    </div>
                   </div>
                 </td>
 
@@ -956,7 +959,7 @@ export default {
           callId: call.callId, // C001, C002, etc.
           callLogId: call.callId, // For backward compatibility
           phone: call.userPhone,
-          customerName: call.customerName, // Customer name from database
+          customerName: call.customerName || 'Unknown Customer', // Customer name from database (from callback or tickets)
           agentName: call.agentId ? `Agent ${call.agentId}` : 'Not Assigned',
           agentPhone: call.agentPhone, // Agent phone from database
           callType: call.callType || 'outbound', // inbound/outbound from database
@@ -971,8 +974,7 @@ export default {
           ticketStatus: call.ticketStatus,
           productId: call.productId,
           agentId: call.agentId,
-          agentPhone: call.agentPhone,
-          customerName: call.userPhone // Use phone as customer name for now
+          agentPhone: call.agentPhone
         }))
 
         // Extract unique agent names for filter dropdown
