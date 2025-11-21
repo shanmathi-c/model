@@ -455,6 +455,30 @@
                     Disconnect
                   </button>
                 </div>
+
+                <!-- Call Recording Status -->
+                <div v-if="currentCallLog" class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                      </svg>
+                      <span class="text-sm font-medium text-blue-900">Recording</span>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-xs text-blue-700">Call ID: {{ currentCallLog.id }}</p>
+                      <p class="text-xs text-blue-600" :class="getRecordingStatusClass()">
+                        {{ getRecordingStatusText() }}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="mt-2 text-xs text-blue-700">
+                    <p><strong>Started:</strong> {{ currentCallLog.startTime || 'Not started' }}</p>
+                    <p v-if="currentCallLog.endTime"><strong>Duration:</strong> {{ formatDuration(currentCallLog.duration) }}</p>
+                    <p v-if="currentCallLog.recordingUrl" class="break-all"><strong>Recording:</strong> {{ currentCallLog.recordingUrl }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -500,7 +524,8 @@ export default {
       ticketDetails: null,
       showSuccessModal: false,
       assignedAgent: null,
-      callStatus: 'pending', // pending, connecting, connected, ended, cancelled
+      callStatus: 'pending', // pending, connecting, connected, ended, cancelled, disconnected
+      currentCallLog: null, // Store current call log data
 
       // Error states
       errors: {
@@ -1166,6 +1191,7 @@ export default {
       this.ticketDetails = null
       this.assignedAgent = null
       this.callStatus = 'pending'
+      this.currentCallLog = null
     },
 
     // Print callback details
@@ -1334,79 +1360,227 @@ export default {
       }
     },
 
+    // Get recording status CSS class
+    getRecordingStatusClass() {
+      if (!this.currentCallLog) return ''
+
+      // Since calls table doesn't have recordingStatus, show based on callStatus
+      const statusClasses = {
+        'ongoing': 'text-yellow-700 font-medium', // Call is active, recording
+        'completed': 'text-green-700 font-medium', // Call ended, recording ready
+        'missed': 'text-gray-500', // Call missed, no recording
+        'cancelled': 'text-gray-500' // Call cancelled, no recording
+      }
+      return statusClasses[this.currentCallLog.callStatus] || 'text-gray-500'
+    },
+
+    // Get recording status text
+    getRecordingStatusText() {
+      if (!this.currentCallLog) return ''
+
+      // Since calls table doesn't have recordingStatus, show based on callStatus
+      const statusTexts = {
+        'ongoing': 'Recording...',
+        'completed': 'Ready',
+        'missed': 'Not Recorded',
+        'cancelled': 'Not Recorded'
+      }
+      return statusTexts[this.currentCallLog.callStatus] || 'Unknown'
+    },
+
+    // Format duration in HH:MM:SS
+    formatDuration(seconds) {
+      if (!seconds || seconds === 0) return '0:00'
+
+      const hours = Math.floor(seconds / 3600)
+      const minutes = Math.floor((seconds % 3600) / 60)
+      const secs = seconds % 60
+
+      if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+      } else {
+        return `${minutes}:${secs.toString().padStart(2, '0')}`
+      }
+    },
+
     // Start call
     async startCall() {
       this.callStatus = 'connecting'
 
-      // Simulate connection time
-      setTimeout(() => {
-        this.callStatus = 'connected'
-      }, 3000)
-    },
-
-    // End call
-    endCall() {
-      this.callStatus = 'ended'
-
-      // Update callback status in backend
-      if (this.ticketDetails && this.ticketDetails.callbackId) {
-        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
-          method: 'PUT',
+      try {
+        // Create call log entry when call starts
+        const response = await fetch('http://localhost:5001/calls', {
+          method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
           body: JSON.stringify({
-            status: 'completed',
+            callbackId: this.ticketDetails.callbackId,
+            ticketId: null, // No ticketId from callback form
+            agentId: this.assignedAgent.id || this.assignedAgent.agentId,
             agentName: this.getAgentName(),
-            callDuration: Math.floor(Math.random() * 600) // Random duration in seconds
+            agentNumber: this.getAgentPhone(),
+            customerPhone: this.ticketDetails.phone,
+            customerName: this.ticketDetails.name,
+            productId: this.ticketDetails.productId || null,
+            subject: this.ticketDetails.subject || 'Callback request from customer'
           })
-        }).catch(error => {
-          console.error('Error updating callback status:', error)
         })
+
+        if (response.ok) {
+          const result = await response.json()
+          this.currentCallLog = result.data
+          console.log('Call log created:', result.data)
+
+          // Simulate connection time and then set to connected
+          setTimeout(() => {
+            this.callStatus = 'connected'
+            console.log('Call connected, recording:', this.currentCallLog.recordingUrl)
+          }, 2000)
+        } else {
+          console.error('Error creating call log:', response.statusText)
+          this.callStatus = 'pending'
+        }
+      } catch (error) {
+        console.error('Error starting call:', error)
+        this.callStatus = 'pending'
       }
     },
 
     // End call
-    endCall() {
+    async endCall() {
       this.callStatus = 'ended'
 
-      // Update callback status in backend
-      if (this.ticketDetails && this.ticketDetails.callbackId) {
-        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            status: 'completed',
-            agentName: this.getAgentName(),
-            callDuration: Math.floor(Math.random() * 600) // Random duration in seconds
+      try {
+        // Update call log with end time and duration
+        if (this.currentCallLog && this.currentCallLog.callId) {
+          const response = await fetch(`http://localhost:5001/calls/${this.currentCallLog.callId}/end`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
           })
-        }).catch(error => {
-          console.error('Error updating callback status:', error)
-        })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('Call ended successfully:', result.data)
+            // Update current call log with end data
+            this.currentCallLog = { ...this.currentCallLog, ...result.data }
+          } else {
+            console.error('Error ending call:', response.statusText)
+          }
+        }
+
+        // Update callback status in backend
+        if (this.ticketDetails && this.ticketDetails.callbackId) {
+          const callDuration = this.currentCallLog ? this.currentCallLog.duration : Math.floor(Math.random() * 600)
+
+          await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              status: 'completed',
+              agentName: this.getAgentName(),
+              callDuration: callDuration,
+              recordingUrl: this.currentCallLog?.recordingUrl
+            })
+          })
+        }
+      } catch (error) {
+        console.error('Error in endCall:', error)
+      }
+    },
+
+    // End call
+    async endCall() {
+      this.callStatus = 'ended'
+
+      try {
+        // Update call log with end time and duration
+        if (this.currentCallLog && this.currentCallLog.callId) {
+          const response = await fetch(`http://localhost:5001/calls/${this.currentCallLog.callId}/end`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('Call ended successfully:', result.data)
+            // Update current call log with end data
+            this.currentCallLog = { ...this.currentCallLog, ...result.data }
+          } else {
+            console.error('Error ending call:', response.statusText)
+          }
+        }
+
+        // Update callback status in backend
+        if (this.ticketDetails && this.ticketDetails.callbackId) {
+          const callDuration = this.currentCallLog ? this.currentCallLog.duration : Math.floor(Math.random() * 600)
+
+          await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              status: 'completed',
+              agentName: this.getAgentName(),
+              callDuration: callDuration,
+              recordingUrl: this.currentCallLog?.recordingUrl
+            })
+          })
+        }
+      } catch (error) {
+        console.error('Error in endCall:', error)
       }
     },
 
     // Disconnect call
-    disconnectCall() {
+    async disconnectCall() {
       this.callStatus = 'disconnected'
 
-      // Update callback status in backend - marked as disconnected
-      if (this.ticketDetails && this.ticketDetails.callbackId) {
-        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            status: 'disconnected',
-            agentName: this.getAgentName(),
-            reason: 'User disconnected the call'
+      try {
+        // Mark call as missed in calls table (null start/end times)
+        if (this.currentCallLog && this.currentCallLog.callId) {
+          const response = await fetch(`http://localhost:5001/calls/${this.currentCallLog.callId}/missed`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
           })
-        }).catch(error => {
-          console.error('Error disconnecting call:', error)
-        })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('Call marked as missed:', result.data)
+          } else {
+            console.error('Error marking call as missed:', response.statusText)
+          }
+        }
+
+        // Update callback status in backend
+        if (this.ticketDetails && this.ticketDetails.callbackId) {
+          await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              status: 'disconnected',
+              agentName: this.getAgentName(),
+              reason: 'User disconnected the call'
+            })
+          })
+        }
+      } catch (error) {
+        console.error('Error in disconnectCall:', error)
       }
     },
 

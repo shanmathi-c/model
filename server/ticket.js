@@ -12,6 +12,13 @@ router.get("/callback/:callbackId", ticketController.getCallbackById);
 router.put("/callback/:callbackId/status", ticketController.updateCallbackStatus);
 router.delete("/callback/:callbackId", ticketController.deleteCallback);
 
+// Call logs routes
+router.post("/calls", ticketController.createCallLog);
+router.put("/calls/:callId/end", ticketController.endCall);
+router.put("/calls/:callId/missed", ticketController.missedCall);
+router.get("/calls", ticketController.getCallLogs);
+router.get("/calls/agent/:agentId", ticketController.getCallLogsByAgent);
+
 router.get("/products", ticketController.getProducts);
 router.get("/tickets", ticketController.getTickets);
 router.get("/unassigned-tickets", ticketController.getUnassignedTickets);

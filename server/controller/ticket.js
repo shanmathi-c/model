@@ -825,4 +825,257 @@ export class ticketController {
             }
         );
     }
+
+    // Generate unique call log ID
+    static generateCallLogId() {
+        return new Promise((resolve, reject) => {
+            // Get the latest call log ID
+            connection.query(
+                "SELECT callLogId FROM calls ORDER BY id DESC LIMIT 1",
+                (err, result) => {
+                    if (err) {
+                        // If table doesn't exist or error, start with CL001
+                        resolve('CL001');
+                        return;
+                    }
+
+                    if (result.length === 0) {
+                        // No calls yet, start with CL001
+                        resolve('CL001');
+                    } else {
+                        // Extract the numeric part from last call log ID
+                        const lastCallLogId = result[0].callLogId;
+                        const match = lastCallLogId.match(/CL(\d+)/);
+
+                        if (match) {
+                            const lastNumber = parseInt(match[1]);
+                            const newNumber = lastNumber + 1;
+                            // Pad with leading zeros to maintain 3 digits
+                            const newCallLogId = `CL${String(newNumber).padStart(3, '0')}`;
+                            resolve(newCallLogId);
+                        } else {
+                            // If format is different, start with CL001
+                            resolve('CL001');
+                        }
+                    }
+                }
+            );
+        });
+    }
+
+    // Generate recording URL
+    static generateRecordingUrl(callId) {
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        return `/recordings/${callId}_${timestamp}_${randomString}.mp3`;
+    }
+
+    // Create new call log
+    static async createCallLog(req, res) {
+        const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject } = req.body;
+
+        try {
+            // Generate unique call ID (CL001 format)
+            const callId = await ticketController.generateCallLogId();
+
+            // Generate recording URL (pending status)
+            const recordingUrl = ticketController.generateRecordingUrl(callId);
+
+            // Get current timestamp
+            const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            // Insert call log with correct field names
+            const callLogData = {
+                id: callId,
+                ticketId: callbackId, // Use callbackId as ticketId for reference
+                userPhone: customerPhone,
+                productId: productId || null,
+                agentId: agentId,
+                agentPhone: agentNumber,
+                callStatus: 'ongoing',
+                ticketStatus: 'in-progress', // Initial status
+                recordingUrl: recordingUrl,
+                callType: 'outbound', // Agent calling customer
+                reason: subject || 'Callback request from customer', // Use callback subject as reason
+                callDescription: subject || 'Callback request from customer', // Use callback subject as description
+                startTime: startTime,
+                endTime: startTime // Set endTime to startTime initially, will be updated when call ends
+            };
+
+            connection.query("INSERT INTO calls SET ?", callLogData, (err, result) => {
+                if (err) {
+                    console.error('Error creating call log:', err);
+                    return res.status(500).json({
+                        message: "Error creating call log",
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "Call log created successfully",
+                        data: {
+                            callId: callId,
+                            startTime: startTime,
+                            recordingUrl: recordingUrl,
+                            callStatus: 'ongoing'
+                        }
+                    });
+                }
+            });
+
+        } catch (error) {
+            console.error('Error in createCallLog:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // End call (update with end time and duration)
+    static endCall(req, res) {
+        const { callId } = req.params;
+
+        try {
+            // Get the call log to calculate duration
+            connection.query(
+                "SELECT * FROM calls WHERE id = ?",
+                [callId],
+                (err, callResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error fetching call log",
+                            error: err
+                        });
+                    }
+
+                    if (callResult.length === 0) {
+                        return res.status(404).json({
+                            message: "Call log not found"
+                        });
+                    }
+
+                    const callLog = callResult[0];
+                    const startTime = new Date(callLog.startTime);
+                    const endTime = new Date();
+                    const duration = Math.floor((endTime - startTime) / 1000); // Duration in seconds
+
+                    // Format end time
+                    const formattedEndTime = endTime.toISOString().slice(0, 19).replace('T', ' ');
+
+                    // Update call log with end time and duration
+                    connection.query(
+                        "UPDATE calls SET endTime = ?, callStatus = 'completed', ticketStatus = 'resolved' WHERE id = ?",
+                        [formattedEndTime, callId],
+                        (err, updateResult) => {
+                            if (err) {
+                                return res.status(500).json({
+                                    message: "Error updating call log",
+                                    error: err
+                                });
+                            } else {
+                                return res.json({
+                                    message: "Call ended successfully",
+                                    data: {
+                                        callId: callId,
+                                        endTime: formattedEndTime,
+                                        duration: duration, // Return duration for frontend
+                                        recordingUrl: callLog.recordingUrl,
+                                        callStatus: 'completed',
+                                        ticketStatus: 'resolved'
+                                    }
+                                });
+                            }
+                        }
+                    );
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in endCall:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Mark call as missed
+    static missedCall(req, res) {
+        const { callId } = req.params;
+
+        try {
+            // Update call log with missed status (null start and end times)
+            connection.query(
+                "UPDATE calls SET startTime = NULL, endTime = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE id = ?",
+                [callId],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error updating call log",
+                            error: err
+                        });
+                    } else {
+                        return res.json({
+                            message: "Call marked as missed",
+                            data: {
+                                callId: callId,
+                                callStatus: 'missed',
+                                ticketStatus: 'cancelled'
+                            }
+                        });
+                    }
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in missedCall:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Get all call logs
+    static getCallLogs(req, res) {
+        connection.query(
+            "SELECT * FROM calls ORDER BY createdAt DESC",
+            (err, result) => {
+                if (err) {
+                    return res.json({
+                        message: "Error fetching call logs",
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "Call logs fetched successfully",
+                        data: result
+                    });
+                }
+            }
+        );
+    }
+
+    // Get call logs by agent
+    static getCallLogsByAgent(req, res) {
+        const { agentId } = req.params;
+
+        connection.query(
+            "SELECT * FROM calls WHERE agentId = ? ORDER BY createdAt DESC",
+            [agentId],
+            (err, result) => {
+                if (err) {
+                    return res.json({
+                        message: "Error fetching call logs",
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "Agent call logs fetched successfully",
+                        data: result
+                    });
+                }
+            }
+        );
+    }
 }
