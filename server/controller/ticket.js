@@ -848,7 +848,7 @@ export class ticketController {
 
     // Create new call log
     static createCallLog(req, res) {
-        const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject, callType } = req.body;
+        const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject, callType, ticketStatus } = req.body;
 
         console.log('Received createCallLog request:', {
             callbackId,
@@ -859,7 +859,8 @@ export class ticketController {
             customerName,
             productId,
             subject,
-            callType
+            callType,
+            ticketStatus
         });
 
         try {
@@ -935,7 +936,7 @@ export class ticketController {
                     agentId, // agentId from frontend
                     agentNumber || agentName || 'Unknown', // agentPhone from frontend or fallback to agentName
                     'pending', // Initial callStatus - should be 'pending' when call starts
-                    'in-progress', // ticketStatus from frontend ticket status
+                    ticketStatus || 'in-progress', // ticketStatus from frontend ticket status
                     'pending', // recordingUrl initially pending
                     callType || 'outbound', // callType from frontend (inbound/outbound)
                     subject || 'Callback request from customer', // reason
@@ -1036,9 +1037,9 @@ export class ticketController {
                     // Format end time
                     const formattedEndTime = endTime.toISOString().slice(0, 19).replace('T', ' ');
 
-                    // Update call log with end time but keep status as pending
+                    // Update call log with only end time, don't change any status
                     connection.query(
-                        "UPDATE calls SET endTime = ?, callStatus = 'pending', ticketStatus = 'resolved' WHERE callId = ?",
+                        "UPDATE calls SET endTime = ? WHERE callId = ?",
                         [formattedEndTime, callId],
                         (err, updateResult) => {
                             if (err) {

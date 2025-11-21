@@ -969,6 +969,7 @@ export default {
           productId: this.selectedTicket.productId || null,
           subject: `Call for ticket ${this.selectedTicket.id} - ${this.selectedTicket.productCategory || 'No Product'}`,
           callType: 'outbound', // Calls from tickets page are outbound (support calling customer)
+          ticketStatus: this.selectedTicket.status || 'assigned' // Send current ticket status
         }
 
         console.log('Sending call data:', callData); // Debug log to see what's being sent

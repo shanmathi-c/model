@@ -1436,7 +1436,8 @@ export default {
             customerName: this.ticketDetails.name,
             productId: this.ticketDetails.productId || null,
             subject: this.ticketDetails.subject || 'Callback request from customer',
-            callType: 'inbound' // Customer requests callback, so inbound
+            callType: 'inbound', // Customer requests callback, so inbound
+            ticketStatus: this.ticketDetails.status || 'callback requested' // Send callback status
           })
         })
 
