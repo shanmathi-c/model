@@ -334,7 +334,7 @@
               <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors">
                 <!-- Call Log ID -->
                 <td v-if="visibleColumns.callLogId" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {{ call.callLogId || call.callbackId || 'N/A' }}
+                  {{ call.callId || call.callLogId || 'N/A' }}
                 </td>
 
                 <!-- Customer Phone -->
@@ -389,7 +389,7 @@
 
                 <!-- Related Ticket ID -->
                 <td v-if="visibleColumns.relatedTicketId" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ call.relatedTicketId || 'N/A' }}
+                  {{ call.ticketId || 'N/A' }}
                 </td>
 
                 <!-- Actions -->
@@ -508,13 +508,11 @@ export default {
         { value: 'voicemail', label: 'Voicemail' }
       ],
       statusOptions: [
-        { value: 'created', label: 'Created' },
-        { value: 'assigned', label: 'Assigned' },
-        { value: 'in-progress', label: 'In Progress' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' },
         { value: 'pending', label: 'Pending' },
-        { value: 'scheduled', label: 'Scheduled' }
+        { value: 'ongoing', label: 'Ongoing' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'missed', label: 'Missed' },
+        { value: 'cancelled', label: 'Cancelled' }
       ],
 
       // Active filters
@@ -623,7 +621,7 @@ export default {
       return chips
     },
 
-    // Filter callbacks based on search and status filter
+    // Filter calls based on search and status filter
     filteredCalls() {
       let filtered = this.calls
 
@@ -631,13 +629,14 @@ export default {
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase()
         filtered = filtered.filter(call =>
+          call.callId?.toLowerCase().includes(query) ||
           call.callLogId?.toLowerCase().includes(query) ||
           call.phone?.toLowerCase().includes(query) ||
-          call.name?.toLowerCase().includes(query) ||
-          call.email?.toLowerCase().includes(query) ||
-          call.subject?.toLowerCase().includes(query) ||
+          call.customerName?.toLowerCase().includes(query) ||
+          call.reason?.toLowerCase().includes(query) ||
+          call.callDescription?.toLowerCase().includes(query) ||
           call.agentName?.toLowerCase().includes(query) ||
-          call.relatedTicketId?.toLowerCase().includes(query)
+          call.ticketId?.toLowerCase().includes(query)
         )
       }
 
@@ -742,13 +741,13 @@ export default {
   },
 
   methods: {
-    // Fetch callback data from API
+    // Fetch calls data from API
     async fetchCallLogs() {
       this.loading = true
       this.error = null
 
       try {
-        const response = await fetch('http://localhost:5001/callbacks', {
+        const response = await fetch('http://localhost:5001/calls', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -762,23 +761,27 @@ export default {
 
         const result = await response.json()
 
-        // Transform callback data to call log format
-        this.calls = (result.data || []).map(callback => ({
-          id: callback.id,
-          callLogId: callback.callbackId,
-          phone: callback.phone,
-          agentName: callback.agentName || 'Not Assigned',
-          callType: callback.status === 'inbound' ? 'inbound' : 'outbound', // Determine call type from status
-          duration: callback.duration || null, // Duration in seconds (if available)
-          status: callback.status || 'pending',
-          callDateTime: callback.createdAt || callback.created_at,
-          recordingUrl: callback.recordingUrl || null,
-          relatedTicketId: callback.relatedTicketId || null,
-          name: callback.name, // Customer name
-          email: callback.email, // Customer email
-          subject: callback.subject,
-          description: callback.description,
-          productId: callback.productId
+        // Map calls table data to display format
+        this.calls = (result.data || []).map(call => ({
+          id: call.id,
+          callId: call.callId, // C001, C002, etc.
+          callLogId: call.callId, // For backward compatibility
+          phone: call.userPhone,
+          agentName: call.agentId ? `Agent ${call.agentId}` : 'Not Assigned',
+          callType: call.callType || 'outbound', // inbound/outbound from database
+          duration: this.calculateDuration(call.startTime, call.endTime), // Calculate duration
+          status: call.callStatus || 'pending', // Use callStatus from calls table
+          callDateTime: call.startTime, // Use startTime from calls table
+          endTime: call.endTime,
+          recordingUrl: call.recordingUrl,
+          ticketId: call.ticketId,
+          reason: call.reason,
+          callDescription: call.callDescription,
+          ticketStatus: call.ticketStatus,
+          productId: call.productId,
+          agentId: call.agentId,
+          agentPhone: call.agentPhone,
+          customerName: call.userPhone // Use phone as customer name for now
         }))
 
         // Extract unique agent names for filter dropdown
@@ -789,10 +792,25 @@ export default {
         this.currentPage = 1
 
       } catch (error) {
-        console.error('Error fetching callbacks:', error)
-        this.error = error.message || 'Error fetching callbacks. Please try again.'
+        console.error('Error fetching calls:', error)
+        this.error = error.message || 'Error fetching calls. Please try again.'
       } finally {
         this.loading = false
+      }
+    },
+
+    // Calculate duration from startTime and endTime
+    calculateDuration(startTime, endTime) {
+      if (!startTime || !endTime) return null
+
+      try {
+        const start = new Date(startTime)
+        const end = new Date(endTime)
+        const diffMs = end - start
+        return Math.floor(diffMs / 1000) // Return duration in seconds
+      } catch (error) {
+        console.error('Error calculating duration:', error)
+        return null
       }
     },
 
@@ -901,13 +919,10 @@ export default {
     // Get status CSS class
     getStatusClass(status) {
       const statusClasses = {
-        'created': 'bg-blue-100 text-blue-800',
-        'assigned': 'bg-yellow-100 text-yellow-800',
-        'in-progress': 'bg-purple-100 text-purple-800',
-        'resolved': 'bg-green-100 text-green-800',
-        'closed': 'bg-gray-100 text-gray-800',
-        'completed': 'bg-green-100 text-green-800',
         'pending': 'bg-yellow-100 text-yellow-800',
+        'ongoing': 'bg-blue-100 text-blue-800',
+        'completed': 'bg-green-100 text-green-800',
+        'missed': 'bg-red-100 text-red-800',
         'cancelled': 'bg-red-100 text-red-800'
       }
       return statusClasses[status] || 'bg-gray-100 text-gray-800'
