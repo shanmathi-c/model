@@ -218,12 +218,10 @@
     </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto bg-gray-50" style="height: calc(100vh - 340px);">
-      <div class="p-6 min-h-full">
+    <div class="flex-1 overflow-auto" style="height: calc(100vh - 340px);">
         <!-- Table View -->
-        <div class="bg-white rounded-lg shadow overflow-hidden" style="min-height: 400px;">
-          <div class="overflow-x-auto" style="height: 100%;">
-            <table class="w-full" style="min-width: 1200px;">
+        <div class="overflow-x-auto" style="height: 100%;">
+          <table class="w-full" style="min-width: 1200px;">
               <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
                   <th v-if="visibleColumns.ticketId" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Ticket ID</th>
@@ -258,10 +256,10 @@
                       <div class="flex items-center gap-1 text-gray-500">
                         <span>{{ ticket.customerContact }}</span>
                         <img
-                          v-if="ticket.customerContact && !ticket.customerContact.includes('@') && (ticket.customerContact.includes('+') || ticket.customerContact.includes('phone') || ticket.customerContact.match(/^\+?\d[\d\s\-\(\)]*$/))"
+                          v-if="isPhoneNumber(ticket.customerContact)"
                           src="/phone-call.svg"
                           alt="Call"
-                          class="w-3 h-3 cursor-pointer hover:text-green-600 transition-colors"
+                          class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
                         />
                       </div>
                     </div>
@@ -270,13 +268,13 @@
                   <!-- Phone -->
                   <td v-if="visibleColumns.phone" class="px-4 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm text-gray-900">{{ ticket.phone || '-' }}</span>
                       <img
-                        v-if="ticket.phone && ticket.phone !== '-'"
+                        v-if="isPhoneNumber(ticket.phone)"
                         src="/phone-call.svg"
                         alt="Call"
-                        class="w-3 h-3 cursor-pointer hover:text-green-600 transition-colors"
+                        class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
                       />
+                      <span class="text-sm text-gray-900">{{ ticket.phone || '-' }}</span>
                     </div>
                   </td>
 
@@ -374,9 +372,6 @@
             <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
             <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
           </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Fixed Pagination Controls -->
@@ -430,6 +425,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
   </div>
 </template>
@@ -731,6 +727,33 @@ export default {
     changeItemsPerPage(count) {
       this.itemsPerPage = count
       this.currentPage = 1 // Reset to first page when changing items per page
+    },
+
+    // Check if string is a phone number starting with specific digits
+    isPhoneNumber(contact) {
+      if (!contact || contact === '-' || contact.includes('@')) {
+        return false
+      }
+
+      // Remove spaces, hyphens, parentheses, and plus signs
+      const cleanNumber = contact.replace(/[\s\-\(\)]/g, '').replace('+', '')
+
+      // Check if it contains only digits and has valid phone number length
+      if (!/^\d+$/.test(cleanNumber)) {
+        return false
+      }
+
+      // Check length (6-15 digits is typical for phone numbers)
+      if (cleanNumber.length < 6 || cleanNumber.length > 15) {
+        return false
+      }
+
+      // Show icon for numbers starting with these digits:
+      // Mobile number prefixes and common phone number patterns
+      const validStartingDigits = ['6', '7', '8', '9', '91', '92', '93', '94', '95', '96', '97', '98', '99', '1', '2', '3', '4', '5']
+
+      // Check if the number starts with any valid prefix
+      return validStartingDigits.some(prefix => cleanNumber.startsWith(prefix))
     }
   },
 
