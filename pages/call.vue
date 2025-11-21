@@ -291,7 +291,7 @@
       <!-- Tickets Table Wrapper -->
       <div v-else class="h-full">
         <div class="inline-block min-w-full align-middle h-full">
-          <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg m-4">
+          <div class="overflow-hidden">
             <table class="min-w-full divide-y divide-gray-300">
             <!-- Table Header - Fixed -->
             <thead class="bg-gray-50 sticky top-0 z-10">
