@@ -640,16 +640,28 @@ export class ticketController {
                     } else {
                         // Extract the numeric part from last callback ID
                         const lastCallbackId = result[0].callbackId;
-                        const match = lastCallbackId.match(/C(\d+)/);
+                        console.log('Last callbackId:', lastCallbackId, 'Type:', typeof lastCallbackId);
 
-                        if (match) {
-                            const lastNumber = parseInt(match[1]);
-                            const newNumber = lastNumber + 1;
-                            // Pad with leading zeros to maintain 3 digits
-                            const newCallbackId = `C${String(newNumber).padStart(3, '0')}`;
-                            resolve(newCallbackId);
+                        // Add safety check for lastCallbackId
+                        if (!lastCallbackId || typeof lastCallbackId !== 'string') {
+                            console.log('Invalid lastCallbackId, starting with C001');
+                            newCallbackId = 'C001';
                         } else {
-                            // If format is different, start with C001
+                            const match = lastCallbackId.match(/C(\d+)/);
+                            if (match) {
+                                const lastNumber = parseInt(match[1]);
+                                const newNumber = lastNumber + 1;
+                                // Pad with leading zeros to maintain 3 digits
+                                const newCallbackId = `C${String(newNumber).padStart(3, '0')}`;
+                                resolve(newCallbackId);
+                            } else {
+                                // If format is different, start with C001
+                                resolve('C001');
+                            }
+                        }
+
+                        // Handle case where newCallbackId wasn't set
+                        if (typeof newCallbackId === 'undefined') {
                             resolve('C001');
                         }
                     }
@@ -836,7 +848,19 @@ export class ticketController {
 
     // Create new call log
     static createCallLog(req, res) {
-        const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject } = req.body;
+        const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject, callType } = req.body;
+
+        console.log('Received createCallLog request:', {
+            callbackId,
+            ticketId,
+            agentId,
+            agentName,
+            customerPhone,
+            customerName,
+            productId,
+            subject,
+            callType
+        });
 
         try {
             // Generate recording URL (pending status) - will use insertId after database insertion
@@ -863,16 +887,24 @@ export class ticketController {
                         console.log('Found existing C-format calls:', callIdResult.map(r => r.callId));
                         // Extract numeric part from last callId and increment
                         const lastCallId = callIdResult[0].callId;
-                        const match = lastCallId.match(/C(\d+)/);
-                        if (match) {
-                            const lastNumber = parseInt(match[1]);
-                            const newNumber = lastNumber + 1;
-                            // Pad with leading zeros to maintain 3 digits
-                            nextCallId = `C${String(newNumber).padStart(3, '0')}`;
-                            console.log(`Last call ID: ${lastCallId}, Next call ID: ${nextCallId}`);
-                        } else {
-                            // If format is different, start with C001
+                        console.log('Last callId:', lastCallId, 'Type:', typeof lastCallId);
+
+                        // Add safety check for lastCallId
+                        if (!lastCallId || typeof lastCallId !== 'string') {
+                            console.log('Invalid lastCallId, starting with C001');
                             nextCallId = 'C001';
+                        } else {
+                            const match = lastCallId.match(/C(\d+)/);
+                            if (match) {
+                                const lastNumber = parseInt(match[1]);
+                                const newNumber = lastNumber + 1;
+                                // Pad with leading zeros to maintain 3 digits
+                                nextCallId = `C${String(newNumber).padStart(3, '0')}`;
+                                console.log(`Last call ID: ${lastCallId}, Next call ID: ${nextCallId}`);
+                            } else {
+                                // If format is different, start with C001
+                                nextCallId = 'C001';
+                            }
                         }
                     }
 
@@ -894,20 +926,34 @@ export class ticketController {
 
                 const values = [
                     nextCallId, // callId as string
-                    callbackId, // ticketId as string
-                    customerPhone,
-                    productId || null,
-                    agentId,
-                    agentNumber,
-                    'pending', // Initial status is pending
-                    'in-progress',
-                    'pending',
-                    'outbound',
-                    subject || 'Callback request from customer',
-                    subject || 'Callback request from customer',
+                    ticketId || callbackId, // ticketId as string - prioritize ticketId from frontend
+                    customerPhone, // userPhone from frontend
+                    productId || null, // productId from frontend
+                    agentId, // agentId from frontend
+                    agentNumber || agentName || 'Unknown', // agentPhone from frontend or fallback to agentName
+                    'pending', // Initial callStatus - should be 'pending' when call starts
+                    'in-progress', // ticketStatus from frontend ticket status
+                    'pending', // recordingUrl initially pending
+                    callType || 'outbound', // callType from frontend (inbound/outbound)
+                    subject || 'Callback request from customer', // reason
+                    subject || 'Callback request from customer', // callDescription
                     startTime, // Actual start time when connect call is clicked
                     startTime // Set endTime to startTime initially, will be updated when call ends
                 ];
+
+                const actualTicketId = ticketId || callbackId;
+                console.log('Inserting call with values:', {
+                    callId: nextCallId,
+                    ticketId: actualTicketId,
+                    userPhone: customerPhone,
+                    productId: productId || null,
+                    agentId: agentId,
+                    agentPhone: agentNumber || agentName || 'Unknown',
+                    callStatus: 'pending',
+                    ticketStatus: 'in-progress',
+                    callType: callType || 'outbound',
+                    startTime: startTime
+                });
 
                 connection.query(insertQuery, values, (err, result) => {
                     if (err) {
@@ -958,6 +1004,8 @@ export class ticketController {
     // End call (update with end time and duration)
     static endCall(req, res) {
         const { callId } = req.params;
+
+        console.log('Received endCall request for callId:', callId);
 
         try {
             // Get the call log to calculate duration
@@ -1026,6 +1074,8 @@ export class ticketController {
     // Mark call as missed
     static missedCall(req, res) {
         const { callId } = req.params;
+
+        console.log('Received missedCall request for callId:', callId);
 
         try {
             // Update call log with missed status (null start and end times)

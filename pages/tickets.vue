@@ -709,13 +709,25 @@ export default {
         // Fetch only assigned tickets
         const response = await $fetch('http://localhost:5001/tickets?status=assigned&limit=1000')
         if (response.data) {
+          console.log('Raw ticket data sample:', response.data[0]); // Debug to see actual structure
+          if (response.data[0]) {
+            console.log('Agent-related fields in ticket:', {
+              agentId: response.data[0].agentId,
+              agent_id: response.data[0].agent_id,
+              assignedAgentId: response.data[0].assignedAgentId,
+              agentName: response.data[0].agentName,
+              assignedAgentName: response.data[0].assignedAgentName
+            });
+          }
           this.tickets = response.data.map(ticket => ({
             id: ticket.ticketId || ticket.id,
             customerName: ticket.name || '-',
             customerContact: ticket.email || '-',
             phone: ticket.phone || '-',
             agentName: ticket.assignedAgentName || ticket.agentName || '-',
+            agentId: ticket.agentId || ticket.agent_id || ticket.assignedAgentId || this.extractAgentIdFromName(ticket.agentName || ticket.assignedAgentName),
             productCategory: ticket.productName || 'No Product',
+            productId: ticket.productId || ticket.product_id || null,
             type: ticket.ticketType || 'general',
             status: ticket.status || 'assigned',
             createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
@@ -943,17 +955,111 @@ export default {
       this.callStatus = 'pending'
     },
 
-    startCall() {
-      this.callStatus = 'connected'
+    async startCall() {
+      try {
+        // Create call log when call starts
+        const callData = {
+          callbackId: this.selectedTicket.id, // Backend expects callbackId for ticketId
+          ticketId: this.selectedTicket.id,
+          agentId: this.selectedTicket.agentId,
+          agentName: this.selectedTicket.agentName || 'Unknown Agent',
+          agentNumber: this.selectedTicket.agentPhone || this.selectedTicket.agentContact || this.generateAgentPhone(this.selectedTicket.agentId),
+          customerPhone: this.selectedTicket.phone,
+          customerName: this.selectedTicket.customerName,
+          productId: this.selectedTicket.productId || null,
+          subject: `Call for ticket ${this.selectedTicket.id} - ${this.selectedTicket.productCategory || 'No Product'}`,
+          callType: 'inbound'
+        }
+
+        console.log('Sending call data:', callData); // Debug log to see what's being sent
+        console.log('Selected ticket agentId:', this.selectedTicket.agentId); // Specific debug for agentId
+
+        const response = await $fetch('http://localhost:5001/calls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: callData
+        })
+
+        if (response.message && response.message.includes('successfully')) {
+          this.callStatus = 'connected'
+          this.selectedTicket.callLogId = response.data.callId // Store call ID for end call
+          console.log('Call started with ID:', response.data.callId)
+          alert('Call connected successfully')
+        } else {
+          alert('Failed to start call')
+        }
+      } catch (error) {
+        console.error('Error starting call:', error)
+        this.callStatus = 'connected' // Still update UI even if API fails
+        alert('Call started (recording not available)')
+      }
     },
 
-    endCall() {
-      this.callStatus = 'ended'
+    async endCall() {
+      try {
+        // Update call log when call ends
+        if (this.selectedTicket.callLogId) {
+          console.log('Ending call with ID:', this.selectedTicket.callLogId)
+
+          const response = await $fetch(`http://localhost:5001/calls/${this.selectedTicket.callLogId}/end`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: {
+              endTime: new Date().toISOString()
+            }
+          })
+
+          console.log('End call response:', response)
+
+          if (response.message && response.message.includes('successfully')) {
+            this.callStatus = 'ended'
+            alert('Call ended and recorded successfully')
+          } else {
+            console.error('End call failed:', response)
+            alert(`Failed to end call recording: ${response.message || 'Unknown error'}`)
+          }
+        } else {
+          console.log('No callLogId found, just updating status')
+          this.callStatus = 'ended'
+          alert('Call ended')
+        }
+      } catch (error) {
+        console.error('Error ending call:', error)
+        this.callStatus = 'ended' // Still update UI even if API fails
+        alert(`Call ended (recording not available): ${error.message}`)
+      }
     },
 
-    disconnectCall() {
-      this.callStatus = 'missed'
-      alert('Call is missed')
+    async disconnectCall() {
+      try {
+        // Mark call as missed
+        if (this.selectedTicket.callLogId) {
+          const response = await $fetch(`http://localhost:5001/calls/${this.selectedTicket.callLogId}/missed`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+
+          if (response.success) {
+            this.callStatus = 'missed'
+            alert('Call is missed and recorded')
+          } else {
+            alert('Failed to record missed call')
+          }
+        } else {
+          this.callStatus = 'missed'
+          alert('Call is missed')
+        }
+      } catch (error) {
+        console.error('Error disconnecting call:', error)
+        this.callStatus = 'missed' // Still update UI even if API fails
+        alert('Call is missed (recording not available)')
+      }
     },
 
     getCallStatusClass() {
@@ -988,6 +1094,33 @@ export default {
         default:
           return 'Unknown'
       }
+    },
+
+    // Extract agent ID from agent name (e.g., "agent-4" -> 4)
+    extractAgentIdFromName(agentName) {
+      if (!agentName || agentName === '-') {
+        return null
+      }
+
+      // Try to extract number from agent name patterns like "agent-4", "Agent 4", etc.
+      const match = agentName.match(/agent[-\s]?(\d+)/i)
+      if (match) {
+        return parseInt(match[1])
+      }
+
+      // If no number found, return null
+      return null
+    },
+
+    // Generate agent phone number based on agent ID
+    generateAgentPhone(agentId) {
+      if (!agentId) {
+        return 'Unknown'
+      }
+
+      // Generate a phone number based on agent ID (e.g., agent 4 -> 9876543204)
+      const baseNumber = 9876543200
+      return `${baseNumber + parseInt(agentId)}`
     },
 
     getStatusBadgeClass(status) {
