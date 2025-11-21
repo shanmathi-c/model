@@ -240,7 +240,7 @@
             </form>
 
       <!-- Success Message -->
-      <div v-if="showSuccess" class="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg animate-slideInRight">
+      <div v-if="showSuccess && !showSuccessModal" class="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg animate-slideInRight">
         <div class="flex items-center gap-2">
           <!-- Success Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -264,6 +264,200 @@
           </div>
         </div>
       </div>
+
+    <!-- Success Modal -->
+    <div v-if="showSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto transform transition-all animate-slideUp">
+        <!-- Success Icon and Title -->
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Callback Requested!</h2>
+          <p class="text-gray-600">Your callback request has been successfully submitted.</p>
+        </div>
+
+        <!-- Landscape Layout Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left Column - Customer Details -->
+          <div v-if="ticketDetails" class="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 class="font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Customer Details</h3>
+
+            <!-- Callback ID -->
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Callback ID:</span>
+              <span class="text-sm font-mono font-semibold text-blue-600">#{{ ticketDetails.callbackId }}</span>
+            </div>
+
+            <!-- Customer Name -->
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Name:</span>
+              <span class="text-sm font-medium text-gray-900">{{ ticketDetails.name }}</span>
+            </div>
+
+            <!-- Email -->
+            <div v-if="ticketDetails.email" class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Email:</span>
+              <span class="text-sm text-gray-900">{{ ticketDetails.email }}</span>
+            </div>
+
+            <!-- Phone -->
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Phone:</span>
+              <span class="text-sm font-medium text-gray-900">{{ ticketDetails.phone }}</span>
+            </div>
+
+            <!-- Subject -->
+            <div v-if="ticketDetails.subject" class="flex justify-between items-start">
+              <span class="text-sm text-gray-600">Subject:</span>
+              <span class="text-sm text-gray-900 text-right max-w-[60%]">{{ ticketDetails.subject }}</span>
+            </div>
+
+            <!-- Status Badge -->
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Status:</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {{ ticketDetails.status === 'callback requested' ? 'CALLBACK REQUESTED' : ticketDetails.status.toUpperCase() }}
+              </span>
+            </div>
+
+            <!-- Expected Response Time -->
+            <div class="bg-blue-50 rounded-lg p-3 mt-4">
+              <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span class="text-sm text-blue-800">We'll call you back within 24 hours</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Agent & Call Controls -->
+          <div class="space-y-4">
+            <!-- Agent Assignment Section -->
+            <div v-if="assignedAgent" class="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+              <h4 class="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Assigned Agent
+              </h4>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-indigo-700">Agent Name:</span>
+                  <span class="text-sm font-medium text-indigo-900">{{ getAgentName() }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-indigo-700">Agent Phone:</span>
+                  <span class="text-sm font-medium text-indigo-900">{{ getAgentPhone() }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-indigo-700">Call Status:</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                        :class="getCallStatusClass()">
+                    {{ getCallStatusText() }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Call Control Buttons -->
+            <div v-if="assignedAgent" class="space-y-3">
+              <!-- Start/End/Cancel Buttons - Always Visible -->
+              <div v-if="callStatus === 'pending' || callStatus === 'ended' || callStatus === 'cancelled'" class="flex gap-3">
+                <button
+                  @click="startCall"
+                  class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  Start Call
+                </button>
+                <button
+                  @click="cancelCallback"
+                  class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Cancel
+                </button>
+              </div>
+
+              <!-- Connecting State -->
+              <div v-else-if="callStatus === 'connecting'" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div>
+                    <p class="text-sm font-medium text-yellow-800">Connecting to agent...</p>
+                    <p class="text-xs text-yellow-600">Please wait while we connect you to {{ getAgentName() }}</p>
+                  </div>
+                </div>
+                <!-- Cancel button while connecting -->
+                <button
+                  @click="cancelCallback"
+                  class="w-full mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Cancel Connection
+                </button>
+              </div>
+
+              <!-- Connected State -->
+              <div v-else-if="callStatus === 'connected'" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <div>
+                    <p class="text-sm font-medium text-green-800">Call Connected</p>
+                    <p class="text-xs text-green-600">You are now connected with {{ getAgentName() }}</p>
+                  </div>
+                </div>
+                <button
+                  @click="endCall"
+                  class="w-full mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  End Call
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button
+            @click="printCallbackDetails"
+            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print
+          </button>
+          <button
+            @click="closeSuccessModal"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
     </div>
 
     </div>
@@ -301,6 +495,9 @@ export default {
 
       // Success modal
       ticketDetails: null,
+      showSuccessModal: false,
+      assignedAgent: null,
+      callStatus: 'pending', // pending, connecting, connected, ended, cancelled
 
       // Error states
       errors: {
@@ -918,8 +1115,12 @@ export default {
 
         const result = await response.json()
 
-        // Show success message
+        // Fetch and assign agent based on productId
+        await this.assignAgentToCallback(callbackPayload.productId)
+
+        // Show success modal
         this.showSuccess = true
+        this.showSuccessModal = true
         this.ticketDetails = {
           callbackId: result.data && result.data.callbackId ? result.data.callbackId : null,
           name: this.formData.name,
@@ -927,14 +1128,15 @@ export default {
           phone: this.formData.countryCode + ' ' + this.formData.phone,
           subject: this.formData.subject,
           status: 'callback requested',
-          type: 'callback'
+          type: 'callback',
+          productId: callbackPayload.productId
         }
 
         // Clear form after successful callback request
         this.resetForm()
         this.clearSavedFormData()
 
-        // Auto-hide success message after 3 seconds
+        // Auto-hide success message (notification) after 3 seconds, but keep modal open
         setTimeout(() => {
           this.showSuccess = false
         }, 3000)
@@ -952,6 +1154,230 @@ export default {
         }
       } finally {
         this.isSubmittingCallback = false
+      }
+    },
+
+    // Close success modal
+    closeSuccessModal() {
+      this.showSuccessModal = false
+      this.ticketDetails = null
+      this.assignedAgent = null
+      this.callStatus = 'pending'
+    },
+
+    // Print callback details
+    printCallbackDetails() {
+      if (!this.ticketDetails) return
+
+      const printContent = `
+        Callback Request Details
+        =========================
+
+        Callback ID: #${this.ticketDetails.callbackId}
+        Name: ${this.ticketDetails.name}
+        Email: ${this.ticketDetails.email || 'N/A'}
+        Phone: ${this.ticketDetails.phone}
+        Subject: ${this.ticketDetails.subject || 'N/A'}
+        Status: ${this.ticketDetails.status}
+
+        Expected Response: Within 24 hours
+        Request Date: ${new Date().toLocaleDateString()}
+      `
+
+      const printWindow = window.open('', '_blank')
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Callback Request Details</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+              .detail { margin: 10px 0; }
+              .label { font-weight: bold; display: inline-block; min-width: 150px; }
+              .footer { margin-top: 30px; font-style: italic; color: #666; }
+            </style>
+          </head>
+          <body>
+            <pre>${printContent}</pre>
+            <div class="footer">This is a system-generated callback request confirmation.</div>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.print()
+    },
+
+    // Assign agent to callback based on productId
+    async assignAgentToCallback(productId) {
+      // Default agent fallback
+      const defaultAgent = {
+        name: 'Support Agent',
+        phone: '+1-800-SUPPORT',
+        id: 'default-agent'
+      }
+
+      if (!productId) {
+        console.log('No productId provided, assigning default agent')
+        this.assignedAgent = defaultAgent
+        return
+      }
+
+      try {
+        console.log(`Fetching agents for productId: ${productId}`)
+        const response = await fetch(`http://localhost:5001/agents/product/${productId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log('Agents response:', result)
+
+          if (result.data && result.data.length > 0) {
+            // Randomly select one agent from available agents
+            const randomIndex = Math.floor(Math.random() * result.data.length)
+            const selectedAgent = result.data[randomIndex]
+
+            console.log(`Selected agent:`, selectedAgent)
+
+            // Preserve all fields from the agent response
+            this.assignedAgent = {
+              ...selectedAgent,
+              // Ensure we have an ID field
+              id: selectedAgent.id || selectedAgent.agentId || randomIndex
+            }
+
+            // Log the assigned agent for debugging
+            console.log('Assigned agent with all fields:', this.assignedAgent)
+            console.log('Agent phone number field check:', {
+              agentNumber: this.assignedAgent.agentNumber,
+              phoneNumber: this.assignedAgent.phoneNumber,
+              phone: this.assignedAgent.phone,
+              contactNumber: this.assignedAgent.contactNumber,
+              mobile: this.assignedAgent.mobile
+            })
+          } else {
+            console.log('No agents found for this product, using default')
+            this.assignedAgent = defaultAgent
+          }
+        } else {
+          console.error(`Error fetching agents: ${response.status}`)
+          this.assignedAgent = defaultAgent
+        }
+      } catch (error) {
+        console.error('Error assigning agent:', error)
+        this.assignedAgent = defaultAgent
+      }
+    },
+
+    // Get call status CSS class
+    getCallStatusClass() {
+      const statusClasses = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'connecting': 'bg-blue-100 text-blue-800',
+        'connected': 'bg-green-100 text-green-800',
+        'ended': 'bg-gray-100 text-gray-800',
+        'cancelled': 'bg-red-100 text-red-800'
+      }
+      return statusClasses[this.callStatus] || 'bg-gray-100 text-gray-800'
+    },
+
+    // Get call status text
+    getCallStatusText() {
+      const statusTexts = {
+        'pending': 'Pending',
+        'connecting': 'Connecting...',
+        'connected': 'Connected',
+        'ended': 'Ended',
+        'cancelled': 'Cancelled'
+      }
+      return statusTexts[this.callStatus] || 'Unknown'
+    },
+
+    // Get agent name with multiple field support
+    getAgentName() {
+      if (!this.assignedAgent) {
+        return 'Not Assigned'
+      }
+
+      return this.assignedAgent.name ||
+             this.assignedAgent.agentName ||
+             this.assignedAgent.fullName ||
+             this.assignedAgent.displayName ||
+             'Not Assigned'
+    },
+
+    // Get agent phone with multiple field support
+    getAgentPhone() {
+      if (!this.assignedAgent) {
+        return 'Not Available'
+      }
+
+      // Check multiple possible field names for phone number
+      const phoneNumber = this.assignedAgent.agentNumber ||
+                        this.assignedAgent.phoneNumber ||
+                        this.assignedAgent.contactNumber ||
+                        this.assignedAgent.mobile ||
+                        this.assignedAgent.phone
+
+      if (phoneNumber) {
+        return phoneNumber
+      } else {
+        return 'Not Available'
+      }
+    },
+
+    // Start call
+    async startCall() {
+      this.callStatus = 'connecting'
+
+      // Simulate connection time
+      setTimeout(() => {
+        this.callStatus = 'connected'
+      }, 3000)
+    },
+
+    // End call
+    endCall() {
+      this.callStatus = 'ended'
+
+      // Update callback status in backend
+      if (this.ticketDetails && this.ticketDetails.callbackId) {
+        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: 'completed',
+            agentName: this.getAgentName(),
+            callDuration: Math.floor(Math.random() * 600) // Random duration in seconds
+          })
+        }).catch(error => {
+          console.error('Error updating callback status:', error)
+        })
+      }
+    },
+
+    // Cancel callback
+    cancelCallback() {
+      this.callStatus = 'cancelled'
+
+      // Update callback status in backend
+      if (this.ticketDetails && this.ticketDetails.callbackId) {
+        fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: 'cancelled'
+          })
+        }).catch(error => {
+          console.error('Error cancelling callback:', error)
+        })
       }
     },
 
@@ -1072,6 +1498,22 @@ export default {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+/* Modal animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
 }
 
 .animate-slideInRight {
