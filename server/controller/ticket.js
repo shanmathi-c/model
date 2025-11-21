@@ -899,14 +899,14 @@ export class ticketController {
                     productId || null,
                     agentId,
                     agentNumber,
-                    'pending',
+                    'pending', // Initial status is pending
                     'in-progress',
                     'pending',
                     'outbound',
                     subject || 'Callback request from customer',
                     subject || 'Callback request from customer',
-                    startTime,
-                    startTime
+                    startTime, // Actual start time when connect call is clicked
+                    startTime // Set endTime to startTime initially, will be updated when call ends
                 ];
 
                 connection.query(insertQuery, values, (err, result) => {
@@ -962,7 +962,7 @@ export class ticketController {
         try {
             // Get the call log to calculate duration
             connection.query(
-                "SELECT * FROM calls WHERE id = ?",
+                "SELECT * FROM calls WHERE callId = ?",
                 [callId],
                 (err, callResult) => {
                     if (err) {
@@ -988,7 +988,7 @@ export class ticketController {
 
                     // Update call log with end time and duration
                     connection.query(
-                        "UPDATE calls SET endTime = ?, callStatus = 'completed', ticketStatus = 'resolved' WHERE id = ?",
+                        "UPDATE calls SET endTime = ?, callStatus = 'completed', ticketStatus = 'resolved' WHERE callId = ?",
                         [formattedEndTime, callId],
                         (err, updateResult) => {
                             if (err) {
@@ -1030,7 +1030,7 @@ export class ticketController {
         try {
             // Update call log with missed status (null start and end times)
             connection.query(
-                "UPDATE calls SET startTime = NULL, endTime = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE id = ?",
+                "UPDATE calls SET startTime = NULL, endTime = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE callId = ?",
                 [callId],
                 (err, result) => {
                     if (err) {
