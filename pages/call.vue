@@ -348,8 +348,8 @@
                       @click="openCallModal(call)"
                     />
                     <div class="flex flex-col">
-                      <span class="font-medium text-gray-900">{{ call.customerName || 'Unknown' }}</span>
-                      <span class="text-xs text-gray-500">{{ call.phone || 'N/A' }}</span>
+                      <span class="font-medium text-gray-900">{{ call.phone || 'N/A' }}</span>
+                      <span class="text-xs text-gray-500">Customer</span>
                     </div>
                   </div>
                 </td>
@@ -403,8 +403,14 @@
                 </td>
 
                 <!-- Related Ticket ID -->
-                <td v-if="visibleColumns.relatedTicketId" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ call.ticketId || 'N/A' }}
+                <td v-if="visibleColumns.relatedTicketId" class="px-6 py-4 whitespace-nowrap text-sm">
+                  <span v-if="call.ticketId && call.ticketId !== 0 && call.ticketId !== '0' && call.ticketId !== null" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <svg class="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    {{ formatTicketId(call.ticketId) }}
+                  </span>
+                  <span v-else class="text-gray-400 text-xs">No Ticket</span>
                 </td>
 
                 <!-- Actions -->
@@ -494,6 +500,125 @@
     </div>
     </div>
 
+    <!-- Ticket Creation Modal -->
+    <div v-if="showTicketModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900">Create New Ticket</h3>
+          <button
+            @click="closeTicketModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <form @submit.prevent="submitTicket" class="space-y-4">
+            <!-- Customer Information (Pre-filled) -->
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <h4 class="font-semibold text-gray-900 text-sm mb-2">Customer Information</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1">Name</label>
+                  <p class="text-sm font-medium text-gray-900">{{ ticketForm.phone ? 'Customer' : 'Unknown' }}</p>
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1">Phone</label>
+                  <p class="text-sm font-medium text-gray-900">{{ ticketForm.phone || 'N/A' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Product Selection -->
+            <div>
+              <label for="product" class="block text-sm font-medium text-gray-700 mb-1">
+                Product <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="product"
+                v-model="ticketForm.productId"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Product</option>
+                <option v-for="product in products" :key="product.productId" :value="product.productId">
+                  {{ product.name || product.productName || 'Product ' + product.productId }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Subject -->
+            <div>
+              <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">
+                Subject <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="subject"
+                v-model="ticketForm.subject"
+                type="text"
+                required
+                placeholder="Enter ticket subject"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                Description <span class="text-red-500">*</span>
+              </label>
+              <textarea
+                id="description"
+                v-model="ticketForm.description"
+                required
+                rows="4"
+                placeholder="Describe the issue or request..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <!-- Email (Optional) -->
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                Email (Optional)
+              </label>
+              <input
+                id="email"
+                v-model="ticketForm.email"
+                type="email"
+                placeholder="customer@example.com"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                @click="closeTicketModal"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="isSubmittingTicket"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="!isSubmittingTicket">Create Ticket</span>
+                <span v-else>Creating...</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <!-- Call Modal -->
     <div v-if="showCallModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
       <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
@@ -524,7 +649,7 @@
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                       <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    <span class="font-medium text-blue-800">{{ selectedCall.customerName || 'Unknown Customer' }}</span>
+                    <span class="font-medium text-blue-800">Customer</span>
                   </div>
                   <div class="flex items-center gap-2 text-blue-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -742,7 +867,20 @@ export default {
       // Call Modal
       showCallModal: false,
       selectedCall: null,
-      callStatus: 'pending'
+      callStatus: 'pending',
+
+      // Ticket Modal
+      showTicketModal: false,
+      ticketForm: {
+        customerName: '',
+        phone: '',
+        email: '',
+        productId: '',
+        subject: '',
+        description: ''
+      },
+      products: [],
+      isSubmittingTicket: false
     }
   },
 
@@ -923,6 +1061,7 @@ export default {
 
   mounted() {
     this.fetchCallLogs()
+    this.fetchProducts() // Fetch products for ticket creation
     // Add click event listener
     document.addEventListener('click', this.handleClickOutside);
   },
@@ -959,7 +1098,7 @@ export default {
           callId: call.callId, // C001, C002, etc.
           callLogId: call.callId, // For backward compatibility
           phone: call.userPhone,
-          customerName: call.customerName || 'Unknown Customer', // Customer name from database (from callback or tickets)
+          customerName: 'Customer', // Default customer name since we're only fetching from calls table
           agentName: call.agentId ? `Agent ${call.agentId}` : 'Not Assigned',
           agentPhone: call.agentPhone, // Agent phone from database
           callType: call.callType || 'outbound', // inbound/outbound from database
@@ -968,7 +1107,7 @@ export default {
           callDateTime: call.startTime, // Use startTime from calls table
           endTime: call.endTime,
           recordingUrl: call.recordingUrl,
-          ticketId: call.ticketId,
+          ticketId: call.ticketId, // Direct ticketId from calls table
           reason: call.reason,
           callDescription: call.callDescription,
           ticketStatus: call.ticketStatus,
@@ -1077,11 +1216,23 @@ export default {
       this.currentPage = page
     },
 
-    // View call details
+    // View call details - Opens ticket creation modal
     viewCallDetails(call) {
-      // Navigate to call details page or open modal
-      console.log('View call details:', call)
-      // You can implement a modal or navigate to a details page
+      // Populate the ticket form with call information
+      this.ticketForm = {
+        customerName: 'Customer', // Default customer name
+        phone: call.phone || '',
+        email: '',
+        productId: call.productId || '',
+        subject: '',
+        description: ''
+      }
+
+      // Store the selected call for reference
+      this.selectedCall = call
+
+      // Open the ticket modal
+      this.showTicketModal = true
     },
 
     // Edit call
@@ -1371,6 +1522,109 @@ export default {
     // Helper method to generate agent phone
     generateAgentPhone(agentId) {
       return `+91-90000${agentId.toString().padStart(3, '0')}`
+    },
+
+    // Format ticket ID for display
+    formatTicketId(ticketId) {
+      if (!ticketId) return '';
+
+      // If ticketId is already in format like T001, T002, just return it
+      if (typeof ticketId === 'string' && ticketId.startsWith('T')) {
+        return ticketId;
+      }
+
+      // If it's a numeric ID, format it
+      if (typeof ticketId === 'number' || !isNaN(ticketId)) {
+        return `T${String(ticketId).padStart(3, '0')}`;
+      }
+
+      // Otherwise return as is
+      return ticketId;
+    },
+
+    // Close ticket modal
+    closeTicketModal() {
+      this.showTicketModal = false
+      this.ticketForm = {
+        customerName: '',
+        phone: '',
+        email: '',
+        productId: '',
+        subject: '',
+        description: ''
+      }
+      this.isSubmittingTicket = false
+    },
+
+    // Fetch products for dropdown
+    async fetchProducts() {
+      try {
+        const response = await fetch('http://localhost:5001/products', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`)
+        }
+
+        const result = await response.json()
+        this.products = result.data || []
+      } catch (error) {
+        console.error('Error fetching products:', error)
+        this.products = []
+      }
+    },
+
+    // Submit ticket
+    async submitTicket() {
+      this.isSubmittingTicket = true
+
+      try {
+        // Prepare ticket data
+        const ticketData = {
+          productId: this.ticketForm.productId,
+          name: this.ticketForm.customerName,
+          email: this.ticketForm.email || null,
+          phone: this.ticketForm.phone,
+          subject: this.ticketForm.subject,
+          description: this.ticketForm.description,
+          ticketType: 'call' // Mark as call-originated ticket
+        }
+
+        const response = await fetch('http://localhost:5001/call-tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(ticketData)
+        })
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log('Ticket created:', result)
+
+        // Show success message (you can add a toast/notification here)
+        alert(`Ticket created successfully! Ticket ID: ${result.data.ticketId}`)
+
+        // Close modal
+        this.closeTicketModal()
+
+        // Optionally refresh the call logs
+        await this.fetchCallLogs()
+
+      } catch (error) {
+        console.error('Error creating ticket:', error)
+        alert('Error creating ticket. Please try again.')
+      } finally {
+        this.isSubmittingTicket = false
+      }
     }
   }
 }
