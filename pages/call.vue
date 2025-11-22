@@ -274,17 +274,19 @@
 
       <!-- Empty State -->
       <div v-else-if="filteredCalls.length === 0" class="flex items-center justify-center" style="min-height: 400px;">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">No calls found</h3>
-        <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No calls found</h3>
+          <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
+        </div>
       </div>
 
       <!-- Table -->
-      <div v-else class="overflow-x-auto">
-        <div class="inline-block min-w-full align-middle">
-          <div class="overflow-hidden">
+      <div v-else class="overflow-x-auto" style="min-height: calc(100vh - 300px);">
+        <div class="inline-block min-w-full align-middle h-full">
+          <div class="overflow-hidden h-full">
             <table class="min-w-full divide-y divide-gray-300">
             <!-- Table Header -->
             <thead class="bg-gray-50">
