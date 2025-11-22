@@ -519,6 +519,34 @@
         <!-- Modal Content -->
         <div class="p-6">
           <form @submit.prevent="submitTicket" class="space-y-4">
+            <!-- Call ID Display -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-semibold text-blue-900 text-sm">Selected Call</h4>
+                  <p class="text-blue-700 text-sm mt-1">Call ID: <span class="font-mono font-bold">{{ selectedCall?.callId || 'N/A' }}</span></p>
+                </div>
+                <svg class="w-8 h-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Agent Information (if assigned) -->
+            <div v-if="selectedCall?.agentName && selectedCall?.agentName !== 'Not Assigned'" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <h4 class="font-semibold text-green-900 text-sm mb-2">Assigned Agent</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-green-700 mb-1">Agent Name</label>
+                  <p class="text-sm font-medium text-green-900">{{ selectedCall.agentName }}</p>
+                </div>
+                <div v-if="selectedCall.agentPhone">
+                  <label class="block text-xs text-green-700 mb-1">Agent Phone</label>
+                  <p class="text-sm font-medium text-green-900">{{ selectedCall.agentPhone }}</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Customer Information (Pre-filled) -->
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
               <h4 class="font-semibold text-gray-900 text-sm mb-2">Customer Information</h4>
@@ -1218,6 +1246,9 @@ export default {
 
     // View call details - Opens ticket creation modal
     viewCallDetails(call) {
+      // Store the selected call for reference (includes all call details)
+      this.selectedCall = call
+
       // Populate the ticket form with call information
       this.ticketForm = {
         customerName: call.customerName || 'Unknown Customer', // Use actual customer name from the call
@@ -1228,8 +1259,12 @@ export default {
         description: ''
       }
 
-      // Store the selected call for reference
-      this.selectedCall = call
+      console.log('Opening ticket modal for call:', {
+        callId: call.callId,
+        agentName: call.agentName,
+        agentId: call.agentId,
+        agentPhone: call.agentPhone
+      })
 
       // Open the ticket modal
       this.showTicketModal = true
@@ -1584,7 +1619,7 @@ export default {
       this.isSubmittingTicket = true
 
       try {
-        // Prepare ticket data
+        // Prepare ticket data with call and agent information
         const ticketData = {
           productId: this.ticketForm.productId,
           name: this.ticketForm.customerName,
@@ -1592,8 +1627,14 @@ export default {
           phone: this.ticketForm.phone,
           subject: this.ticketForm.subject,
           description: this.ticketForm.description,
-          ticketType: 'call' // Mark as call-originated ticket
+          ticketType: 'call', // Mark as call-originated ticket
+          callId: this.selectedCall?.callId || null, // Include the call ID
+          agentId: this.selectedCall?.agentId || null, // Include agent ID if available
+          agentName: this.selectedCall?.agentName || null, // Include agent name
+          agentPhone: this.selectedCall?.agentPhone || null // Include agent phone
         }
+
+        console.log('Submitting ticket with call details:', ticketData)
 
         const response = await fetch('http://localhost:5001/call-tickets', {
           method: 'POST',

@@ -132,7 +132,12 @@ export class ticketController {
     }
 
     static async createCallTicket(req, res) {
-        const { productId, userId, name, email, countryCode, phone, subject, description, agentId, callType } = req.body;
+        const { productId, userId, name, email, countryCode, phone, subject, description, agentId, agentName, agentPhone, callType, callId } = req.body;
+
+        console.log('=== CREATE CALL TICKET REQUEST ===');
+        console.log('Request body:', req.body);
+        console.log('CallId from frontend:', callId);
+        console.log('Agent details:', { agentId, agentName, agentPhone });
 
         // Validate required fields
         if (!name || !phone || !subject || !description) {
@@ -184,24 +189,59 @@ export class ticketController {
                 const numericTicketId = result.insertId;
 
                 try {
-                    // Step 2: Create entry in assign-ticket table if agentId is provided
+                    // Step 2: Handle assign-ticket table if agentId is provided
                     if (agentId) {
-                        const assignData = {
-                            ticketId: ticketId,
-                            agentId: agentId,
-                            status: 'assigned',
-                            importAction: 'call'
-                        };
-
-                        await new Promise((resolve, reject) => {
-                            connection.query("INSERT INTO `assign-ticket` SET ?", assignData, (assignErr, assignResult) => {
-                                if (assignErr) {
-                                    reject(assignErr);
-                                } else {
-                                    resolve(assignResult);
+                        // Check if assignment already exists for this ticketId
+                        const existingAssignment = await new Promise((resolve, reject) => {
+                            connection.query(
+                                "SELECT * FROM `assign-ticket` WHERE ticketId = ?",
+                                [ticketId],
+                                (checkErr, checkResult) => {
+                                    if (checkErr) {
+                                        reject(checkErr);
+                                    } else {
+                                        resolve(checkResult);
+                                    }
                                 }
-                            });
+                            );
                         });
+
+                        if (existingAssignment.length > 0) {
+                            // Update existing assignment
+                            await new Promise((resolve, reject) => {
+                                connection.query(
+                                    "UPDATE `assign-ticket` SET agentId = ?, status = 'assigned', importAction = 'call' WHERE ticketId = ?",
+                                    [agentId, ticketId],
+                                    (updateErr, updateResult) => {
+                                        if (updateErr) {
+                                            reject(updateErr);
+                                        } else {
+                                            console.log('Assignment updated for ticketId:', ticketId);
+                                            resolve(updateResult);
+                                        }
+                                    }
+                                );
+                            });
+                        } else {
+                            // Insert new assignment
+                            const assignData = {
+                                ticketId: ticketId,
+                                agentId: agentId,
+                                status: 'assigned',
+                                importAction: 'call'
+                            };
+
+                            await new Promise((resolve, reject) => {
+                                connection.query("INSERT INTO `assign-ticket` SET ?", assignData, (assignErr, assignResult) => {
+                                    if (assignErr) {
+                                        reject(assignErr);
+                                    } else {
+                                        console.log('New assignment created for ticketId:', ticketId);
+                                        resolve(assignResult);
+                                    }
+                                });
+                            });
+                        }
 
                         // Update ticket status to 'assigned'
                         await new Promise((resolve, reject) => {
@@ -215,35 +255,107 @@ export class ticketController {
                         });
                     }
 
-                    // Step 3: Create entry in calls table
-                    const callId = await ticketController.generateCallId();
+                    // Step 3: Handle calls table - either update existing call or create new one
+                    let finalCallId;
 
-                    const callData = {
-                        callId: callId,
-                        ticketId: ticketId,
-                        userPhone: fullPhone,
-                        productId: productId || null,
-                        agentId: agentId || null,
-                        agentPhone: null, // Will be filled later if agent is assigned
-                        callStatus: 'created',
-                        ticketStatus: 'assigned',
-                        recordingUrl: null,
-                        callType: callType || 'inbound',
-                        reason: subject,
-                        callDescription: description,
-                        startTime: null,
-                        endTime: null
-                    };
+                    if (callId) {
+                        // If callId is provided from frontend, update the existing call record
+                        console.log('Updating existing call record with callId:', callId);
+                        finalCallId = callId;
 
-                    await new Promise((resolve, reject) => {
-                        connection.query("INSERT INTO calls SET ?", callData, (callErr, callResult) => {
-                            if (callErr) {
-                                reject(callErr);
-                            } else {
-                                resolve(callResult);
-                            }
+                        // Verify the call exists
+                        const verifyCall = await new Promise((resolve, reject) => {
+                            connection.query(
+                                "SELECT id, callId FROM calls WHERE callId = ?",
+                                [callId],
+                                (err, result) => {
+                                    if (err) {
+                                        reject(err);
+                                    } else {
+                                        resolve(result);
+                                    }
+                                }
+                            );
                         });
-                    });
+
+                        if (verifyCall.length === 0) {
+                            return res.status(404).json({
+                                message: `CallId ${callId} not found in calls table`,
+                                error: "Specified callId does not exist"
+                            });
+                        }
+
+                        // Update the existing call record with ticket data
+                        await new Promise((resolve, reject) => {
+                            const updateQuery = `
+                                UPDATE calls
+                                SET ticketId = ?,
+                                    userPhone = ?,
+                                    productId = ?,
+                                    callStatus = 'created',
+                                    ticketStatus = 'assigned',
+                                    reason = ?,
+                                    callDescription = ?,
+                                    agentId = COALESCE(?, agentId),
+                                    agentPhone = COALESCE(?, agentPhone)
+                                WHERE callId = ?
+                            `;
+
+                            const updateValues = [
+                                ticketId,
+                                fullPhone,
+                                productId || null,
+                                subject,
+                                description,
+                                agentId || null,
+                                agentPhone || null,
+                                callId
+                            ];
+
+                            connection.query(updateQuery, updateValues, (updateErr, updateResult) => {
+                                if (updateErr) {
+                                    console.error('Error updating call record:', updateErr);
+                                    reject(updateErr);
+                                } else {
+                                    console.log('Call record updated successfully');
+                                    resolve(updateResult);
+                                }
+                            });
+                        });
+                    } else {
+                        // No callId from frontend, create new call record
+                        console.log('Creating new call record');
+                        finalCallId = await ticketController.generateCallId();
+
+                        const callData = {
+                            callId: finalCallId,
+                            ticketId: ticketId,
+                            userPhone: fullPhone,
+                            productId: productId || null,
+                            agentId: agentId || null,
+                            agentPhone: agentPhone || null,
+                            callStatus: 'created',
+                            ticketStatus: 'assigned',
+                            recordingUrl: null,
+                            callType: callType || 'inbound',
+                            reason: subject,
+                            callDescription: description,
+                            startTime: null,
+                            endTime: null
+                        };
+
+                        await new Promise((resolve, reject) => {
+                            connection.query("INSERT INTO calls SET ?", callData, (callErr, callResult) => {
+                                if (callErr) {
+                                    console.error('Error creating call record:', callErr);
+                                    reject(callErr);
+                                } else {
+                                    console.log('Call record created successfully');
+                                    resolve(callResult);
+                                }
+                            });
+                        });
+                    }
 
                     return res.json({
                         message: "Call ticket created successfully",
@@ -251,8 +363,10 @@ export class ticketController {
                             ticketId: ticketId,
                             userId: finalUserId,
                             numericId: numericTicketId,
-                            callId: callId,
+                            callId: finalCallId,
                             agentId: agentId || null,
+                            agentName: agentName || null,
+                            agentPhone: agentPhone || null,
                             status: 'assigned',
                             ticketType: 'call'
                         }
@@ -1413,6 +1527,50 @@ export class ticketController {
                 }
             }
         );
+    }
+
+    // Get call details by callId (including agent details)
+    static getCallDetails(req, res) {
+        const { callId } = req.params;
+
+        const query = `
+            SELECT
+                c.*,
+                a.agentName,
+                a.email as agentEmail,
+                a.phone as agentPhoneNumber,
+                p.name as productName,
+                t.name as customerName,
+                t.email as customerEmail,
+                t.subject as ticketSubject,
+                t.description as ticketDescription
+            FROM calls c
+            LEFT JOIN agents a ON c.agentId = a.id
+            LEFT JOIN product p ON c.productId = p.productId
+            LEFT JOIN tickets t ON c.ticketId = t.ticketId
+            WHERE c.callId = ?
+        `;
+
+        connection.query(query, [callId], (err, result) => {
+            if (err) {
+                console.error('Error fetching call details:', err);
+                return res.status(500).json({
+                    message: "Error fetching call details",
+                    error: err
+                });
+            }
+
+            if (result.length === 0) {
+                return res.status(404).json({
+                    message: "Call not found"
+                });
+            }
+
+            return res.json({
+                message: "Call details fetched successfully",
+                data: result[0]
+            });
+        });
     }
 
     // Fix existing numeric ticketIds to T001 format in assign-ticket table
