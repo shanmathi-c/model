@@ -370,26 +370,38 @@
 
                   <!-- Feedback -->
                   <td v-if="visibleColumns.feedback" class="px-4 py-4 whitespace-nowrap">
-                    <!-- Debug: {{ ticket.ticketId }} - Status: {{ ticket.status }} - Link: {{ ticket.feedbackLink ? 'Yes' : 'No' }} -->
-                    <div v-if="ticket.status === 'resolved' && ticket.feedbackLink" class="flex items-center gap-2">
-                      <button
-                        @click.stop="openFeedbackLinkInNewTab(ticket.feedbackLink)"
-                        class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                        title="Open feedback form"
-                      >
-                        Open
-                      </button>
-                      <button
-                        @click.stop="copyFeedbackLinkFromTable(ticket.feedbackLink)"
-                        class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        title="Copy feedback link"
-                      >
-                        {{ ticket.feedbackLinkCopied ? 'Copied!' : 'Copy' }}
-                      </button>
+                    <!-- Show "Feedback Received" if status is received -->
+                    <div v-if="ticket.feedbackStatus === 'received'" class="text-sm">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Feedback Received
+                      </span>
+                      <div v-if="ticket.feedbackRating" class="mt-1 text-xs text-gray-600">
+                        Rating: {{ ticket.feedbackRating }}/5
+                      </div>
                     </div>
-                    <div v-else-if="ticket.feedback" class="text-sm text-gray-900">
-                      <div class="max-w-xs truncate">{{ ticket.feedback }}</div>
+                    <!-- Show Open/Copy buttons if status is pending -->
+                    <div v-else-if="ticket.feedbackStatus === 'pending' && ticket.feedbackLink" class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <button
+                          @click.stop="openFeedbackLinkInNewTab(ticket.feedbackLink)"
+                          class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                          title="Open feedback form"
+                        >
+                          Open
+                        </button>
+                        <button
+                          @click.stop="copyFeedbackLinkFromTable(ticket.feedbackLink)"
+                          class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          title="Copy feedback link"
+                        >
+                          {{ ticket.feedbackLinkCopied ? 'Copied!' : 'Copy' }}
+                        </button>
+                      </div>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Pending
+                      </span>
                     </div>
+                    <!-- Fallback: Show - if no feedback -->
                     <span v-else class="text-sm text-gray-400">-</span>
                   </td>
                 </tr>
@@ -1248,7 +1260,12 @@ export default {
               csatRating: ticket.csatRating || ticket.csat_rating || null,
               firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
               notes: ticket.subject || ticket.description || '-',
-              importAction: ticket.importAction || null
+              importAction: ticket.importAction || null,
+              feedbackStatus: ticket.feedbackStatus || null,
+              feedbackRating: ticket.feedbackRating || null,
+              feedbackComment: ticket.feedbackComment || null,
+              feedbackLink: null,
+              feedbackLinkCopied: false
             }
           })
         }
@@ -1958,12 +1975,14 @@ export default {
         // Store the feedback link in the ticket object for table display
         if (this.selectedTicketDetails) {
           this.selectedTicketDetails.feedbackLink = generatedLink
+          this.selectedTicketDetails.feedbackStatus = 'pending'
           const ticketIndex = this.tickets.findIndex(t => t.ticketId === ticketId)
           console.log('Looking for ticket with ticketId:', ticketId, 'Found at index:', ticketIndex)
           if (ticketIndex !== -1) {
             // Vue 3 doesn't need $set - direct assignment works with reactivity
             this.tickets[ticketIndex].feedbackLink = generatedLink
             this.tickets[ticketIndex].feedbackLinkCopied = false
+            this.tickets[ticketIndex].feedbackStatus = 'pending'
             console.log('Feedback link set on ticket:', this.tickets[ticketIndex])
             console.log('Ticket status:', this.tickets[ticketIndex].status)
           } else {
