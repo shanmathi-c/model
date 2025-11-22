@@ -292,7 +292,7 @@ export class ticketController {
                                 SET ticketId = ?,
                                     userPhone = ?,
                                     productId = ?,
-                                    callStatus = 'created',
+                                    callStatus = 'pending',
                                     ticketStatus = 'assigned',
                                     reason = ?,
                                     callDescription = ?,
@@ -334,7 +334,7 @@ export class ticketController {
                             productId: productId || null,
                             agentId: agentId || null,
                             agentPhone: agentPhone || null,
-                            callStatus: 'created',
+                            callStatus: 'pending',
                             ticketStatus: 'assigned',
                             recordingUrl: null,
                             callType: callType || 'inbound',
@@ -368,6 +368,7 @@ export class ticketController {
                             agentName: agentName || null,
                             agentPhone: agentPhone || null,
                             status: 'assigned',
+                            ticketStatus: 'assigned',
                             ticketType: 'call'
                         }
                     });
