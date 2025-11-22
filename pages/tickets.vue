@@ -222,10 +222,10 @@
       </div>
     </div>
 
-    <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto scrollbar-thin" style="height: calc(130vh - 360px);">
+    <!-- Scrollable Content Area with padding for fixed pagination -->
+    <div class="flex-1 overflow-auto scrollbar-thin pb-20" style="min-height: calc(100vh - 200px);">
         <!-- Table View -->
-        <div class="overflow-x-auto scrollbar-thin" style="height: 100%;">
+        <div class="overflow-x-auto scrollbar-thin" style="min-height: calc(100vh - 300px);">
           <table class="w-full" style="min-width: 1200px;">
               <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
@@ -372,12 +372,14 @@
 
   
           <!-- Empty State -->
-          <div v-if="filteredTickets.length === 0" class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
-            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
+          <div v-if="filteredTickets.length === 0" class="flex items-center justify-center" style="min-height: 400px;">
+            <div class="text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
+              <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
+            </div>
           </div>
     </div>
 
@@ -542,7 +544,7 @@
     </div>
 
     <!-- Fixed Pagination Controls -->
-    <div class="flex-shrink-0 px-4 py-4 mt-4 bg-white border-t border-gray-200 sticky bottom-0">
+    <div class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white border-t border-gray-200 z-10">
       <div class="flex flex-col gap-2">
         <!-- Info row -->
         <div class="text-sm text-gray-700">
@@ -671,7 +673,7 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 10,
+      itemsPerPage: 3,
 
       // Data from backend
       tickets: [],
@@ -1262,10 +1264,14 @@ export default {
 </script>
 
 <style scoped>
-/* Thin scrollbar for all elements */
+/* Thin scrollbar for vertical, invisible for horizontal */
 ::-webkit-scrollbar {
   width: 4px !important;
-  height: 4px !important;
+  height: 0px !important;
+}
+
+::-webkit-scrollbar:horizontal {
+  height: 0px !important;
 }
 
 ::-webkit-scrollbar-track {
@@ -1281,7 +1287,21 @@ export default {
   background: #9ca3af !important;
 }
 
+/* Make horizontal scrollbar invisible */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 0px;
+}
+
+.overflow-x-auto::-webkit-scrollbar:horizontal {
+  height: 0px;
+}
+
 /* For Firefox */
+.overflow-x-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
 * {
   scrollbar-width: thin !important;
   scrollbar-color: #d1d5db transparent !important;
