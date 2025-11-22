@@ -1451,6 +1451,54 @@ export class ticketController {
         }
     }
 
+    // Start call (update existing call with start time and ensure status is pending)
+    static startCall(req, res) {
+        const { callId } = req.params;
+
+        console.log('Received startCall request for callId:', callId);
+
+        try {
+            // Get current timestamp
+            const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            // Update call log with start time and set status to pending (in case it was missed)
+            connection.query(
+                "UPDATE calls SET startTime = ?, callStatus = 'pending' WHERE callId = ?",
+                [startTime, callId],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error updating call log",
+                            error: err
+                        });
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Call log not found"
+                        });
+                    }
+
+                    return res.json({
+                        message: "Call started successfully",
+                        data: {
+                            callId: callId,
+                            startTime: startTime,
+                            callStatus: 'pending'
+                        }
+                    });
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in startCall:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
     // End call (update with end time and duration)
     static endCall(req, res) {
         const { callId } = req.params;
@@ -1484,9 +1532,9 @@ export class ticketController {
                     // Format end time
                     const formattedEndTime = endTime.toISOString().slice(0, 19).replace('T', ' ');
 
-                    // Update call log with only end time, don't change any status
+                    // Update call log with end time and set status to pending (since it has both start and end times)
                     connection.query(
-                        "UPDATE calls SET endTime = ? WHERE callId = ?",
+                        "UPDATE calls SET endTime = ?, callStatus = 'pending' WHERE callId = ?",
                         [formattedEndTime, callId],
                         (err, updateResult) => {
                             if (err) {
@@ -1503,7 +1551,7 @@ export class ticketController {
                                         duration: duration, // Return duration for frontend
                                         recordingUrl: callLog.recordingUrl,
                                         callStatus: 'pending',
-                                        ticketStatus: 'resolved'
+                                        ticketStatus: callLog.ticketStatus
                                     }
                                 });
                             }

@@ -1695,42 +1695,36 @@ export default {
         this.callStatus = 'connected'
         console.log('Call started with:', this.selectedCall.phone)
 
-        // Create new call log entry when call is connected from calls page
-        const callData = {
-          callbackId: this.selectedCall.ticketId || 0,
-          ticketId: this.selectedCall.ticketId || 0,
-          agentId: this.extractAgentIdFromName(this.selectedCall.agentName),
-          agentName: this.selectedCall.agentName || 'Unknown Agent',
-          agentNumber: this.selectedCall.agentPhone || this.generateAgentPhone(this.extractAgentIdFromName(this.selectedCall.agentName)),
-          customerPhone: this.selectedCall.phone,
-          customerName: this.selectedCall.customerName || 'Customer',
-          productId: this.selectedCall.productId || null,
-          subject: `Follow-up call for ${this.selectedCall.customerName || 'Customer'}`,
-          callType: 'inbound', // Calls from calls page are inbound (customer callback)
-          ticketStatus: this.selectedCall.ticketStatus || 'in-progress'
+        // Update existing call record with connected status and start time
+        const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
+
+        if (!callIdToUpdate) {
+          throw new Error('No call ID found to update')
         }
 
-        console.log('Creating new call log from calls page:', callData)
+        console.log('Updating call status to connected for callId:', callIdToUpdate)
 
-        const response = await fetch('http://localhost:3000/api/calls/create-call-log', {
-          method: 'POST',
+        const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/start`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(callData)
+          }
         })
 
         if (!response.ok) {
-          throw new Error('Failed to create call log')
+          throw new Error('Failed to start call')
         }
 
         const result = await response.json()
-        console.log('Call log created successfully:', result)
+        console.log('Call started successfully:', result)
 
-        // Update the selected call with the new call log ID
+        // Update local call data - keep status as pending, only update start time
         if (this.selectedCall) {
-          this.selectedCall.newCallLogId = result.callId
+          this.selectedCall.callDateTime = result.data.startTime
         }
+
+        // Refresh the calls list to show updated start time
+        await this.fetchCallLogs()
 
       } catch (error) {
         console.error('Error starting call:', error)
@@ -1746,19 +1740,33 @@ export default {
         this.callStatus = 'ended'
         console.log('Call ended with:', this.selectedCall.phone)
 
-        // Update the call log with end time - use new call log ID if available, otherwise existing call ID
-        const callIdToUpdate = this.selectedCall.newCallLogId || this.selectedCall.id
-        if (callIdToUpdate) {
-          const response = await fetch(`http://localhost:3000/api/calls/${callIdToUpdate}/end`, {
-            method: 'PUT'
-          })
+        // Update the call log with end time and completed status
+        const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
 
-          if (!response.ok) {
-            throw new Error('Failed to end call')
-          }
-
-          console.log('Call ended successfully')
+        if (!callIdToUpdate) {
+          throw new Error('No call ID found to update')
         }
+
+        console.log('Ending call for callId:', callIdToUpdate)
+
+        const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/end`, {
+          method: 'PUT'
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to end call')
+        }
+
+        const result = await response.json()
+        console.log('Call ended successfully:', result)
+
+        // Update local call data - keep status as pending, only update end time
+        if (this.selectedCall) {
+          this.selectedCall.endTime = result.data.endTime
+        }
+
+        // Refresh the calls list to show updated end time
+        await this.fetchCallLogs()
 
       } catch (error) {
         console.error('Error ending call:', error)
@@ -1773,41 +1781,48 @@ export default {
       try {
         console.log('Call disconnected for:', this.selectedCall.phone)
 
-        // If disconnecting from pending state, mark as missed
+        // If disconnecting from pending state
         if (this.callStatus === 'pending') {
-          this.callStatus = 'missed'
+          // Check if call was already started (has startTime)
+          if (this.selectedCall.callDateTime) {
+            // Call was connected, so just end it normally (keep as pending)
+            await this.endCall()
+            this.callStatus = 'disconnected'
+          } else {
+            // Call was never connected, mark as missed
+            this.callStatus = 'missed'
 
-          // Create missed call log entry
-          const callData = {
-            callbackId: this.selectedCall.ticketId || 0,
-            ticketId: this.selectedCall.ticketId || 0,
-            agentId: this.extractAgentIdFromName(this.selectedCall.agentName),
-            agentName: this.selectedCall.agentName || 'Unknown Agent',
-            agentNumber: this.selectedCall.agentPhone || this.generateAgentPhone(this.extractAgentIdFromName(this.selectedCall.agentName)),
-            customerPhone: this.selectedCall.phone,
-            customerName: this.selectedCall.customerName || 'Customer',
-            productId: this.selectedCall.productId || null,
-            subject: `Missed call for ${this.selectedCall.customerName || 'Customer'}`,
-            callType: 'inbound',
-            ticketStatus: this.selectedCall.ticketStatus || 'missed'
+            // Update existing call record as missed
+            const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
+
+            if (!callIdToUpdate) {
+              throw new Error('No call ID found to update')
+            }
+
+            console.log('Marking call as missed for callId:', callIdToUpdate)
+
+            const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/missed`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            })
+
+            if (!response.ok) {
+              throw new Error('Failed to mark call as missed')
+            }
+
+            const result = await response.json()
+            console.log('Call marked as missed successfully:', result)
+
+            // Update local call data
+            if (this.selectedCall) {
+              this.selectedCall.status = 'missed'
+            }
+
+            // Refresh the calls list to show updated status
+            await this.fetchCallLogs()
           }
-
-          console.log('Creating missed call log:', callData)
-
-          const response = await fetch('http://localhost:3000/api/calls/create-call-log', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(callData)
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to create missed call log')
-          }
-
-          const result = await response.json()
-          console.log('Missed call log created successfully:', result)
         } else if (this.callStatus === 'connected') {
           // If disconnecting from connected state, end the call first
           await this.endCall()
