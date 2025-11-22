@@ -326,7 +326,7 @@
 
             <!-- Table Body - Fixed Height -->
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors">
+              <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors cursor-pointer" @click="openCallDetails(call)">
                 <!-- Call Log ID -->
                 <td v-if="visibleColumns.callLogId" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ call.callId || call.callLogId || 'N/A' }}
@@ -340,7 +340,7 @@
                       src="/phone-call.svg"
                       alt="Call"
                       class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
-                      @click="openCallModal(call)"
+                      @click.stop="openCallModal(call)"
                     />
                     <div class="flex flex-col">
                       <span class="font-medium text-gray-900">{{ call.customerName || 'Unknown' }}</span>
@@ -410,7 +410,7 @@
 
                 <!-- Actions -->
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                  <button @click="viewCallDetails(call)" class="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50 transition-colors" title="View Details">
+                  <button @click.stop="viewCallDetails(call)" class="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50 transition-colors" title="Create Ticket">
                     <!-- Plus Circle Icon -->
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -796,6 +796,264 @@
         </div>
       </div>
     </div>
+
+    <!-- Call Details Side Panel -->
+    <div v-if="showCallDetailsPanel" class="fixed inset-0 z-50 overflow-hidden">
+      <!-- Background overlay -->
+      <div class="absolute inset-0 bg-black bg-opacity-50" @click="closeCallDetails"></div>
+
+      <!-- Side panel -->
+      <div class="absolute right-0 top-0 h-full w-full max-w-3xl bg-white shadow-2xl transform transition-transform duration-300"
+           :class="showCallDetailsPanel ? 'translate-x-0' : 'translate-x-full'">
+
+        <!-- Panel Header -->
+        <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl font-bold text-gray-900">Call #{{ selectedCallDetails?.callId }}</h2>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="getCallStatusClass(selectedCallDetails?.callStatus)">
+                {{ selectedCallDetails?.callStatus }}
+              </span>
+            </div>
+            <button @click="closeCallDetails" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Content -->
+        <div class="flex-1 overflow-y-auto" style="max-height: calc(100vh - 80px);">
+          <div class="p-6 space-y-6">
+
+            <!-- Call Metadata -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Information</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Call Type</p>
+                  <p class="text-sm font-medium text-gray-900">
+                    <span class="inline-flex items-center gap-1">
+                      <svg v-if="selectedCallDetails?.callType === 'inbound'" class="w-4 h-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                      <svg v-else class="w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      {{ selectedCallDetails?.callType || 'Unknown' }}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Duration</p>
+                  <p class="text-sm font-medium text-gray-900">{{ formatDuration(selectedCallDetails?.duration) || 'N/A' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Start Time</p>
+                  <p class="text-sm font-medium text-gray-900">{{ formatDateTime(selectedCallDetails?.startTime) }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">End Time</p>
+                  <p class="text-sm font-medium text-gray-900">{{ formatDateTime(selectedCallDetails?.endTime) || 'Ongoing' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Provider</p>
+                  <p class="text-sm font-medium text-gray-900">{{ selectedCallDetails?.provider || 'Default Provider' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Recording Status</p>
+                  <p class="text-sm font-medium text-gray-900">
+                    <span v-if="selectedCallDetails?.recordingUrl" class="text-green-600">Available</span>
+                    <span v-else class="text-gray-400">Not Available</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer & Agent Information -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h3 class="text-sm font-semibold text-blue-900 mb-3">Customer</h3>
+                <div class="space-y-2">
+                  <div>
+                    <p class="text-xs text-blue-700">Name</p>
+                    <p class="text-sm font-medium text-blue-900">{{ selectedCallDetails?.customerName || 'Unknown' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-blue-700">Phone</p>
+                    <p class="text-sm font-medium text-blue-900">{{ selectedCallDetails?.phone || 'N/A' }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                <h3 class="text-sm font-semibold text-green-900 mb-3">Agent</h3>
+                <div class="space-y-2">
+                  <div>
+                    <p class="text-xs text-green-700">Name</p>
+                    <p class="text-sm font-medium text-green-900">{{ selectedCallDetails?.agentName || 'Not Assigned' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-green-700">Phone</p>
+                    <p class="text-sm font-medium text-green-900">{{ selectedCallDetails?.agentPhone || 'N/A' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Call Recording Player -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Recording</h3>
+              <div v-if="selectedCallDetails?.recordingUrl" class="space-y-3">
+                <audio controls class="w-full">
+                  <source :src="selectedCallDetails.recordingUrl" type="audio/mpeg">
+                  Your browser does not support the audio element.
+                </audio>
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                  <span>Duration: {{ formatDuration(selectedCallDetails?.duration) }}</span>
+                  <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                    Download Recording
+                  </button>
+                </div>
+              </div>
+              <div v-else class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                <p class="text-sm">No recording available for this call</p>
+              </div>
+            </div>
+
+            <!-- Call Transcript -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-900">Call Transcript</h3>
+                <button v-if="callTranscript" class="text-xs text-blue-600 hover:text-blue-700">Download Transcript</button>
+              </div>
+              <div v-if="callTranscript" class="max-h-60 overflow-y-auto space-y-3">
+                <div v-for="(line, index) in callTranscript" :key="index" class="flex gap-3">
+                  <span class="text-xs font-medium" :class="line.speaker === 'Agent' ? 'text-green-600' : 'text-blue-600'">
+                    {{ line.speaker }}:
+                  </span>
+                  <p class="text-sm text-gray-700 flex-1">{{ line.text }}</p>
+                  <span class="text-xs text-gray-400">{{ line.timestamp }}</span>
+                </div>
+              </div>
+              <div v-else class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-sm">Transcript not available</p>
+                <button class="mt-2 text-xs text-blue-600 hover:text-blue-700">Request Transcript</button>
+              </div>
+            </div>
+
+            <!-- Related Ticket Information -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-900">Related Ticket</h3>
+                <button v-if="!selectedCallDetails?.ticketId" @click="createTicketFromCall"
+                        class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+                  Create Ticket
+                </button>
+              </div>
+              <div v-if="selectedCallDetails?.ticketId">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm font-medium text-yellow-900">Ticket #{{ selectedCallDetails.ticketId }}</p>
+                      <p class="text-xs text-yellow-700 mt-1">{{ selectedCallDetails.ticketStatus || 'Active' }}</p>
+                    </div>
+                    <button @click="viewRelatedTicket" class="px-3 py-1.5 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors">
+                      View Ticket
+                    </button>
+                  </div>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <div>
+                    <p class="text-xs text-gray-500">Subject</p>
+                    <p class="text-sm text-gray-900">{{ selectedCallDetails.reason || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Description</p>
+                    <p class="text-sm text-gray-700">{{ selectedCallDetails.callDescription || 'N/A' }}</p>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-center py-6 text-gray-500">
+                <p class="text-sm">No ticket linked to this call</p>
+              </div>
+            </div>
+
+            <!-- Call Notes -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-900">Call Notes</h3>
+                <button @click="showAddCallNote = true" class="text-xs text-blue-600 hover:text-blue-700">+ Add Note</button>
+              </div>
+              <div v-if="showAddCallNote" class="mb-3">
+                <textarea v-model="newCallNote" rows="3" placeholder="Enter your note..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"></textarea>
+                <div class="flex gap-2 mt-2">
+                  <button @click="addCallNote" class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                    Add Note
+                  </button>
+                  <button @click="showAddCallNote = false; newCallNote = ''" class="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div v-for="note in callNotes" :key="note.id" class="p-2 bg-gray-50 rounded-lg">
+                  <p class="text-sm text-gray-900">{{ note.text }}</p>
+                  <p class="text-xs text-gray-500 mt-1">{{ note.timestamp }}</p>
+                </div>
+                <div v-if="!callNotes || callNotes.length === 0" class="text-center py-4 text-gray-500">
+                  <p class="text-sm">No notes added yet</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Activity</h3>
+              <div class="space-y-3">
+                <div class="flex gap-3">
+                  <div class="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Call initiated</p>
+                    <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.startTime) }}</p>
+                  </div>
+                </div>
+                <div v-if="selectedCallDetails?.agentName" class="flex gap-3">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Connected to {{ selectedCallDetails.agentName }}</p>
+                    <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.startTime) }}</p>
+                  </div>
+                </div>
+                <div v-if="selectedCallDetails?.endTime" class="flex gap-3">
+                  <div class="w-2 h-2 bg-gray-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Call ended</p>
+                    <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.endTime) }}</p>
+                  </div>
+                </div>
+                <div v-if="selectedCallDetails?.ticketId" class="flex gap-3">
+                  <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Ticket #{{ selectedCallDetails.ticketId }} created</p>
+                    <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.createdAt) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script>
@@ -885,7 +1143,15 @@ export default {
         description: ''
       },
       products: [],
-      isSubmittingTicket: false
+      isSubmittingTicket: false,
+
+      // Call Details Side Panel
+      showCallDetailsPanel: false,
+      selectedCallDetails: null,
+      callTranscript: null,
+      callNotes: [],
+      showAddCallNote: false,
+      newCallNote: ''
     }
   },
 
@@ -1648,12 +1914,100 @@ export default {
       } finally {
         this.isSubmittingTicket = false
       }
+    },
+
+    // Call Details Side Panel Methods
+    openCallDetails(call) {
+      this.selectedCallDetails = { ...call }
+      this.showCallDetailsPanel = true
+      this.loadCallRelatedData(call.callId)
+    },
+
+    closeCallDetails() {
+      this.showCallDetailsPanel = false
+      this.selectedCallDetails = null
+      this.callTranscript = null
+      this.callNotes = []
+      this.showAddCallNote = false
+      this.newCallNote = ''
+    },
+
+    async loadCallRelatedData(callId) {
+      // TODO: Fetch call transcript, notes, and related data from backend
+      // For now, using placeholder data
+      this.callTranscript = null // Will be populated from API
+      this.callNotes = []
+    },
+
+    formatDuration(seconds) {
+      if (!seconds) return 'N/A'
+      const mins = Math.floor(seconds / 60)
+      const secs = seconds % 60
+      return `${mins}:${secs.toString().padStart(2, '0')}`
+    },
+
+    formatDateTime(dateTime) {
+      if (!dateTime) return 'N/A'
+      const date = new Date(dateTime)
+      return date.toLocaleString()
+    },
+
+    getCallStatusClass(status) {
+      switch(status?.toLowerCase()) {
+        case 'pending': return 'bg-yellow-100 text-yellow-800'
+        case 'connected': return 'bg-green-100 text-green-800'
+        case 'ended': return 'bg-gray-100 text-gray-800'
+        case 'missed': return 'bg-red-100 text-red-800'
+        case 'cancelled': return 'bg-orange-100 text-orange-800'
+        default: return 'bg-gray-100 text-gray-800'
+      }
+    },
+
+    addCallNote() {
+      if (this.newCallNote.trim()) {
+        const note = {
+          id: Date.now(),
+          text: this.newCallNote,
+          timestamp: new Date().toLocaleString()
+        }
+        this.callNotes.unshift(note)
+        this.newCallNote = ''
+        this.showAddCallNote = false
+        // TODO: Save note to backend
+      }
+    },
+
+    createTicketFromCall() {
+      // Close the side panel and open ticket creation modal with call data
+      this.selectedCall = this.selectedCallDetails
+      this.closeCallDetails()
+      this.viewCallDetails(this.selectedCallDetails)
+    },
+
+    viewRelatedTicket() {
+      // TODO: Navigate to ticket details or open ticket modal
+      console.log('View ticket:', this.selectedCallDetails?.ticketId)
+      // You can redirect to tickets page or open a modal
+      // this.$router.push(`/tickets/${this.selectedCallDetails.ticketId}`)
     }
   }
 }
 </script>
 
 <style scoped>
+/* Side Panel Transition Animation */
+.transform {
+  transition: transform 0.3s ease-in-out;
+}
+
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+.translate-x-full {
+  transform: translateX(100%);
+}
+
 /* Main container */
 .h-screen {
   height: 100vh;
