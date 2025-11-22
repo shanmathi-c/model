@@ -38,6 +38,36 @@ export class ticketController {
         });
     }
 
+    // Get customer feedback for a ticket
+    static getTicketFeedback(req, res) {
+        const { id } = req.params;
+
+        // We try to match either by formatted ticketId (T001) or numeric id
+        const query = `
+            SELECT *
+            FROM feedback
+            WHERE ticketId = ?
+               OR ticketId = (
+                    SELECT ticketId FROM tickets WHERE id = ? LIMIT 1
+               )
+            ORDER BY createdAt DESC
+        `;
+
+        connection.query(query, [id, id], (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "Error fetching ticket feedback",
+                    error: err
+                });
+            }
+
+            return res.json({
+                message: "Ticket feedback fetched successfully",
+                data: result || []
+            });
+        });
+    }
+
     // Generate sequential userId
     static generateUserId() {
         return new Promise((resolve, reject) => {
@@ -389,6 +419,82 @@ export class ticketController {
                 error: error.message
             });
         }
+    }
+
+    // Update ticket status and keep related tables in sync
+    static updateTicketStatus(req, res) {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({
+                message: "Missing status"
+            });
+        }
+
+        // First, resolve ticket by numeric id or ticketId (e.g., T001)
+        const getTicketQuery = `SELECT id, ticketId FROM tickets WHERE id = ? OR ticketId = ?`;
+
+        connection.query(getTicketQuery, [id, id], (getErr, ticketResult) => {
+            if (getErr) {
+                return res.status(500).json({
+                    message: "Error fetching ticket",
+                    error: getErr
+                });
+            }
+
+            if (!ticketResult || ticketResult.length === 0) {
+                return res.status(404).json({
+                    message: "Ticket not found"
+                });
+            }
+
+            const numericId = ticketResult[0].id;
+            const formattedTicketId = ticketResult[0].ticketId || `T${String(ticketResult[0].id).padStart(3, '0')}`;
+
+            // Step 1: update tickets table
+            connection.query(
+                `UPDATE tickets SET status = ? WHERE id = ?`,
+                [status, numericId],
+                (updateErr, updateResult) => {
+                    if (updateErr) {
+                        return res.status(500).json({
+                            message: "Error updating ticket status",
+                            error: updateErr
+                        });
+                    }
+
+                    if (updateResult.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Ticket not found"
+                        });
+                    }
+
+                    // Step 2: update assign-ticket table (best effort)
+                    connection.query(
+                        "UPDATE `assign-ticket` SET status = ? WHERE ticketId = ?",
+                        [status, formattedTicketId],
+                        () => {}
+                    );
+
+                    // Step 3: update calls table ticketStatus (best effort)
+                    connection.query(
+                        "UPDATE calls SET ticketStatus = ? WHERE ticketId = ?",
+                        [status, formattedTicketId],
+                        () => {}
+                    );
+
+                    return res.json({
+                        message: "Ticket status updated successfully",
+                        data: {
+                            id: numericId,
+                            ticketId: formattedTicketId,
+                            status
+                        }
+                    });
+                }
+            );
+        });
     }
 
     // Generate call ID in format C001, C002, etc.

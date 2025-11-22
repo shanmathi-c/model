@@ -1,9 +1,20 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-6">
     <!-- Header -->
-    <div class="mb-8 text-center">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Assign Tickets to Agents</h1>
-      <p class="text-gray-600">View all unassigned tickets and assign them to support agents</p>
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Assign Tickets to Agents</h1>
+        <p class="text-gray-600">View all unassigned tickets and assign them to support agents</p>
+      </div>
+      <button
+        @click="goBackToTickets"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50"
+      >
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span>Back to Tickets</span>
+      </button>
     </div>
 
     <!-- Search and Filter Section -->
@@ -439,6 +450,29 @@ export default {
     }
   },
 
+  async created() {
+    // Initial data load
+    await this.fetchTickets()
+    await this.fetchProducts()
+    await this.fetchAllAvailableAgents()
+
+    // If opened with a ticketId query (from Link to Freshdesk), focus that ticket
+    const queryTicketId = this.$route && this.$route.query && this.$route.query.ticketId
+    if (queryTicketId) {
+      // Try to find by formatted ticketId or numeric id
+      const target = this.tickets.find(t =>
+        String(t.ticketId) === String(queryTicketId) ||
+        String(t.id) === String(queryTicketId)
+      )
+
+      if (target) {
+        // Visually highlight the card and prefill search to narrow list
+        target.selected = true
+        this.searchQuery = String(target.ticketId || target.id)
+      }
+    }
+  },
+
   computed: {
     filteredTickets() {
       let result = this.tickets
@@ -512,6 +546,10 @@ export default {
   },
 
   methods: {
+    goBackToTickets() {
+      this.$router.push('/tickets')
+    },
+
     // Fetch data from backend
     async fetchTickets() {
       this.loading = true

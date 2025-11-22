@@ -583,10 +583,10 @@
               <button class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
                 Assign Agent
               </button>
-              <button class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
+              <button @click="openStatusModal" class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
                 Change Status
               </button>
-              <button class="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
+              <button @click="goToAssignTicket" class="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
                 Link to Freshdesk
               </button>
             </div>
@@ -756,19 +756,69 @@
             <!-- Customer Feedback & Comments -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Customer Feedback & Comments</h3>
-              <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                  <p class="text-xs text-gray-500">CSAT Rating:</p>
-                  <div class="flex gap-1">
-                    <span v-for="i in 5" :key="i" class="text-lg"
-                          :class="i <= (selectedTicketDetails?.csatRating || 0) ? 'text-yellow-500' : 'text-gray-300'">
-                      ★
-                    </span>
+
+              <!-- Empty state when there is no feedback -->
+              <div v-if="!selectedTicketDetails || !selectedTicketDetails.feedback || selectedTicketDetails.feedback.length === 0" class="text-sm text-gray-500">
+                No customer feedback submitted yet.
+              </div>
+
+              <!-- Feedback list -->
+              <div v-else class="space-y-3">
+                <div
+                  v-for="item in selectedTicketDetails.feedback"
+                  :key="item.id || item.createdAt"
+                  class="border border-gray-200 rounded-lg p-3 bg-white"
+                >
+                  <div class="flex items-center gap-3 mb-1">
+                    <p class="text-xs text-gray-500">CSAT Rating:</p>
+                    <div class="flex gap-1">
+                      <span
+                        v-for="i in 5"
+                        :key="i"
+                        class="text-lg"
+                        :class="i <= (item.rating || item.csatRating || 0) ? 'text-yellow-500' : 'text-gray-300'"
+                      >
+                        ★
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Customer Comment:</p>
+                    <p class="text-sm text-gray-700 italic">{{ item.comment || item.text || 'No comment provided' }}</p>
+                  </div>
+                  <div class="mt-1 text-xs text-gray-400" v-if="item.createdAt">
+                    {{ formatDate(item.createdAt) }}
                   </div>
                 </div>
-                <div>
-                  <p class="text-xs text-gray-500 mb-1">Customer Comment:</p>
-                  <p class="text-sm text-gray-700 italic">"Great service, issue resolved quickly!"</p>
+              </div>
+            </div>
+
+            <!-- Ticket Status Modal -->
+            <div v-if="showStatusModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div class="bg-white rounded-lg shadow-xl p-4 w-full max-w-sm">
+                <h3 class="text-sm font-semibold mb-3">Ticket Lifecycle & Status</h3>
+                <div class="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                  <label
+                    v-for="status in ticketStatusOptions"
+                    :key="status"
+                    class="flex items-center gap-2 cursor-pointer text-sm"
+                  >
+                    <input
+                      type="radio"
+                      :value="status"
+                      v-model="newStatus"
+                      class="text-purple-600"
+                    />
+                    <span>{{ status }}</span>
+                  </label>
+                </div>
+                <div class="flex justify-end gap-2">
+                  <button class="px-3 py-1.5 text-sm border rounded" @click="showStatusModal = false">
+                    Cancel
+                  </button>
+                  <button class="px-3 py-1.5 text-sm bg-purple-600 text-white rounded" @click="changeTicketStatus">
+                    Update Status
+                  </button>
                 </div>
               </div>
             </div>
@@ -951,7 +1001,19 @@ export default {
       showAddNote: false,
       newNote: '',
       internalNotes: [],
-      activityHistory: []
+      activityHistory: [],
+
+      // Status modal state
+      showStatusModal: false,
+      newStatus: null,
+      ticketStatusOptions: [
+        'created',
+        'assigned',
+        'in-progress',
+        'pending',
+        'resolved',
+        'closed'
+      ]
     }
   },
 
@@ -981,8 +1043,8 @@ export default {
       this.loading = true
       this.error = null
       try {
-        // Fetch only assigned tickets
-        const response = await $fetch('http://localhost:5001/tickets?status=assigned&limit=1000')
+        // Fetch all tickets; frontend filters will handle status
+        const response = await $fetch('http://localhost:5001/tickets?limit=1000')
         if (response.data) {
           console.log('Raw ticket data sample:', response.data[0]); // Debug to see actual structure
           if (response.data[0]) {
@@ -1444,10 +1506,26 @@ export default {
     },
 
     async loadTicketRelatedData(ticketId) {
-      // TODO: Fetch related calls, notes, and activity history from backend
-      // For now, using placeholder data
       this.internalNotes = []
       this.activityHistory = []
+
+      if (!ticketId) return
+
+      try {
+        const response = await $fetch(`http://localhost:5001/tickets/${ticketId}/feedback`)
+        const feedback = response && (response.data || response) || []
+
+        this.selectedTicketDetails = {
+          ...this.selectedTicketDetails,
+          feedback
+        }
+      } catch (error) {
+        console.error('Error loading ticket feedback', error)
+        this.selectedTicketDetails = {
+          ...this.selectedTicketDetails,
+          feedback: []
+        }
+      }
     },
 
     addInternalNote() {
@@ -1469,6 +1547,67 @@ export default {
       if (!date) return 'N/A'
       const d = new Date(date)
       return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()
+    },
+
+    // Open status modal
+    openStatusModal() {
+      if (!this.selectedTicketDetails) return
+      this.newStatus = this.selectedTicketDetails.status || 'assigned'
+      this.showStatusModal = true
+    },
+
+    // Change ticket status via backend
+    async changeTicketStatus() {
+      if (!this.newStatus || !this.selectedTicketDetails) {
+        this.showStatusModal = false
+        return
+      }
+
+      try {
+        const id = this.selectedTicketDetails.id
+        await $fetch(`http://localhost:5001/tickets/${id}/status`, {
+          method: 'PUT',
+          body: {
+            status: this.newStatus
+          }
+        })
+
+        // Update local state
+        this.selectedTicketDetails.status = this.newStatus
+        const ticketIndex = this.tickets.findIndex(t => t.id === id)
+        if (ticketIndex !== -1) {
+          this.$set(this.tickets, ticketIndex, {
+            ...this.tickets[ticketIndex],
+            status: this.newStatus
+          })
+        }
+      } catch (error) {
+        console.error('Failed to update ticket status', error)
+      } finally {
+        this.showStatusModal = false
+      }
+    },
+
+    // Navigate to assign ticket page with current ticket id
+    goToAssignTicket() {
+      if (!this.selectedTicketDetails) return
+      const ticketId = this.selectedTicketDetails.id || this.selectedTicketDetails.ticketId
+      if (!ticketId) return
+      this.$router.push({
+        path: '/assignticket',
+        query: {
+          ticketId
+        }
+      })
+    },
+
+    // Secondary formatter for feedback timestamps (avoids duplicate name)
+    formatFeedbackDate(date) {
+      if (!date) return ''
+      const d = new Date(date)
+      if (isNaN(d.getTime())) return ''
+      const options = { year: 'numeric', month: 'short', day: 'numeric' }
+      return d.toLocaleDateString('en-US', options)
     }
   },
 
@@ -1502,6 +1641,9 @@ export default {
     // Computed filtered tickets (all tickets after filtering)
     filteredTickets() {
       let result = this.tickets
+
+      // Always exclude tickets in 'created' status from the main view
+      result = result.filter(ticket => ticket.status !== 'created')
 
       // Filter by search query
       if (this.searchQuery) {
