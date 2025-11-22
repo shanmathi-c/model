@@ -924,6 +924,37 @@
               </div>
             </div>
 
+            <!-- Update Call Status -->
+            <div class="bg-blue-50 rounded-lg p-4 border-2 border-blue-300">
+              <h3 class="text-sm font-semibold text-blue-900 mb-3">📝 Update Call Status</h3>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-2">Current Status</label>
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="px-3 py-1.5 rounded-full text-xs font-semibold"
+                          :class="getCallStatusClass(selectedCallDetails?.callStatus || 'pending')">
+                      {{ (selectedCallDetails?.callStatus || 'pending').toUpperCase() }}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label for="callStatusSelectPanel" class="block text-xs font-medium text-gray-700 mb-2">Change Status To</label>
+                  <select
+                    id="callStatusSelectPanel"
+                    v-model="selectedCallDetailsStatus"
+                    @change="updateCallDetailsStatus"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="missed">Missed</option>
+                  </select>
+                </div>
+                <p class="text-xs text-gray-500 italic">Status will update immediately when changed</p>
+              </div>
+            </div>
+
             <!-- Call Recording Player -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Recording</h3>
@@ -1153,6 +1184,7 @@ export default {
       showCallModal: false,
       selectedCall: null,
       callStatus: 'pending',
+      selectedCallStatus: 'pending',
 
       // Ticket Modal
       showTicketModal: false,
@@ -1177,7 +1209,10 @@ export default {
 
       // Agent change for call side panel
       availableAgentsForCall: [],
-      changingCallAgent: false
+      changingCallAgent: false,
+
+      // Call status update for side panel
+      selectedCallDetailsStatus: 'pending'
     }
   },
 
@@ -1677,6 +1712,7 @@ export default {
       console.log('Opening call modal for:', call.phone)
       this.selectedCall = call
       this.callStatus = 'pending'
+      this.selectedCallStatus = call.status || 'pending'
       this.showCallModal = true
     },
 
@@ -1839,6 +1875,52 @@ export default {
       }
     },
 
+    // Update call status
+    async updateCallStatus() {
+      if (!this.selectedCall) return
+
+      try {
+        const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
+
+        if (!callIdToUpdate) {
+          console.error('No call ID found to update')
+          return
+        }
+
+        console.log('Updating call status to:', this.selectedCallStatus, 'for callId:', callIdToUpdate)
+
+        const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            callStatus: this.selectedCallStatus
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update call status')
+        }
+
+        const result = await response.json()
+        console.log('Call status updated successfully:', result)
+
+        // Update local call data
+        if (this.selectedCall) {
+          this.selectedCall.status = this.selectedCallStatus
+        }
+
+        // Refresh the calls list to show updated status
+        await this.fetchCallLogs()
+
+      } catch (error) {
+        console.error('Error updating call status:', error)
+        // Reset to previous status on error
+        this.selectedCallStatus = this.selectedCall.status || 'pending'
+      }
+    },
+
     // Helper method to extract agent ID from agent name
     extractAgentIdFromName(agentName) {
       if (!agentName) return 1
@@ -1967,6 +2049,7 @@ export default {
     // Call Details Side Panel Methods
     openCallDetails(call) {
       this.selectedCallDetails = { ...call }
+      this.selectedCallDetailsStatus = call.callStatus || call.status || 'pending'
       this.showCallDetailsPanel = true
       this.loadCallRelatedData(call.callId)
     },
@@ -2111,6 +2194,53 @@ export default {
       console.log('View ticket:', this.selectedCallDetails?.ticketId)
       // You can redirect to tickets page or open a modal
       // this.$router.push(`/tickets/${this.selectedCallDetails.ticketId}`)
+    },
+
+    // Update call status from side panel
+    async updateCallDetailsStatus() {
+      if (!this.selectedCallDetails) return
+
+      try {
+        const callIdToUpdate = this.selectedCallDetails.callId || this.selectedCallDetails.id
+
+        if (!callIdToUpdate) {
+          console.error('No call ID found to update')
+          return
+        }
+
+        console.log('Updating call status to:', this.selectedCallDetailsStatus, 'for callId:', callIdToUpdate)
+
+        const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            callStatus: this.selectedCallDetailsStatus
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update call status')
+        }
+
+        const result = await response.json()
+        console.log('Call status updated successfully:', result)
+
+        // Update local call details data
+        if (this.selectedCallDetails) {
+          this.selectedCallDetails.callStatus = this.selectedCallDetailsStatus
+          this.selectedCallDetails.status = this.selectedCallDetailsStatus
+        }
+
+        // Refresh the calls list to show updated status
+        await this.fetchCallLogs()
+
+      } catch (error) {
+        console.error('Error updating call status:', error)
+        // Reset to previous status on error
+        this.selectedCallDetailsStatus = this.selectedCallDetails.callStatus || this.selectedCallDetails.status || 'pending'
+      }
     }
   }
 }

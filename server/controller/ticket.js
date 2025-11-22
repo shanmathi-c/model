@@ -1608,6 +1608,65 @@ export class ticketController {
         }
     }
 
+    // Update call status
+    static updateCallStatus(req, res) {
+        const { callId } = req.params;
+        const { callStatus } = req.body;
+
+        console.log('Received updateCallStatus request for callId:', callId, 'callStatus:', callStatus);
+
+        if (!callStatus) {
+            return res.status(400).json({
+                message: "Missing required field: callStatus"
+            });
+        }
+
+        // Validate status value
+        const validStatuses = ['pending', 'completed', 'cancelled', 'missed'];
+        if (!validStatuses.includes(callStatus)) {
+            return res.status(400).json({
+                message: "Invalid callStatus. Must be one of: pending, completed, cancelled, missed"
+            });
+        }
+
+        try {
+            // Update the callStatus in calls table
+            connection.query(
+                "UPDATE calls SET callStatus = ? WHERE callId = ?",
+                [callStatus, callId],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error updating call status",
+                            error: err
+                        });
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Call log not found"
+                        });
+                    }
+
+                    return res.json({
+                        message: "Call status updated successfully",
+                        data: {
+                            callId: callId,
+                            callStatus: callStatus
+                        }
+                    });
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in updateCallStatus:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
     // Update call agent - updates agentId in calls table
     static updateCallAgent(req, res) {
         const { callId } = req.params;
