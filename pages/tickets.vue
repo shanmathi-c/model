@@ -253,7 +253,7 @@
                 >
                   <!-- Ticket ID -->
                   <td v-if="visibleColumns.ticketId" class="px-4 py-4 whitespace-nowrap">
-                    <span class="text-sm font-medium text-blue-600">#{{ ticket.id }}</span>
+                    <span class="text-sm font-medium text-blue-600">{{ ticket.ticketId || '#' + ticket.id }}</span>
                   </td>
 
                   <!-- Customer -->
@@ -566,7 +566,7 @@
         <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <h2 class="text-xl font-bold text-gray-900">Ticket #{{ selectedTicketDetails?.id }}</h2>
+              <h2 class="text-xl font-bold text-gray-900">Ticket {{ selectedTicketDetails?.ticketId || '#' + selectedTicketDetails?.id }}</h2>
               <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
                     :class="getStatusBadgeClass(selectedTicketDetails?.status)">
                 {{ selectedTicketDetails?.status }}
@@ -759,6 +759,33 @@
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                         :class="selectedTicketDetails.firstCallResolution ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
                     {{ selectedTicketDetails.firstCallResolution ? 'FCR: Yes' : 'FCR: No' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Update Ticket Status -->
+            <div class="bg-purple-50 rounded-lg p-4 border-2 border-purple-300">
+              <h3 class="text-sm font-semibold text-purple-900 mb-3">🔄 Update Ticket Status</h3>
+              <div class="space-y-3">
+                <p class="text-xs text-gray-600">Change the status across all related tables</p>
+                <select
+                  v-model="sidebarSelectedStatus"
+                  @change="updateTicketStatusFromSidebar"
+                  class="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">Select Status</option>
+                  <option value="created">Created</option>
+                  <option value="assigned">Assigned</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="pending">Pending</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <div v-if="selectedTicketDetails.status" class="mt-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        :class="getStatusBadgeClass(selectedTicketDetails.status)">
+                    Current: {{ selectedTicketDetails.status }}
                   </span>
                 </div>
               </div>
@@ -1130,14 +1157,16 @@ export default {
         'in-progress',
         'pending',
         'resolved',
-        'closed',
-        'completed'
+        'closed'
       ],
 
       // Feedback modal state
       showFeedbackLinkModal: false,
       feedbackLink: '',
-      feedbackLinkCopied: false
+      feedbackLinkCopied: false,
+
+      // Sidebar status update
+      sidebarSelectedStatus: ''
     }
   },
 
@@ -1180,24 +1209,31 @@ export default {
               assignedAgentName: response.data[0].assignedAgentName
             });
           }
-          this.tickets = response.data.map(ticket => ({
-            id: ticket.ticketId || ticket.id,
-            customerName: ticket.name || '-',
-            customerContact: ticket.email || '-',
-            phone: ticket.phone || '-',
-            agentName: ticket.assignedAgentName || ticket.agentName || '-',
-            agentId: ticket.agentId || ticket.agent_id || ticket.assignedAgentId || this.extractAgentIdFromName(ticket.agentName || ticket.assignedAgentName),
-            productCategory: ticket.productName || 'No Product',
-            productId: ticket.productId || ticket.product_id || null,
-            type: ticket.ticketType || 'general',
-            status: ticket.status || 'assigned',
-            createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
-            resolvedDate: ticket.resolvedAt || ticket.resolved_at || null,
-            csatRating: ticket.csatRating || ticket.csat_rating || null,
-            firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
-            notes: ticket.subject || ticket.description || '-',
-            importAction: ticket.importAction || null
-          }))
+          this.tickets = response.data.map(ticket => {
+            // Debug: Log status from backend
+            if (ticket.ticketId === 1 || ticket.id === 1) {
+              console.log('Ticket 1 status from backend:', ticket.status)
+            }
+            return {
+              id: ticket.id,  // Numeric ID for backend operations
+              ticketId: ticket.ticketId,  // Formatted ID for display
+              customerName: ticket.name || '-',
+              customerContact: ticket.email || '-',
+              phone: ticket.phone || '-',
+              agentName: ticket.assignedAgentName || ticket.agentName || '-',
+              agentId: ticket.agentId || ticket.agent_id || ticket.assignedAgentId || this.extractAgentIdFromName(ticket.agentName || ticket.assignedAgentName),
+              productCategory: ticket.productName || 'No Product',
+              productId: ticket.productId || ticket.product_id || null,
+              type: ticket.ticketType || 'general',
+              status: ticket.status || 'assigned',
+              createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
+              resolvedDate: ticket.resolvedAt || ticket.resolved_at || null,
+              csatRating: ticket.csatRating || ticket.csat_rating || null,
+              firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
+              notes: ticket.subject || ticket.description || '-',
+              importAction: ticket.importAction || null
+            }
+          })
         }
       } catch (error) {
         console.error('Error fetching tickets:', error)
@@ -1762,6 +1798,67 @@ export default {
       return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()
     },
 
+    // Update ticket status from sidebar (updates all tables)
+    async updateTicketStatusFromSidebar() {
+      if (!this.sidebarSelectedStatus || !this.selectedTicketDetails) {
+        return
+      }
+
+      try {
+        // Use formatted ticketId (like T011) for backend updates
+        const ticketId = this.selectedTicketDetails.ticketId
+        const newStatus = this.sidebarSelectedStatus
+
+        console.log('Selected ticket details:', this.selectedTicketDetails)
+        console.log('Ticket ID:', ticketId)
+        console.log('Updating ticket status to:', newStatus)
+
+        if (!ticketId) {
+          throw new Error('Ticket ID is missing')
+        }
+
+        // Call backend to update status in all tables using ticketId
+        const response = await fetch(`http://localhost:5001/tickets/${ticketId}/update-all-status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: newStatus
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to update status')
+        }
+
+        console.log('Backend update result:', result)
+
+        // Update local state only after successful backend update
+        this.selectedTicketDetails.status = newStatus
+        const ticketIndex = this.tickets.findIndex(t => t.ticketId === ticketId)
+        if (ticketIndex !== -1) {
+          this.tickets[ticketIndex].status = newStatus
+        }
+
+        // If status is resolved, show feedback link modal
+        if (newStatus === 'resolved') {
+          await this.generateFeedbackLink()
+        }
+
+        console.log('Ticket status updated successfully across all tables')
+      } catch (error) {
+        console.error('Error updating ticket status:', error)
+        alert('Failed to update ticket status: ' + error.message)
+        // Reload tickets to get the correct status from backend
+        await this.fetchTickets()
+      } finally {
+        this.sidebarSelectedStatus = ''
+      }
+    },
+
     // Open status modal
     openStatusModal() {
       if (!this.selectedTicketDetails) return
@@ -1795,8 +1892,8 @@ export default {
           })
         }
 
-        // If status is completed, show feedback link modal
-        if (this.newStatus === 'completed') {
+        // If status is resolved, show feedback link modal
+        if (this.newStatus === 'resolved') {
           await this.generateFeedbackLink()
         }
       } catch (error) {

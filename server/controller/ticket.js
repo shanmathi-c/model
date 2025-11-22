@@ -1922,6 +1922,82 @@ export class ticketController {
         });
     }
 
+    // Update ticket status in all related tables (tickets, assign-ticket, calls)
+    static updateAllTablesStatus(req, res) {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({
+                message: "Missing required field: status"
+            });
+        }
+
+        try {
+            // Update all three tables using ticketId
+            // Update tickets table - status column using ticketId
+            connection.query(
+                "UPDATE tickets SET status = ? WHERE ticketId = ?",
+                [status, id],
+                (err, ticketsResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error updating tickets table",
+                            error: err
+                        });
+                    }
+
+                    if (ticketsResult.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Ticket not found"
+                        });
+                    }
+
+                    // Update assign-ticket table - status column using ticketId
+                    connection.query(
+                        "UPDATE `assign-ticket` SET status = ? WHERE ticketId = ?",
+                        [status, id],
+                        (err, assignResult) => {
+                            if (err) {
+                                console.error('Error updating assign-ticket table:', err);
+                            }
+
+                            // Update calls table - ticketStatus column using ticketId
+                            connection.query(
+                                "UPDATE calls SET ticketStatus = ? WHERE ticketId = ?",
+                                [status, id],
+                                (err, callsResult) => {
+                                    if (err) {
+                                        console.error('Error updating calls table:', err);
+                                    }
+
+                                    return res.json({
+                                        message: "Status updated successfully in all tables",
+                                        data: {
+                                            ticketId: id,
+                                            status: status,
+                                            updatedTables: {
+                                                tickets: ticketsResult.affectedRows,
+                                                assignTicket: assignResult ? assignResult.affectedRows : 0,
+                                                calls: callsResult ? callsResult.affectedRows : 0
+                                            }
+                                        }
+                                    });
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        } catch (error) {
+            console.error('Error in updateAllTablesStatus:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
     // Update ticket First Call Resolution
     static updateTicketFCR(req, res) {
         const { id } = req.params;

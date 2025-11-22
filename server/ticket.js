@@ -31,6 +31,7 @@ router.get("/agents/product/:productId", ticketController.getAgentsByProduct);
 router.post("/assign", ticketController.assignTicketToAgent);
 router.post("/bulk-assign", ticketController.bulkAssignTickets);
 router.put("/tickets/:id/status", ticketController.updateTicketStatus);
+router.put("/tickets/:id/update-all-status", ticketController.updateAllTablesStatus);
 router.put("/tickets/:id/fcr", ticketController.updateTicketFCR);
 
 // Feedback routes
