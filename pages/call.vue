@@ -246,8 +246,8 @@
       </div>
     </div>
 
-    <!-- Table Container - Scrollable Content -->
-    <div class="flex-1 overflow-auto">
+    <!-- Table Container - Takes full remaining height with padding for fixed pagination -->
+    <div class="flex-1 overflow-auto flex flex-col pb-20" style="min-height: calc(100vh - 200px);">
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center h-64">
         <div class="flex flex-col items-center">
@@ -273,28 +273,21 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredCalls.length === 0" class="flex items-center justify-center h-64">
-        <div class="text-center">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-          </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No callbacks found</h3>
-          <p class="mt-1 text-sm text-gray-500">No callback requests match your search criteria.</p>
-          <div class="mt-6">
-            <button @click="clearFilters" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Clear Filters
-            </button>
-          </div>
-        </div>
+      <div v-else-if="filteredCalls.length === 0" class="flex items-center justify-center" style="min-height: 400px;">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No calls found</h3>
+        <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
       </div>
 
-      <!-- Tickets Table Wrapper -->
-      <div v-else class="h-full">
-        <div class="inline-block min-w-full align-middle h-full">
+      <!-- Table -->
+      <div v-else class="overflow-x-auto">
+        <div class="inline-block min-w-full align-middle">
           <div class="overflow-hidden">
             <table class="min-w-full divide-y divide-gray-300">
-            <!-- Table Header - Fixed -->
-            <thead class="bg-gray-50 sticky top-0 z-10">
+            <!-- Table Header -->
+            <thead class="bg-gray-50">
               <tr>
                 <th v-if="visibleColumns.callLogId" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Call Log ID
@@ -329,7 +322,7 @@
               </tr>
             </thead>
 
-            <!-- Table Body - Scrollable -->
+            <!-- Table Body - Fixed Height -->
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors">
                 <!-- Call Log ID -->
@@ -425,79 +418,61 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
 
-          <!-- Pagination -->
-          <div v-if="totalPages > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div class="flex-1 flex justify-between sm:hidden">
+    <!-- Fixed Pagination Controls -->
+        <div class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white border-t border-gray-200 z-10">
+          <div class="flex flex-col gap-2">
+            <!-- Info row -->
+            <div class="text-sm text-gray-700">
+              Showing <span class="font-medium">{{ Math.min(((currentPage - 1) * itemsPerPage) + 1, filteredCalls.length) }}</span> to
+              <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredCalls.length) }}</span> of
+              <span class="font-medium">{{ filteredCalls.length }}</span> calls (Page {{ currentPage }} of {{ totalPages }})
+            </div>
+
+            <!-- Controls row -->
+            <div class="flex items-center justify-center">
+              <!-- Previous Button -->
               <button
                 @click="prevPage"
                 :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
+                :class="currentPage === 1
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
               >
                 Previous
               </button>
+
+              <!-- Page Numbers -->
+              <template v-for="page in pageNumbers" :key="page">
+                <button
+                  @click="goToPage(page)"
+                  class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
+                  :class="page === currentPage
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                >
+                  {{ page }}
+                </button>
+              </template>
+
+              <!-- Next Button -->
               <button
                 @click="nextPage"
                 :disabled="currentPage === totalPages"
-                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
+                :class="currentPage === totalPages
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
               >
                 Next
               </button>
             </div>
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p class="text-sm text-gray-700">
-                  Showing
-                  <span class="font-medium">{{ startIndex + 1 }}</span>
-                  to
-                  <span class="font-medium">{{ Math.min(endIndex, filteredCalls.length) }}</span>
-                  of
-                  <span class="font-medium">{{ filteredCalls.length }}</span>
-                  results
-                </p>
-              </div>
-              <div>
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button
-                    @click="prevPage"
-                    :disabled="currentPage === 1"
-                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span class="sr-only">Previous</span>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                  <span
-                    v-for="page in visiblePages"
-                    :key="page"
-                    @click="goToPage(page)"
-                    :class="[
-                      'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                      page === currentPage
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                    ]"
-                  >
-                    {{ page }}
-                  </span>
-                  <button
-                    @click="nextPage"
-                    :disabled="currentPage === totalPages"
-                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span class="sr-only">Next</span>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </nav>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-    </div>
     </div>
 
     <!-- Ticket Creation Modal -->
@@ -890,7 +865,7 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 10,
+      itemsPerPage: 3,
 
       // Call Modal
       showCallModal: false,
@@ -1063,19 +1038,22 @@ export default {
       return this.startIndex + this.itemsPerPage
     },
 
-    // Visible page numbers for pagination
-    visiblePages() {
+    // Page numbers to show in pagination
+    pageNumbers() {
       const pages = []
-      const maxVisible = 5
-      let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2))
-      let end = Math.min(this.totalPages, start + maxVisible - 1)
+      const maxVisiblePages = 5
 
-      if (end - start < maxVisible - 1) {
-        start = Math.max(1, end - maxVisible + 1)
-      }
+      if (this.totalPages <= maxVisiblePages) {
+        for (let i = 1; i <= this.totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        const startPage = Math.max(1, this.currentPage - 2)
+        const endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1)
 
-      for (let i = start; i <= end; i++) {
-        pages.push(i)
+        for (let i = startPage; i <= endPage; i++) {
+          pages.push(i)
+        }
       }
 
       return pages
@@ -1241,7 +1219,9 @@ export default {
     },
 
     goToPage(page) {
-      this.currentPage = page
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+      }
     },
 
     // View call details - Opens ticket creation modal
@@ -1672,40 +1652,63 @@ export default {
 </script>
 
 <style scoped>
-/* Fix double scrollbar - main container should not scroll */
+/* Main container */
 .h-screen {
   height: 100vh;
   overflow: hidden;
 }
 
-/* Only allow scrolling on the main content area */
-.flex-1.overflow-auto {
+/* Flex utilities */
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+/* Ensure proper overflow handling */
+.overflow-auto {
   overflow-y: auto;
   overflow-x: auto;
 }
 
-/* Custom scrollbar */
-.flex-1.overflow-auto::-webkit-scrollbar {
+/* Custom scrollbar - vertical only visible */
+.overflow-auto::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
+  height: 0px;
 }
 
-.flex-1.overflow-auto::-webkit-scrollbar-track {
+.overflow-auto::-webkit-scrollbar:horizontal {
+  height: 0px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
   background: #f1f1f1;
 }
 
-.flex-1.overflow-auto::-webkit-scrollbar-thumb {
+.overflow-auto::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
 }
 
-.flex-1.overflow-auto::-webkit-scrollbar-thumb:hover {
+.overflow-auto::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
 
-/* Ensure no overflow on other elements */
-.overflow-hidden {
-  overflow: hidden !important;
+/* Make horizontal scrollbar invisible */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 0px;
+}
+
+.overflow-x-auto::-webkit-scrollbar:horizontal {
+  height: 0px;
+}
+
+/* Firefox */
+.overflow-x-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 /* Smooth transitions */
