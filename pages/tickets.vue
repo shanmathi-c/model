@@ -241,6 +241,7 @@
                   <th v-if="visibleColumns.csat" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 80px; min-width: 80px;">CSAT</th>
                   <th v-if="visibleColumns.fcr" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 60px; min-width: 60px;">FCR</th>
                   <th v-if="visibleColumns.notes" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 300px; min-width: 300px;">Notes</th>
+                  <th v-if="visibleColumns.feedback" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 150px; min-width: 150px;">Feedback</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200">
@@ -365,6 +366,14 @@
                     <div class="text-sm text-gray-600 max-w-xs truncate">
                       {{ ticket.notes }}
                     </div>
+                  </td>
+
+                  <!-- Feedback -->
+                  <td v-if="visibleColumns.feedback" class="px-4 py-4 whitespace-nowrap">
+                    <div v-if="ticket.feedback" class="text-sm text-gray-900">
+                      <div class="max-w-xs truncate">{{ ticket.feedback }}</div>
+                    </div>
+                    <span v-else class="text-sm text-gray-400">-</span>
                   </td>
                 </tr>
               </tbody>
@@ -719,6 +728,42 @@
               </div>
             </div>
 
+            <!-- First Call Resolution -->
+            <div class="bg-blue-50 rounded-lg p-4 border-2 border-blue-300">
+              <h3 class="text-sm font-semibold text-blue-900 mb-3">✅ First Call Resolution</h3>
+              <div class="space-y-3">
+                <p class="text-xs text-gray-600">Was this issue resolved on the first call?</p>
+                <div class="flex items-center gap-6">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="selectedTicketDetails.firstCallResolution"
+                      :value="true"
+                      @change="updateFirstCallResolution"
+                      class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                    />
+                    <span class="text-sm font-medium text-gray-900">Yes</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="selectedTicketDetails.firstCallResolution"
+                      :value="false"
+                      @change="updateFirstCallResolution"
+                      class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                    />
+                    <span class="text-sm font-medium text-gray-900">No</span>
+                  </label>
+                </div>
+                <div v-if="selectedTicketDetails.firstCallResolution !== null && selectedTicketDetails.firstCallResolution !== undefined" class="mt-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        :class="selectedTicketDetails.firstCallResolution ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                    {{ selectedTicketDetails.firstCallResolution ? 'FCR: Yes' : 'FCR: No' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <!-- Related Calls & Recordings -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Related Calls & Recordings</h3>
@@ -999,7 +1044,8 @@ export default {
         { key: 'resolved', label: 'Resolved' },
         { key: 'csat', label: 'CSAT' },
         { key: 'fcr', label: 'FCR' },
-        { key: 'notes', label: 'Notes' }
+        { key: 'notes', label: 'Notes' },
+        { key: 'feedback', label: 'Feedback' }
       ],
 
       // Visible columns state
@@ -1618,6 +1664,40 @@ export default {
         console.error('Error changing ticket agent', error)
       } finally {
         this.changingAgent = false
+      }
+    },
+
+    // Update First Call Resolution
+    async updateFirstCallResolution() {
+      if (!this.selectedTicketDetails) return
+
+      try {
+        const ticketId = this.selectedTicketDetails.id
+        const fcrValue = this.selectedTicketDetails.firstCallResolution
+
+        console.log('Updating FCR for ticket:', ticketId, 'to:', fcrValue)
+
+        // Update in backend (you may need to create this endpoint)
+        await fetch(`http://localhost:5001/tickets/${ticketId}/fcr`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstCallResolution: fcrValue
+          })
+        })
+
+        // Update local ticket data
+        const idx = this.tickets.findIndex(t => t.id === ticketId)
+        if (idx !== -1) {
+          this.tickets[idx].firstCallResolution = fcrValue
+        }
+
+        console.log('FCR updated successfully')
+      } catch (error) {
+        console.error('Error updating FCR:', error)
+        alert('Failed to update First Call Resolution')
       }
     },
 
