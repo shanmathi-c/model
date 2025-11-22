@@ -1560,6 +1560,71 @@ export class ticketController {
         }
     }
 
+    // Update call agent - updates agentId in calls table
+    static updateCallAgent(req, res) {
+        const { callId } = req.params;
+        const { agentId } = req.body;
+
+        console.log('Received updateCallAgent request for callId:', callId, 'agentId:', agentId);
+
+        if (!agentId) {
+            return res.status(400).json({
+                message: "Missing required field: agentId"
+            });
+        }
+
+        try {
+            // First, verify the call exists
+            connection.query(
+                "SELECT * FROM calls WHERE callId = ?",
+                [callId],
+                (err, callResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error fetching call log",
+                            error: err
+                        });
+                    }
+
+                    if (callResult.length === 0) {
+                        return res.status(404).json({
+                            message: "Call log not found"
+                        });
+                    }
+
+                    // Update the agentId in calls table
+                    connection.query(
+                        "UPDATE calls SET agentId = ? WHERE callId = ?",
+                        [agentId, callId],
+                        (updateErr, updateResult) => {
+                            if (updateErr) {
+                                return res.status(500).json({
+                                    message: "Error updating call agent",
+                                    error: updateErr
+                                });
+                            }
+
+                            return res.json({
+                                message: "Call agent updated successfully",
+                                data: {
+                                    callId: callId,
+                                    agentId: agentId
+                                }
+                            });
+                        }
+                    );
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in updateCallAgent:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
     // Get all call logs
     static getCallLogs(req, res) {
         // Fetch data ONLY from calls table, with customer names via subqueries

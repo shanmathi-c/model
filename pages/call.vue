@@ -889,14 +889,36 @@
               </div>
               <div class="bg-green-50 rounded-lg p-4 border border-green-200">
                 <h3 class="text-sm font-semibold text-green-900 mb-3">Agent</h3>
-                <div class="space-y-2">
+                <div class="space-y-3">
                   <div>
-                    <p class="text-xs text-green-700">Name</p>
+                    <p class="text-xs text-green-700">Currently Assigned</p>
                     <p class="text-sm font-medium text-green-900">{{ selectedCallDetails?.agentName || 'Not Assigned' }}</p>
                   </div>
                   <div>
                     <p class="text-xs text-green-700">Phone</p>
                     <p class="text-sm font-medium text-green-900">{{ selectedCallDetails?.agentPhone || 'N/A' }}</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select
+                      v-model="selectedCallDetails.agentId"
+                      class="px-2 py-1 border border-gray-300 rounded text-xs bg-white text-gray-900"
+                    >
+                      <option value="" disabled>Select agent</option>
+                      <option
+                        v-for="agent in availableAgentsForCall"
+                        :key="agent.id"
+                        :value="agent.id"
+                      >
+                        {{ agent.agentName || agent.name || agent.label }}
+                      </option>
+                    </select>
+                    <button
+                      @click="changeCallAgent"
+                      :disabled="!selectedCallDetails?.agentId || changingCallAgent"
+                      class="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {{ changingCallAgent ? 'Updating...' : 'Update Agent' }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1151,7 +1173,11 @@ export default {
       callTranscript: null,
       callNotes: [],
       showAddCallNote: false,
-      newCallNote: ''
+      newCallNote: '',
+
+      // Agent change for call side panel
+      availableAgentsForCall: [],
+      changingCallAgent: false
     }
   },
 
@@ -1393,6 +1419,13 @@ export default {
         // Extract unique agent names for filter dropdown
         const uniqueAgents = [...new Set(this.calls.map(call => call.agentName).filter(name => name && name !== 'Not Assigned'))]
         this.agentOptions = uniqueAgents.sort()
+
+        // Build available agents list for call details side panel (simple structure with id + name)
+        this.availableAgentsForCall = [...new Map(
+          this.calls
+            .filter(c => c.agentId && c.agentName && c.agentName !== 'Not Assigned')
+            .map(c => [c.agentId, { id: c.agentId, agentName: c.agentName }])
+        ).values()]
 
         // Reset to first page when filtering
         this.currentPage = 1
@@ -1937,6 +1970,80 @@ export default {
       // For now, using placeholder data
       this.callTranscript = null // Will be populated from API
       this.callNotes = []
+
+      // Load available agents for the call's product
+      try {
+        const productId = this.selectedCallDetails?.productId
+        if (productId) {
+          const resAgents = await $fetch(`http://localhost:5001/agents/product/${productId}`)
+          this.availableAgentsForCall = resAgents.data || []
+        } else {
+          this.availableAgentsForCall = []
+        }
+      } catch (err) {
+        console.error('Error loading agents for call', err)
+        this.availableAgentsForCall = []
+      }
+    },
+
+    async changeCallAgent() {
+      if (!this.selectedCallDetails || !this.selectedCallDetails.agentId) return
+
+      this.changingCallAgent = true
+      const callId = this.selectedCallDetails.callId
+      const agentId = this.selectedCallDetails.agentId
+      const ticketId = this.selectedCallDetails.ticketId
+
+      try {
+        // Step 1: Update calls table
+        const updateCallResponse = await $fetch(`http://localhost:5001/calls/${callId}/agent`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+            agentId
+          }
+        })
+
+        // Step 2: If there's a related ticket, update assign-ticket table
+        if (ticketId && ticketId !== 0 && ticketId !== '0' && ticketId !== null) {
+          await $fetch('http://localhost:5001/assign', {
+            method: 'POST',
+            body: {
+              ticketId,
+              agentId
+            }
+          })
+        }
+
+        // Update local call data with new agent info
+        const agent = this.availableAgentsForCall.find(a => a.id == agentId)
+        const agentName = agent ? (agent.agentName || agent.name) : this.selectedCallDetails.agentName
+
+        this.selectedCallDetails = {
+          ...this.selectedCallDetails,
+          agentName,
+          agentId
+        }
+
+        // Update in the calls list
+        const idx = this.calls.findIndex(c => c.callId === callId)
+        if (idx !== -1) {
+          this.calls[idx] = {
+            ...this.calls[idx],
+            agentName,
+            agentId
+          }
+        }
+
+        alert('Agent updated successfully')
+      } catch (error) {
+        console.error('Error changing call agent', error)
+        alert(`Failed to update agent: ${error.message || 'Unknown error'}`)
+      } finally {
+        this.changingCallAgent = false
+      }
     },
 
     formatDuration(seconds) {
