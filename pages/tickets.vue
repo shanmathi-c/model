@@ -657,7 +657,28 @@
                     <p class="text-xs text-gray-500">Currently Assigned To</p>
                     <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.agentName || 'Unassigned' }}</p>
                   </div>
-                  <button class="text-xs text-blue-600 hover:text-blue-700">Change Agent</button>
+                  <div class="flex items-center gap-2">
+                    <select
+                      v-model="selectedTicketDetails.agentId"
+                      class="px-2 py-1 border border-gray-300 rounded text-xs"
+                    >
+                      <option value="" disabled>Select agent</option>
+                      <option
+                        v-for="agent in availableAgentsForTicket"
+                        :key="agent.id"
+                        :value="agent.id"
+                      >
+                        {{ agent.agentName || agent.name }}
+                      </option>
+                    </select>
+                    <button
+                      @click="changeTicketAgent"
+                      :disabled="!selectedTicketDetails?.agentId || changingAgent"
+                      class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {{ changingAgent ? 'Updating...' : 'Update Agent' }}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <p class="text-xs text-gray-500 mb-2">Assignment History</p>
@@ -1002,6 +1023,8 @@ export default {
       newNote: '',
       internalNotes: [],
       activityHistory: [],
+      availableAgentsForTicket: [],
+      changingAgent: false,
 
       // Status modal state
       showStatusModal: false,
@@ -1526,6 +1549,20 @@ export default {
           feedback: []
         }
       }
+
+      // Load available agents for this ticket's product
+      try {
+        const productId = this.selectedTicketDetails?.productId
+        if (productId) {
+          const resAgents = await $fetch(`http://localhost:5001/agents/product/${productId}`)
+          this.availableAgentsForTicket = resAgents.data || []
+        } else {
+          this.availableAgentsForTicket = []
+        }
+      } catch (err) {
+        console.error('Error loading agents for ticket', err)
+        this.availableAgentsForTicket = []
+      }
     },
 
     addInternalNote() {
@@ -1540,6 +1577,47 @@ export default {
         this.newNote = ''
         this.showAddNote = false
         // TODO: Save note to backend
+      }
+    },
+
+    async changeTicketAgent() {
+      if (!this.selectedTicketDetails || !this.selectedTicketDetails.agentId) return
+
+      this.changingAgent = true
+      const ticketId = this.selectedTicketDetails.id
+      const agentId = this.selectedTicketDetails.agentId
+
+      try {
+        await $fetch('http://localhost:5001/assign', {
+          method: 'POST',
+          body: {
+            ticketId,
+            agentId
+          }
+        })
+
+        // Update local ticket data with new agent info
+        const agent = this.availableAgentsForTicket.find(a => a.id == agentId)
+        const agentName = agent ? (agent.agentName || agent.name) : this.selectedTicketDetails.agentName
+
+        this.selectedTicketDetails = {
+          ...this.selectedTicketDetails,
+          agentName,
+          agentId
+        }
+
+        const idx = this.tickets.findIndex(t => t.id === ticketId)
+        if (idx !== -1) {
+          this.$set(this.tickets, idx, {
+            ...this.tickets[idx],
+            agentName,
+            agentId
+          })
+        }
+      } catch (error) {
+        console.error('Error changing ticket agent', error)
+      } finally {
+        this.changingAgent = false
       }
     },
 

@@ -806,14 +806,23 @@ export class ticketController {
                         });
                     }
 
-                    return res.json({
-                        message: isUpdate ? "Ticket reassigned successfully" : "Ticket assigned successfully",
-                        data: {
-                            ticketId: formattedTicketId,
-                            agentId: agentId,
-                            action: isUpdate ? 'reassigned' : 'assigned',
-                            importAction: 'single'
+                    // Step 4: Update calls table agentId for this ticket (best effort)
+                    const updateCallsQuery = `UPDATE calls SET agentId = ? WHERE ticketId = ? OR ticketId = ?`;
+
+                    connection.query(updateCallsQuery, [agentId, formattedTicketId, numericTicketId], (callsErr) => {
+                        if (callsErr) {
+                            console.log('Warning: failed to update calls agentId for ticket', formattedTicketId, callsErr.sqlMessage || callsErr);
                         }
+
+                        return res.json({
+                            message: isUpdate ? "Ticket reassigned successfully" : "Ticket assigned successfully",
+                            data: {
+                                ticketId: formattedTicketId,
+                                agentId: agentId,
+                                action: isUpdate ? 'reassigned' : 'assigned',
+                                importAction: 'single'
+                            }
+                        });
                     });
                 });
             });
