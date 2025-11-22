@@ -248,6 +248,7 @@
                   v-for="ticket in paginatedTickets"
                   :key="ticket.id"
                   class="hover:bg-gray-50 transition-colors cursor-pointer"
+                  @click="openTicketDetails(ticket)"
                 >
                   <!-- Ticket ID -->
                   <td v-if="visibleColumns.ticketId" class="px-4 py-4 whitespace-nowrap">
@@ -265,7 +266,7 @@
                           src="/phone-call.svg"
                           alt="Call"
                           class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
-                          @click="openCallModal(ticket)"
+                          @click.stop="openCallModal(ticket)"
                         />
                       </div>
                     </div>
@@ -279,7 +280,7 @@
                         src="/phone-call.svg"
                         alt="Call"
                         class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
-                        @click="openCallModal(ticket)"
+                        @click.stop="openCallModal(ticket)"
                       />
                       <span class="text-sm text-gray-900">{{ ticket.phone || '-' }}</span>
                     </div>
@@ -543,6 +544,268 @@
       </div>
     </div>
 
+    <!-- Ticket Details Side Panel -->
+    <div v-if="showTicketDetails" class="fixed inset-0 z-50 overflow-hidden">
+      <!-- Background overlay -->
+      <div class="absolute inset-0 bg-black bg-opacity-50" @click="closeTicketDetails"></div>
+
+      <!-- Side panel -->
+      <div class="absolute right-0 top-0 h-full w-full max-w-3xl bg-white shadow-2xl transform transition-transform duration-300"
+           :class="showTicketDetails ? 'translate-x-0' : 'translate-x-full'">
+
+        <!-- Panel Header -->
+        <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl font-bold text-gray-900">Ticket #{{ selectedTicketDetails?.id }}</h2>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    :class="getStatusBadgeClass(selectedTicketDetails?.status)">
+                {{ selectedTicketDetails?.status }}
+              </span>
+            </div>
+            <button @click="closeTicketDetails" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Content -->
+        <div class="flex-1 overflow-y-auto" style="max-height: calc(100vh - 80px);">
+          <div class="p-6 space-y-6">
+
+            <!-- Quick Actions Bar -->
+            <div class="flex gap-2 flex-wrap">
+              <button @click="editMode = !editMode" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                {{ editMode ? 'Save Changes' : 'Edit Details' }}
+              </button>
+              <button class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                Assign Agent
+              </button>
+              <button class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
+                Change Status
+              </button>
+              <button class="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
+                Link to Freshdesk
+              </button>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Customer Information</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Name</p>
+                  <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.customerName }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Phone</p>
+                  <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.phone }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Email</p>
+                  <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.customerContact || 'N/A' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Product</p>
+                  <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.productCategory || 'N/A' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticket Details -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Ticket Details</h3>
+              <div class="space-y-3">
+                <div>
+                  <p class="text-xs text-gray-500">Subject</p>
+                  <input v-if="editMode" v-model="editedTicket.subject" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
+                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.notes || 'No subject' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Description</p>
+                  <textarea v-if="editMode" v-model="editedTicket.description" rows="3"
+                            class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"></textarea>
+                  <p v-else class="text-sm text-gray-900 whitespace-pre-wrap">{{ selectedTicketDetails?.description || 'No description' }}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500">Priority</p>
+                    <select v-if="editMode" v-model="editedTicket.priority" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                    <p v-else class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.priority || 'Medium' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">Type</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.type || 'General' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Agent Assignment & History -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Agent Assignment</h3>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-xs text-gray-500">Currently Assigned To</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.agentName || 'Unassigned' }}</p>
+                  </div>
+                  <button class="text-xs text-blue-600 hover:text-blue-700">Change Agent</button>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-2">Assignment History</p>
+                  <div class="space-y-1 text-xs text-gray-600">
+                    <div class="flex justify-between">
+                      <span>Agent John Doe</span>
+                      <span>2024-01-15 10:30 AM</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Agent Jane Smith</span>
+                      <span>2024-01-14 02:15 PM</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Follow-up Information -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Follow-up Information</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Follow-up Date</p>
+                  <input v-if="editMode" type="date" v-model="editedTicket.followupDate"
+                         class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
+                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupDate || 'Not set' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Follow-up Status</p>
+                  <select v-if="editMode" v-model="editedTicket.followupStatus"
+                          class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    <option value="pending">Pending</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupStatus || 'Pending' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Related Calls & Recordings -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Related Calls & Recordings</h3>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <div>
+                      <p class="text-sm font-medium">Call #C001</p>
+                      <p class="text-xs text-gray-500">Duration: 5:23 | 2024-01-15 10:30 AM</p>
+                    </div>
+                  </div>
+                  <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                    Play Recording
+                  </button>
+                </div>
+                <div class="text-center py-2 text-xs text-gray-500">
+                  No more related calls
+                </div>
+              </div>
+            </div>
+
+            <!-- Internal Notes -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-900">Internal Notes</h3>
+                <button @click="showAddNote = true" class="text-xs text-blue-600 hover:text-blue-700">+ Add Note</button>
+              </div>
+              <div v-if="showAddNote" class="mb-3">
+                <textarea v-model="newNote" rows="3" placeholder="Enter your note..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"></textarea>
+                <div class="flex gap-2 mt-2">
+                  <button @click="addInternalNote" class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                    Add Note
+                  </button>
+                  <button @click="showAddNote = false; newNote = ''" class="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="text-sm text-gray-900">Customer requested callback tomorrow morning</p>
+                      <p class="text-xs text-gray-500 mt-1">By Agent John - 2024-01-15 3:30 PM</p>
+                    </div>
+                    <button class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Feedback & Comments -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Customer Feedback & Comments</h3>
+              <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                  <p class="text-xs text-gray-500">CSAT Rating:</p>
+                  <div class="flex gap-1">
+                    <span v-for="i in 5" :key="i" class="text-lg"
+                          :class="i <= (selectedTicketDetails?.csatRating || 0) ? 'text-yellow-500' : 'text-gray-300'">
+                      ★
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-1">Customer Comment:</p>
+                  <p class="text-sm text-gray-700 italic">"Great service, issue resolved quickly!"</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Activity History</h3>
+              <div class="space-y-3">
+                <div class="flex gap-3">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Ticket created</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(selectedTicketDetails?.createdDate) }}</p>
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <div class="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Assigned to {{ selectedTicketDetails?.agentName }}</p>
+                    <p class="text-xs text-gray-500">2 hours ago</p>
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Status changed to In Progress</p>
+                    <p class="text-xs text-gray-500">1 hour ago</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Fixed Pagination Controls -->
     <div class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white border-t border-gray-200 z-10">
       <div class="flex flex-col gap-2">
@@ -678,7 +941,17 @@ export default {
       // Data from backend
       tickets: [],
       allAgents: [],
-      allProducts: []
+      allProducts: [],
+
+      // Ticket Details Side Panel
+      showTicketDetails: false,
+      selectedTicketDetails: null,
+      editMode: false,
+      editedTicket: {},
+      showAddNote: false,
+      newNote: '',
+      internalNotes: [],
+      activityHistory: []
     }
   },
 
@@ -1148,6 +1421,54 @@ export default {
         default:
           return 'bg-gray-100 text-gray-800'
       }
+    },
+
+    // Ticket Details Side Panel Methods
+    openTicketDetails(ticket) {
+      this.selectedTicketDetails = { ...ticket }
+      this.editedTicket = { ...ticket }
+      this.showTicketDetails = true
+      this.editMode = false
+      this.showAddNote = false
+      this.newNote = ''
+      // Load related data (calls, notes, history, etc.)
+      this.loadTicketRelatedData(ticket.id)
+    },
+
+    closeTicketDetails() {
+      this.showTicketDetails = false
+      this.selectedTicketDetails = null
+      this.editMode = false
+      this.showAddNote = false
+      this.newNote = ''
+    },
+
+    async loadTicketRelatedData(ticketId) {
+      // TODO: Fetch related calls, notes, and activity history from backend
+      // For now, using placeholder data
+      this.internalNotes = []
+      this.activityHistory = []
+    },
+
+    addInternalNote() {
+      if (this.newNote.trim()) {
+        const note = {
+          id: Date.now(),
+          text: this.newNote,
+          author: 'Current Agent',
+          timestamp: new Date().toISOString()
+        }
+        this.internalNotes.unshift(note)
+        this.newNote = ''
+        this.showAddNote = false
+        // TODO: Save note to backend
+      }
+    },
+
+    formatDate(date) {
+      if (!date) return 'N/A'
+      const d = new Date(date)
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()
     }
   },
 
@@ -1264,6 +1585,19 @@ export default {
 </script>
 
 <style scoped>
+/* Side Panel Transition Animation */
+.transform {
+  transition: transform 0.3s ease-in-out;
+}
+
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+.translate-x-full {
+  transform: translateX(100%);
+}
+
 /* Thin scrollbar for vertical, invisible for horizontal */
 ::-webkit-scrollbar {
   width: 4px !important;
