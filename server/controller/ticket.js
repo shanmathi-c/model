@@ -42,28 +42,59 @@ export class ticketController {
     static getTicketFeedback(req, res) {
         const { id } = req.params;
 
-        // We try to match either by formatted ticketId (T001) or numeric id
-        const query = `
-            SELECT *
-            FROM feedback
-            WHERE ticketId = ?
-               OR ticketId = (
-                    SELECT ticketId FROM tickets WHERE id = ? LIMIT 1
-               )
-            ORDER BY createdAt DESC
-        `;
+        // We try to match either by numeric id or formatted ticketId (T001)
+        // First get the ticketId for this id
+        const getTicketIdQuery = `SELECT ticketId FROM tickets WHERE id = ? OR ticketId = ? LIMIT 1`;
 
-        connection.query(query, [id, id], (err, result) => {
+        connection.query(getTicketIdQuery, [id, id], (err, ticketResult) => {
             if (err) {
                 return res.status(500).json({
-                    message: "Error fetching ticket feedback",
+                    message: "Error finding ticket",
                     error: err
                 });
             }
 
-            return res.json({
-                message: "Ticket feedback fetched successfully",
-                data: result || []
+            if (!ticketResult || ticketResult.length === 0) {
+                return res.json({
+                    message: "Ticket not found",
+                    data: []
+                });
+            }
+
+            const ticketId = ticketResult[0].ticketId;
+
+            // Now get feedback for this ticketId
+            const query = `
+                SELECT
+                    f.*,
+                    t.ticketId,
+                    t.ticketType,
+                    t.productId,
+                    p.productName,
+                    t.name as customerName,
+                    t.email as customerEmail,
+                    a.agentName
+                FROM feedbacks f
+                LEFT JOIN tickets t ON f.ticketId = t.ticketId
+                LEFT JOIN product p ON t.productId = p.productId
+                LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
+                LEFT JOIN agents a ON at.agentId = a.id
+                WHERE f.ticketId = ?
+                ORDER BY f.createdAt DESC
+            `;
+
+            connection.query(query, [ticketId], (err, result) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error fetching ticket feedback",
+                        error: err
+                    });
+                }
+
+                return res.json({
+                    message: "Ticket feedback fetched successfully",
+                    data: result || []
+                });
             });
         });
     }
@@ -2073,29 +2104,39 @@ export class ticketController {
         }
     }
 
-    // Get all feedback
+    // Get all feedback (optionally filter by ticketId)
     static getFeedback(req, res) {
         try {
+            const { ticketId } = req.query;
+
+            let whereClause = '';
+            let queryParams = [];
+
+            if (ticketId) {
+                whereClause = 'WHERE f.ticketId = ?';
+                queryParams.push(ticketId);
+            }
+
             const query = `
                 SELECT
                     f.*,
-                    t.id as ticketId,
+                    t.ticketId,
                     t.ticketType,
                     t.productId,
                     p.productName,
-                    c.fullName as customerName,
-                    c.email as customerEmail,
-                    a.fullName as agentName,
-                    a.id as agentId
-                FROM feedback f
-                LEFT JOIN tickets t ON f.ticketId = t.id
-                LEFT JOIN products p ON t.productId = p.id
-                LEFT JOIN customers c ON t.customerId = c.id
-                LEFT JOIN agents a ON t.agentId = a.id
-                ORDER BY f.requestSentAt DESC
+                    t.name as customerName,
+                    t.email as customerEmail,
+                    a.agentName
+                FROM feedbacks f
+                LEFT JOIN tickets t ON f.ticketId = t.ticketId
+                LEFT JOIN product p ON t.productId = p.productId
+                LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
+                LEFT JOIN agents a ON at.agentId = a.id
+                ${whereClause}
+                ORDER BY f.createdAt DESC
             `;
 
-            connection.query(query, (err, results) => {
+            connection.query(query, queryParams, (err, results) => {
                 if (err) {
                     return res.status(500).json({
                         message: "Error fetching feedback",

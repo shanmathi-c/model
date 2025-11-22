@@ -372,9 +372,13 @@
                   <td v-if="visibleColumns.feedback" class="px-4 py-4 whitespace-nowrap">
                     <!-- Show "Feedback Received" if status is received -->
                     <div v-if="ticket.feedbackStatus === 'received'" class="text-sm">
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <button
+                        @click.stop="openFeedbackDetailsModal(ticket)"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer"
+                        title="Click to view feedback details"
+                      >
                         Feedback Received
-                      </span>
+                      </button>
                       <div v-if="ticket.feedbackRating" class="mt-1 text-xs text-gray-600">
                         Rating: {{ ticket.feedbackRating }}/5
                       </div>
@@ -891,25 +895,56 @@
                   :key="item.id || item.createdAt"
                   class="border border-gray-200 rounded-lg p-3 bg-white"
                 >
-                  <div class="flex items-center gap-3 mb-1">
-                    <p class="text-xs text-gray-500">CSAT Rating:</p>
-                    <div class="flex gap-1">
-                      <span
-                        v-for="i in 5"
-                        :key="i"
-                        class="text-lg"
-                        :class="i <= (item.rating || item.csatRating || 0) ? 'text-yellow-500' : 'text-gray-300'"
-                      >
-                        ★
-                      </span>
+                  <!-- Feedback Status Badge -->
+                  <div class="flex items-center justify-between mb-2">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      :class="item.deliveryStatus === 'received' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                    >
+                      {{ item.deliveryStatus === 'received' ? 'Feedback Received' : 'Pending' }}
+                    </span>
+                    <span class="text-xs text-gray-400">{{ item.feedbackId }}</span>
+                  </div>
+
+                  <!-- Rating - only show if received -->
+                  <div v-if="item.deliveryStatus === 'received' && item.rating" class="mb-2">
+                    <div class="flex items-center gap-3">
+                      <p class="text-xs text-gray-500">Rating:</p>
+                      <div class="flex gap-1">
+                        <span
+                          v-for="i in 5"
+                          :key="i"
+                          class="text-lg"
+                          :class="i <= (item.rating || 0) ? 'text-yellow-500' : 'text-gray-300'"
+                        >
+                          ★
+                        </span>
+                      </div>
+                      <span class="text-sm font-semibold text-gray-700">{{ item.rating }}/5</span>
                     </div>
                   </div>
-                  <div>
+
+                  <!-- Comment - only show if received -->
+                  <div v-if="item.deliveryStatus === 'received'">
                     <p class="text-xs text-gray-500 mb-1">Customer Comment:</p>
-                    <p class="text-sm text-gray-700 italic">{{ item.comment || item.text || 'No comment provided' }}</p>
+                    <p class="text-sm text-gray-700 italic bg-gray-50 rounded p-2">
+                      {{ item.feedbackComment || 'No comment provided' }}
+                    </p>
                   </div>
-                  <div class="mt-1 text-xs text-gray-400" v-if="item.createdAt">
-                    {{ formatDate(item.createdAt) }}
+
+                  <!-- Pending message -->
+                  <div v-else class="text-sm text-gray-500 italic">
+                    Waiting for customer to submit feedback
+                  </div>
+
+                  <!-- Timestamp -->
+                  <div class="mt-2 text-xs text-gray-400">
+                    <span v-if="item.deliveryStatus === 'received'">
+                      Received: {{ formatDate(item.updatedAt || item.collectedTimestamp) }}
+                    </span>
+                    <span v-else>
+                      Sent: {{ formatDate(item.createdAt) }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -989,6 +1024,100 @@
                       <line x1="10" y1="14" x2="21" y2="3"></line>
                     </svg>
                     <span>Open in New Tab</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback Details Modal -->
+            <div v-if="showFeedbackDetailsModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-semibold text-gray-900">Customer Feedback Details</h3>
+                  <button @click="showFeedbackDetailsModal = false" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <div v-if="loadingFeedbackDetails" class="text-center py-8">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p class="text-sm text-gray-500 mt-2">Loading feedback...</p>
+                </div>
+
+                <div v-else-if="feedbackDetailsError" class="text-center py-8">
+                  <p class="text-sm text-red-600">{{ feedbackDetailsError }}</p>
+                </div>
+
+                <div v-else-if="feedbackDetails" class="space-y-4">
+                  <!-- Ticket Information -->
+                  <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Ticket Information</h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span class="text-gray-500">Ticket ID:</span>
+                        <span class="ml-2 font-medium text-gray-900">{{ feedbackDetails.ticketId }}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-500">Type:</span>
+                        <span class="ml-2 font-medium text-gray-900">{{ feedbackDetails.ticketType }}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-500">Product:</span>
+                        <span class="ml-2 font-medium text-gray-900">{{ feedbackDetails.productName || 'N/A' }}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-500">Agent:</span>
+                        <span class="ml-2 font-medium text-gray-900">{{ feedbackDetails.agentName || 'N/A' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Rating -->
+                  <div>
+                    <label class="text-sm font-semibold text-gray-700 block mb-2">Customer Rating</label>
+                    <div class="flex items-center gap-1">
+                      <svg v-for="star in 5" :key="star"
+                           xmlns="http://www.w3.org/2000/svg"
+                           width="24"
+                           height="24"
+                           viewBox="0 0 24 24"
+                           :fill="star <= (feedbackDetails.rating || 0) ? '#FBBF24' : 'none'"
+                           :stroke="star <= (feedbackDetails.rating || 0) ? '#FBBF24' : '#D1D5DB'"
+                           stroke-width="2"
+                           stroke-linecap="round"
+                           stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                      <span class="ml-2 text-lg font-semibold text-gray-900">{{ feedbackDetails.rating || 0 }}/5</span>
+                    </div>
+                  </div>
+
+                  <!-- Comments -->
+                  <div>
+                    <label class="text-sm font-semibold text-gray-700 block mb-2">Customer Comments</label>
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 min-h-[100px]">
+                      <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ feedbackDetails.feedbackComment || 'No comments provided' }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Timestamp -->
+                  <div class="border-t pt-3">
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                      <span>Feedback ID: {{ feedbackDetails.feedbackId }}</span>
+                      <span>Received: {{ formatDate(feedbackDetails.updatedAt || feedbackDetails.collectedTimestamp) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                  <button
+                    @click="showFeedbackDetailsModal = false"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Close
                   </button>
                 </div>
               </div>
@@ -1193,6 +1322,12 @@ export default {
       showFeedbackLinkModal: false,
       feedbackLink: '',
       feedbackLinkCopied: false,
+
+      // Feedback details modal
+      showFeedbackDetailsModal: false,
+      feedbackDetails: null,
+      loadingFeedbackDetails: false,
+      feedbackDetailsError: null,
 
       // Sidebar status update
       sidebarSelectedStatus: ''
@@ -2019,6 +2154,32 @@ export default {
     // Open feedback link from table in new tab
     openFeedbackLinkInNewTab(link) {
       window.open(link, '_blank')
+    },
+
+    // Open feedback details modal
+    async openFeedbackDetailsModal(ticket) {
+      this.showFeedbackDetailsModal = true
+      this.loadingFeedbackDetails = true
+      this.feedbackDetailsError = null
+      this.feedbackDetails = null
+
+      try {
+        // We need to get the feedback ID from the feedbacks table
+        // Since we have ticketId, we'll fetch feedback by ticketId
+        const response = await $fetch(`http://localhost:5001/feedback?ticketId=${ticket.ticketId}`)
+
+        if (response.data && response.data.length > 0) {
+          // Get the most recent feedback for this ticket
+          this.feedbackDetails = response.data[0]
+        } else {
+          this.feedbackDetailsError = 'No feedback found for this ticket'
+        }
+      } catch (error) {
+        console.error('Failed to fetch feedback details', error)
+        this.feedbackDetailsError = 'Failed to load feedback details'
+      } finally {
+        this.loadingFeedbackDetails = false
+      }
     },
 
     // Copy feedback link from table to clipboard
