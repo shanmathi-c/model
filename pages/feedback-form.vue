@@ -125,6 +125,11 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
+// Disable default layout for this page
+definePageMeta({
+  layout: false
+})
+
 const route = useRoute()
 
 const loading = ref(true)

@@ -2097,19 +2097,18 @@ export class ticketController {
             const query = `
                 SELECT
                     f.*,
-                    t.id as ticketId,
+                    t.ticketId,
                     t.ticketType,
                     t.productId,
                     p.productName,
-                    c.fullName as customerName,
-                    c.email as customerEmail,
-                    a.fullName as agentName,
-                    a.id as agentId
-                FROM feedback f
-                LEFT JOIN tickets t ON f.ticketId = t.id
-                LEFT JOIN products p ON t.productId = p.id
-                LEFT JOIN customers c ON t.customerId = c.id
-                LEFT JOIN agents a ON t.agentId = a.id
+                    t.name as customerName,
+                    t.email as customerEmail,
+                    a.agentName
+                FROM feedbacks f
+                LEFT JOIN tickets t ON f.ticketId = t.ticketId
+                LEFT JOIN product p ON t.productId = p.productId
+                LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
+                LEFT JOIN agents a ON at.agentId = a.id
                 WHERE f.id = ?
             `;
 
@@ -2152,34 +2151,49 @@ export class ticketController {
         }
 
         try {
-            const requestSentAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            const query = `
-                INSERT INTO feedback (ticketId, customerEmail, ratingScale, includeComments, status, requestSentAt)
-                VALUES (?, ?, ?, ?, 'pending', ?)
-            `;
-
+            // Generate unique feedbackId (similar to ticketId generation)
             connection.query(
-                query,
-                [ticketId, customerEmail, ratingScale || 5, includeComments || false, requestSentAt],
+                "SELECT feedbackId FROM feedbacks ORDER BY id DESC LIMIT 1",
                 (err, result) => {
-                    if (err) {
-                        return res.status(500).json({
-                            message: "Error creating feedback request",
-                            error: err
-                        });
+                    let feedbackId = 'FB001';
+
+                    if (!err && result && result.length > 0 && result[0].feedbackId) {
+                        const lastId = result[0].feedbackId;
+                        const numPart = parseInt(lastId.substring(2)) + 1;
+                        feedbackId = 'FB' + String(numPart).padStart(3, '0');
                     }
 
-                    return res.json({
-                        message: "Feedback request sent successfully",
-                        data: {
-                            feedbackId: result.insertId,
-                            ticketId: ticketId,
-                            customerEmail: customerEmail,
-                            status: 'pending',
-                            requestSentAt: requestSentAt
+                    const query = `
+                        INSERT INTO feedbacks (feedbackId, ticketId, deliveryStatus, collectedTimestamp, createdAt, updatedAt)
+                        VALUES (?, ?, 'pending', ?, ?, ?)
+                    `;
+
+                    connection.query(
+                        query,
+                        [feedbackId, ticketId, currentTimestamp, currentTimestamp, currentTimestamp],
+                        (err, result) => {
+                            if (err) {
+                                return res.status(500).json({
+                                    message: "Error creating feedback request",
+                                    error: err
+                                });
+                            }
+
+                            return res.json({
+                                message: "Feedback request sent successfully",
+                                data: {
+                                    feedbackId: result.insertId,
+                                    formattedFeedbackId: feedbackId,
+                                    ticketId: ticketId,
+                                    customerEmail: customerEmail,
+                                    deliveryStatus: 'pending',
+                                    collectedTimestamp: currentTimestamp
+                                }
+                            });
                         }
-                    });
+                    );
                 }
             );
         } catch (error) {
@@ -2203,11 +2217,11 @@ export class ticketController {
         }
 
         try {
-            const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
             connection.query(
-                "UPDATE feedback SET rating = ?, comments = ?, status = 'received', createdAt = ? WHERE id = ?",
-                [rating, comments || null, createdAt, id],
+                "UPDATE feedbacks SET rating = ?, feedbackComment = ?, deliveryStatus = 'received', updatedAt = ? WHERE id = ?",
+                [rating, comments || null, updatedAt, id],
                 (err, result) => {
                     if (err) {
                         return res.status(500).json({
@@ -2227,9 +2241,9 @@ export class ticketController {
                         data: {
                             feedbackId: id,
                             rating: rating,
-                            comments: comments,
-                            status: 'received',
-                            createdAt: createdAt
+                            feedbackComment: comments,
+                            deliveryStatus: 'received',
+                            updatedAt: updatedAt
                         }
                     });
                 }

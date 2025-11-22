@@ -370,7 +370,24 @@
 
                   <!-- Feedback -->
                   <td v-if="visibleColumns.feedback" class="px-4 py-4 whitespace-nowrap">
-                    <div v-if="ticket.feedback" class="text-sm text-gray-900">
+                    <!-- Debug: {{ ticket.ticketId }} - Status: {{ ticket.status }} - Link: {{ ticket.feedbackLink ? 'Yes' : 'No' }} -->
+                    <div v-if="ticket.status === 'resolved' && ticket.feedbackLink" class="flex items-center gap-2">
+                      <button
+                        @click.stop="openFeedbackLinkInNewTab(ticket.feedbackLink)"
+                        class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        title="Open feedback form"
+                      >
+                        Open
+                      </button>
+                      <button
+                        @click.stop="copyFeedbackLinkFromTable(ticket.feedbackLink)"
+                        class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        title="Copy feedback link"
+                      >
+                        {{ ticket.feedbackLinkCopied ? 'Copied!' : 'Copy' }}
+                      </button>
+                    </div>
+                    <div v-else-if="ticket.feedback" class="text-sm text-gray-900">
                       <div class="max-w-xs truncate">{{ ticket.feedback }}</div>
                     </div>
                     <span v-else class="text-sm text-gray-400">-</span>
@@ -1906,8 +1923,16 @@ export default {
     // Generate feedback link and show modal
     async generateFeedbackLink() {
       try {
-        const ticketId = this.selectedTicketDetails.id
-        const customerEmail = this.selectedTicketDetails.email || this.selectedTicketDetails.customerEmail
+        const ticketId = this.selectedTicketDetails.ticketId || this.selectedTicketDetails.id
+        const customerEmail = this.selectedTicketDetails.customerContact || this.selectedTicketDetails.email || this.selectedTicketDetails.customerEmail
+
+        console.log('Generating feedback link for ticket:', ticketId, 'email:', customerEmail)
+
+        if (!customerEmail) {
+          console.error('Customer email is missing')
+          alert('Customer email is required to send feedback request')
+          return
+        }
 
         // Request feedback from backend
         const response = await $fetch('http://localhost:5001/feedback/request', {
@@ -1923,11 +1948,34 @@ export default {
         // Generate feedback link with feedback ID
         const feedbackId = response.data.feedbackId
         const baseUrl = window.location.origin
-        this.feedbackLink = `${baseUrl}/feedback-form?id=${feedbackId}`
+        const generatedLink = `${baseUrl}/feedback-form?id=${feedbackId}`
+
+        this.feedbackLink = generatedLink
         this.feedbackLinkCopied = false
-        this.showFeedbackLinkModal = true
+        // Don't show modal - buttons will appear in the table Feedback column
+        // this.showFeedbackLinkModal = true
+
+        // Store the feedback link in the ticket object for table display
+        if (this.selectedTicketDetails) {
+          this.selectedTicketDetails.feedbackLink = generatedLink
+          const ticketIndex = this.tickets.findIndex(t => t.ticketId === ticketId)
+          console.log('Looking for ticket with ticketId:', ticketId, 'Found at index:', ticketIndex)
+          if (ticketIndex !== -1) {
+            // Vue 3 doesn't need $set - direct assignment works with reactivity
+            this.tickets[ticketIndex].feedbackLink = generatedLink
+            this.tickets[ticketIndex].feedbackLinkCopied = false
+            console.log('Feedback link set on ticket:', this.tickets[ticketIndex])
+            console.log('Ticket status:', this.tickets[ticketIndex].status)
+          } else {
+            console.error('Could not find ticket in array with ticketId:', ticketId)
+          }
+        }
+
+        console.log('Feedback link generated successfully! Check the Feedback column.')
+        console.log('Generated link:', generatedLink)
       } catch (error) {
         console.error('Failed to generate feedback link', error)
+        alert('Failed to generate feedback link: ' + error.message)
       }
     },
 
@@ -1947,6 +1995,29 @@ export default {
     // Open feedback link in new tab
     openFeedbackLink() {
       window.open(this.feedbackLink, '_blank')
+    },
+
+    // Open feedback link from table in new tab
+    openFeedbackLinkInNewTab(link) {
+      window.open(link, '_blank')
+    },
+
+    // Copy feedback link from table to clipboard
+    async copyFeedbackLinkFromTable(link) {
+      try {
+        await navigator.clipboard.writeText(link)
+
+        // Find the ticket and update its copied state
+        const ticket = this.tickets.find(t => t.feedbackLink === link)
+        if (ticket) {
+          ticket.feedbackLinkCopied = true
+          setTimeout(() => {
+            ticket.feedbackLinkCopied = false
+          }, 2000)
+        }
+      } catch (error) {
+        console.error('Failed to copy link from table', error)
+      }
     },
 
     // Navigate to assign ticket page with current ticket id
