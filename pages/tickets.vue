@@ -889,6 +889,55 @@
               </div>
             </div>
 
+            <!-- Feedback Link Modal -->
+            <div v-if="showFeedbackLinkModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-semibold text-gray-900">Customer Feedback Link Generated</h3>
+                  <button @click="showFeedbackLinkModal = false" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="mb-4">
+                  <p class="text-sm text-gray-600 mb-3">Share this link with the customer to collect their feedback:</p>
+                  <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p class="text-sm font-mono text-gray-800 break-all">{{ feedbackLink }}</p>
+                  </div>
+                </div>
+
+                <div class="flex gap-3">
+                  <button
+                    @click="copyFeedbackLink"
+                    class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg v-if="!feedbackLinkCopied" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>{{ feedbackLinkCopied ? 'Copied!' : 'Copy Link' }}</span>
+                  </button>
+                  <button
+                    @click="openFeedbackLink"
+                    class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    <span>Open in New Tab</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Activity Log -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Activity History</h3>
@@ -1081,8 +1130,14 @@ export default {
         'in-progress',
         'pending',
         'resolved',
-        'closed'
-      ]
+        'closed',
+        'completed'
+      ],
+
+      // Feedback modal state
+      showFeedbackLinkModal: false,
+      feedbackLink: '',
+      feedbackLinkCopied: false
     }
   },
 
@@ -1739,11 +1794,62 @@ export default {
             status: this.newStatus
           })
         }
+
+        // If status is completed, show feedback link modal
+        if (this.newStatus === 'completed') {
+          await this.generateFeedbackLink()
+        }
       } catch (error) {
         console.error('Failed to update ticket status', error)
       } finally {
         this.showStatusModal = false
       }
+    },
+
+    // Generate feedback link and show modal
+    async generateFeedbackLink() {
+      try {
+        const ticketId = this.selectedTicketDetails.id
+        const customerEmail = this.selectedTicketDetails.email || this.selectedTicketDetails.customerEmail
+
+        // Request feedback from backend
+        const response = await $fetch('http://localhost:5001/feedback/request', {
+          method: 'POST',
+          body: {
+            ticketId: ticketId,
+            customerEmail: customerEmail,
+            ratingScale: 5,
+            includeComments: true
+          }
+        })
+
+        // Generate feedback link with feedback ID
+        const feedbackId = response.data.feedbackId
+        const baseUrl = window.location.origin
+        this.feedbackLink = `${baseUrl}/feedback-form?id=${feedbackId}`
+        this.feedbackLinkCopied = false
+        this.showFeedbackLinkModal = true
+      } catch (error) {
+        console.error('Failed to generate feedback link', error)
+      }
+    },
+
+    // Copy feedback link to clipboard
+    async copyFeedbackLink() {
+      try {
+        await navigator.clipboard.writeText(this.feedbackLink)
+        this.feedbackLinkCopied = true
+        setTimeout(() => {
+          this.feedbackLinkCopied = false
+        }, 2000)
+      } catch (error) {
+        console.error('Failed to copy link', error)
+      }
+    },
+
+    // Open feedback link in new tab
+    openFeedbackLink() {
+      window.open(this.feedbackLink, '_blank')
     },
 
     // Navigate to assign ticket page with current ticket id

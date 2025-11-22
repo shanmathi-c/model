@@ -31,6 +31,13 @@ router.get("/agents/product/:productId", ticketController.getAgentsByProduct);
 router.post("/assign", ticketController.assignTicketToAgent);
 router.post("/bulk-assign", ticketController.bulkAssignTickets);
 router.put("/tickets/:id/status", ticketController.updateTicketStatus);
+router.put("/tickets/:id/fcr", ticketController.updateTicketFCR);
+
+// Feedback routes
+router.get("/feedback", ticketController.getFeedback);
+router.get("/feedback/:id", ticketController.getFeedbackById);
+router.post("/feedback/request", ticketController.requestFeedback);
+router.put("/feedback/:id/response", ticketController.updateFeedbackResponse);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");

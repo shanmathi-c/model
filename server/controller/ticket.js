@@ -1921,4 +1921,249 @@ export class ticketController {
             });
         });
     }
+
+    // Update ticket First Call Resolution
+    static updateTicketFCR(req, res) {
+        const { id } = req.params;
+        const { firstCallResolution } = req.body;
+
+        if (firstCallResolution === undefined || firstCallResolution === null) {
+            return res.status(400).json({
+                message: "Missing required field: firstCallResolution"
+            });
+        }
+
+        try {
+            connection.query(
+                "UPDATE tickets SET firstCallResolution = ? WHERE id = ?",
+                [firstCallResolution, id],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error updating FCR",
+                            error: err
+                        });
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Ticket not found"
+                        });
+                    }
+
+                    return res.json({
+                        message: "First Call Resolution updated successfully",
+                        data: {
+                            ticketId: id,
+                            firstCallResolution: firstCallResolution
+                        }
+                    });
+                }
+            );
+        } catch (error) {
+            console.error('Error in updateTicketFCR:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Get all feedback
+    static getFeedback(req, res) {
+        try {
+            const query = `
+                SELECT
+                    f.*,
+                    t.id as ticketId,
+                    t.ticketType,
+                    t.productId,
+                    p.productName,
+                    c.fullName as customerName,
+                    c.email as customerEmail,
+                    a.fullName as agentName,
+                    a.id as agentId
+                FROM feedback f
+                LEFT JOIN tickets t ON f.ticketId = t.id
+                LEFT JOIN products p ON t.productId = p.id
+                LEFT JOIN customers c ON t.customerId = c.id
+                LEFT JOIN agents a ON t.agentId = a.id
+                ORDER BY f.requestSentAt DESC
+            `;
+
+            connection.query(query, (err, results) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error fetching feedback",
+                        error: err
+                    });
+                }
+
+                return res.json({
+                    message: "Feedback fetched successfully",
+                    data: results
+                });
+            });
+        } catch (error) {
+            console.error('Error in getFeedback:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Get single feedback by ID
+    static getFeedbackById(req, res) {
+        const { id } = req.params;
+
+        try {
+            const query = `
+                SELECT
+                    f.*,
+                    t.id as ticketId,
+                    t.ticketType,
+                    t.productId,
+                    p.productName,
+                    c.fullName as customerName,
+                    c.email as customerEmail,
+                    a.fullName as agentName,
+                    a.id as agentId
+                FROM feedback f
+                LEFT JOIN tickets t ON f.ticketId = t.id
+                LEFT JOIN products p ON t.productId = p.id
+                LEFT JOIN customers c ON t.customerId = c.id
+                LEFT JOIN agents a ON t.agentId = a.id
+                WHERE f.id = ?
+            `;
+
+            connection.query(query, [id], (err, results) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error fetching feedback",
+                        error: err
+                    });
+                }
+
+                if (results.length === 0) {
+                    return res.status(404).json({
+                        message: "Feedback request not found"
+                    });
+                }
+
+                return res.json({
+                    message: "Feedback fetched successfully",
+                    data: results[0]
+                });
+            });
+        } catch (error) {
+            console.error('Error in getFeedbackById:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Request feedback from customer
+    static requestFeedback(req, res) {
+        const { ticketId, customerEmail, ratingScale, includeComments } = req.body;
+
+        if (!ticketId || !customerEmail) {
+            return res.status(400).json({
+                message: "Missing required fields: ticketId, customerEmail"
+            });
+        }
+
+        try {
+            const requestSentAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            const query = `
+                INSERT INTO feedback (ticketId, customerEmail, ratingScale, includeComments, status, requestSentAt)
+                VALUES (?, ?, ?, ?, 'pending', ?)
+            `;
+
+            connection.query(
+                query,
+                [ticketId, customerEmail, ratingScale || 5, includeComments || false, requestSentAt],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error creating feedback request",
+                            error: err
+                        });
+                    }
+
+                    return res.json({
+                        message: "Feedback request sent successfully",
+                        data: {
+                            feedbackId: result.insertId,
+                            ticketId: ticketId,
+                            customerEmail: customerEmail,
+                            status: 'pending',
+                            requestSentAt: requestSentAt
+                        }
+                    });
+                }
+            );
+        } catch (error) {
+            console.error('Error in requestFeedback:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    // Update feedback with customer response
+    static updateFeedbackResponse(req, res) {
+        const { id } = req.params;
+        const { rating, comments } = req.body;
+
+        if (!rating) {
+            return res.status(400).json({
+                message: "Missing required field: rating"
+            });
+        }
+
+        try {
+            const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            connection.query(
+                "UPDATE feedback SET rating = ?, comments = ?, status = 'received', createdAt = ? WHERE id = ?",
+                [rating, comments || null, createdAt, id],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error updating feedback",
+                            error: err
+                        });
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Feedback request not found"
+                        });
+                    }
+
+                    return res.json({
+                        message: "Feedback response recorded successfully",
+                        data: {
+                            feedbackId: id,
+                            rating: rating,
+                            comments: comments,
+                            status: 'received',
+                            createdAt: createdAt
+                        }
+                    });
+                }
+            );
+        } catch (error) {
+            console.error('Error in updateFeedbackResponse:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
 }
