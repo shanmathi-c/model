@@ -2069,6 +2069,46 @@ export default {
       this.callTranscript = null // Will be populated from API
       this.callNotes = []
 
+      // Parse existing notes and display them in the call notes list
+      if (this.selectedCallDetails?.notes) {
+        const notesText = this.selectedCallDetails.notes
+        // Split notes by the timestamp separator
+        const notesParts = notesText.split(/\n\n--- (.*?) ---\n/)
+
+        // Parse the notes into structured format
+        const parsedNotes = []
+
+        if (notesParts.length === 1) {
+          // Single note without timestamp
+          parsedNotes.push({
+            id: Date.now(),
+            text: notesText,
+            timestamp: 'Unknown'
+          })
+        } else {
+          // Multiple notes with timestamps
+          for (let i = 1; i < notesParts.length; i += 2) {
+            if (notesParts[i] && notesParts[i + 1]) {
+              parsedNotes.push({
+                id: Date.now() + i,
+                text: notesParts[i + 1].trim(),
+                timestamp: notesParts[i]
+              })
+            }
+          }
+          // Add the first note (before any separator)
+          if (notesParts[0] && notesParts[0].trim()) {
+            parsedNotes.unshift({
+              id: Date.now(),
+              text: notesParts[0].trim(),
+              timestamp: 'Initial'
+            })
+          }
+        }
+
+        this.callNotes = parsedNotes
+      }
+
       // Load available agents for the call's product
       try {
         const productId = this.selectedCallDetails?.productId
@@ -2168,17 +2208,52 @@ export default {
       }
     },
 
-    addCallNote() {
+    async addCallNote() {
       if (this.newCallNote.trim()) {
-        const note = {
-          id: Date.now(),
-          text: this.newCallNote,
-          timestamp: new Date().toLocaleString()
+        try {
+          const ticketId = this.selectedCallDetails.ticketId
+
+          if (!ticketId) {
+            alert('No ticket associated with this call. Please create a ticket first.')
+            return
+          }
+
+          // Save note to backend (calls table notes column via ticket endpoint)
+          const response = await fetch(`http://localhost:5001/tickets/${ticketId}/details`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              notes: this.newCallNote
+            })
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            throw new Error(result.message || 'Failed to save note')
+          }
+
+          // Fetch updated call to get the full appended notes
+          await this.fetchCalls()
+
+          // Find the updated call
+          const updatedCall = this.calls.find(c => c.id === this.selectedCallDetails.id)
+          if (updatedCall) {
+            this.selectedCallDetails.notes = updatedCall.notes
+            // Reload notes to display them properly
+            this.loadCallRelatedData(this.selectedCallDetails.callId)
+          }
+
+          this.newCallNote = ''
+          this.showAddCallNote = false
+
+          console.log('Note saved successfully')
+        } catch (error) {
+          console.error('Error saving note:', error)
+          alert('Failed to save note: ' + error.message)
         }
-        this.callNotes.unshift(note)
-        this.newCallNote = ''
-        this.showAddCallNote = false
-        // TODO: Save note to backend
       }
     },
 

@@ -977,7 +977,8 @@ export class ticketController {
                             COALESCE((SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1), NULL) as feedbackStatus,
                             COALESCE((SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1), NULL) as feedbackRating,
                             COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment,
-                            COALESCE((SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1), NULL) as resolvedOn
+                            COALESCE((SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1), NULL) as resolvedOn,
+                            COALESCE((SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1), NULL) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.createdAt DESC
@@ -991,7 +992,8 @@ export class ticketController {
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.created_at DESC
@@ -1005,7 +1007,8 @@ export class ticketController {
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1019,7 +1022,8 @@ export class ticketController {
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1033,7 +1037,8 @@ export class ticketController {
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1047,7 +1052,8 @@ export class ticketController {
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1060,7 +1066,8 @@ export class ticketController {
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1827,6 +1834,7 @@ export class ticketController {
                    c.startTime,
                    c.endTime,
                    c.createdAt,
+                   c.notes,
                    (SELECT name FROM tickets
                     WHERE (ticketId = c.ticketId COLLATE utf8mb4_unicode_ci
                            OR id = c.ticketId
@@ -2437,47 +2445,71 @@ export class ticketController {
                             callUpdateFields.push("firstCall = ?");
                             callUpdateValues.push(firstCallResolution);
                         }
-                        if (notes !== undefined) {
-                            callUpdateFields.push("notes = ?");
-                            callUpdateValues.push(notes);
+                        if (notes !== undefined && notes !== null) {
+                            // Append new note to existing notes instead of replacing
+                            // First, get existing notes
+                            connection.query(
+                                "SELECT notes FROM calls WHERE ticketId = ? ORDER BY id DESC LIMIT 1",
+                                [ticketId],
+                                (err, existingNotes) => {
+                                    let appendedNotes = notes;
+
+                                    if (!err && existingNotes && existingNotes.length > 0 && existingNotes[0].notes) {
+                                        // Append new note with timestamp and separator
+                                        const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                                        appendedNotes = existingNotes[0].notes + '\n\n--- ' + timestamp + ' ---\n' + notes;
+                                    }
+
+                                    callUpdateFields.push("notes = ?");
+                                    callUpdateValues.push(appendedNotes);
+
+                                    // Continue with the update
+                                    executeCallUpdate();
+                                }
+                            );
+                            return; // Exit early, executeCallUpdate will be called after getting existing notes
                         }
 
-                        if (callUpdateFields.length > 0) {
-                            callUpdateValues.push(ticketId);
-                            const callUpdateQuery = `UPDATE calls SET ${callUpdateFields.join(", ")} WHERE ticketId = ?`;
+                        executeCallUpdate();
 
-                            connection.query(callUpdateQuery, callUpdateValues, (callUpdateErr) => {
-                                if (callUpdateErr) {
-                                    console.error('Error updating calls table:', callUpdateErr);
-                                }
+                        function executeCallUpdate() {
+                            if (callUpdateFields.length > 0) {
+                                callUpdateValues.push(ticketId);
+                                const callUpdateQuery = `UPDATE calls SET ${callUpdateFields.join(", ")} WHERE ticketId = ?`;
 
+                                connection.query(callUpdateQuery, callUpdateValues, (callUpdateErr) => {
+                                    if (callUpdateErr) {
+                                        console.error('Error updating calls table:', callUpdateErr);
+                                    }
+
+                                    return res.json({
+                                        message: "Ticket details updated successfully",
+                                        data: {
+                                            ticketId: ticketId,
+                                            updatedFields: {
+                                                subject,
+                                                description,
+                                                priority,
+                                                followupDate,
+                                                followupStatus,
+                                                firstCallResolution,
+                                                notes
+                                            }
+                                        }
+                                    });
+                                });
+                            } else {
                                 return res.json({
                                     message: "Ticket details updated successfully",
                                     data: {
                                         ticketId: ticketId,
                                         updatedFields: {
                                             subject,
-                                            description,
-                                            priority,
-                                            followupDate,
-                                            followupStatus,
-                                            firstCallResolution,
-                                            notes
+                                            description
                                         }
                                     }
                                 });
-                            });
-                        } else {
-                            return res.json({
-                                message: "Ticket details updated successfully",
-                                data: {
-                                    ticketId: ticketId,
-                                    updatedFields: {
-                                        subject,
-                                        description
-                                    }
-                                }
-                            });
+                            }
                         }
                     });
                 }

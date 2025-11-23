@@ -657,7 +657,7 @@
                 <div>
                   <p class="text-xs text-gray-500">Subject</p>
                   <input v-if="editMode" v-model="editedTicket.subject" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
-                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.notes || 'No subject' }}</p>
+                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.subject || 'No subject' }}</p>
                 </div>
                 <div>
                   <p class="text-xs text-gray-500">Description</p>
@@ -752,6 +752,16 @@
                   </select>
                   <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupStatus || 'Pending' }}</p>
                 </div>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Notes</h3>
+              <div>
+                <textarea v-if="editMode" v-model="editedTicket.notes" rows="3" placeholder="Enter notes..."
+                          class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"></textarea>
+                <p v-else class="text-sm text-gray-900 whitespace-pre-wrap">{{ selectedTicketDetails?.notes || 'No notes' }}</p>
               </div>
             </div>
 
@@ -861,14 +871,16 @@
                 </div>
               </div>
               <div class="space-y-2">
-                <div class="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div v-for="note in internalNotes" :key="note.id" class="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div class="flex justify-between items-start">
                     <div>
-                      <p class="text-sm text-gray-900">Customer requested callback tomorrow morning</p>
-                      <p class="text-xs text-gray-500 mt-1">By Agent John - 2024-01-15 3:30 PM</p>
+                      <p class="text-sm text-gray-900">{{ note.text }}</p>
+                      <p class="text-xs text-gray-500 mt-1">By {{ note.author }} - {{ note.timestamp }}</p>
                     </div>
-                    <button class="text-xs text-red-500 hover:text-red-700">Delete</button>
                   </div>
+                </div>
+                <div v-if="!internalNotes || internalNotes.length === 0" class="text-center py-4 text-gray-500">
+                  <p class="text-sm">No notes added yet</p>
                 </div>
               </div>
             </div>
@@ -1388,7 +1400,7 @@ export default {
               resolvedDate: ticket.resolvedOn || ticket.resolvedAt || ticket.resolved_at || null,
               csatRating: ticket.csatRating || ticket.csat_rating || null,
               firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
-              notes: ticket.subject || ticket.description || '-',
+              notes: ticket.notes || null,
               importAction: ticket.importAction || null,
               feedbackStatus: ticket.feedbackStatus || null,
               feedbackRating: ticket.feedbackRating || null,
@@ -1850,6 +1862,49 @@ export default {
         }
       }
 
+      // Parse existing notes and display them in the internal notes list
+      if (this.selectedTicketDetails?.notes) {
+        const notesText = this.selectedTicketDetails.notes
+        // Split notes by the timestamp separator
+        const notesParts = notesText.split(/\n\n--- (.*?) ---\n/)
+
+        // Parse the notes into structured format
+        const parsedNotes = []
+
+        if (notesParts.length === 1) {
+          // Single note without timestamp
+          parsedNotes.push({
+            id: Date.now(),
+            text: notesText,
+            author: 'Agent',
+            timestamp: 'Unknown'
+          })
+        } else {
+          // Multiple notes with timestamps
+          for (let i = 1; i < notesParts.length; i += 2) {
+            if (notesParts[i] && notesParts[i + 1]) {
+              parsedNotes.push({
+                id: Date.now() + i,
+                text: notesParts[i + 1].trim(),
+                author: 'Agent',
+                timestamp: notesParts[i]
+              })
+            }
+          }
+          // Add the first note (before any separator)
+          if (notesParts[0] && notesParts[0].trim()) {
+            parsedNotes.unshift({
+              id: Date.now(),
+              text: notesParts[0].trim(),
+              author: 'Agent',
+              timestamp: 'Initial'
+            })
+          }
+        }
+
+        this.internalNotes = parsedNotes
+      }
+
       // Load available agents for this ticket's product
       try {
         const productId = this.selectedTicketDetails?.productId
@@ -1865,18 +1920,47 @@ export default {
       }
     },
 
-    addInternalNote() {
+    async addInternalNote() {
       if (this.newNote.trim()) {
-        const note = {
-          id: Date.now(),
-          text: this.newNote,
-          author: 'Current Agent',
-          timestamp: new Date().toISOString()
+        try {
+          const ticketId = this.selectedTicketDetails.id
+
+          // Save note to backend (calls table notes column)
+          const response = await fetch(`http://localhost:5001/tickets/${ticketId}/details`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              notes: this.newNote
+            })
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            throw new Error(result.message || 'Failed to save note')
+          }
+
+          // Fetch updated ticket to get the full appended notes
+          await this.fetchTickets()
+
+          // Find the updated ticket
+          const updatedTicket = this.tickets.find(t => t.id === ticketId)
+          if (updatedTicket) {
+            this.selectedTicketDetails.notes = updatedTicket.notes
+            // Reload notes to display them properly
+            this.loadTicketRelatedData(ticketId)
+          }
+
+          this.newNote = ''
+          this.showAddNote = false
+
+          console.log('Note saved successfully')
+        } catch (error) {
+          console.error('Error saving note:', error)
+          alert('Failed to save note: ' + error.message)
         }
-        this.internalNotes.unshift(note)
-        this.newNote = ''
-        this.showAddNote = false
-        // TODO: Save note to backend
       }
     },
 
@@ -1964,13 +2048,13 @@ export default {
 
         // Prepare the data to send
         const updateData = {
-          subject: this.editedTicket.subject || this.selectedTicketDetails.notes,
+          subject: this.editedTicket.subject || this.selectedTicketDetails.subject,
           description: this.editedTicket.description || this.selectedTicketDetails.description,
           priority: this.editedTicket.priority || this.selectedTicketDetails.priority,
           followupDate: this.editedTicket.followupDate || this.selectedTicketDetails.followupDate,
           followupStatus: this.editedTicket.followupStatus || this.selectedTicketDetails.followupStatus,
           firstCallResolution: this.selectedTicketDetails.firstCallResolution,
-          notes: this.editedTicket.notes || this.selectedTicketDetails.notes
+          notes: this.editedTicket.notes || this.selectedTicketDetails.notes || null
         }
 
         console.log('Saving ticket details:', updateData)
@@ -2001,7 +2085,7 @@ export default {
           this.tickets[idx] = {
             ...this.tickets[idx],
             ...updateData,
-            notes: updateData.subject
+            notes: updateData.notes
           }
         }
 
