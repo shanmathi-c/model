@@ -329,20 +329,20 @@
 
                   <!-- CSAT Rating -->
                   <td v-if="visibleColumns.csat" class="px-4 py-4 whitespace-nowrap">
-                    <div v-if="ticket.csatRating" class="flex items-center gap-1">
+                    <div v-if="ticket.feedbackRating" class="flex items-center gap-1">
                       <span
                         v-for="n in 5"
                         :key="n"
                         class="text-yellow-400"
                       >
-                        <svg v-if="n <= ticket.csatRating" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <svg v-if="n <= ticket.feedbackRating" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                         <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                       </span>
-                      <span class="ml-1 text-xs text-gray-600">({{ ticket.csatRating }})</span>
+                      <span class="ml-1 text-xs text-gray-600">({{ ticket.feedbackRating }})</span>
                     </div>
                     <span v-else class="text-sm text-gray-400">-</span>
                   </td>
