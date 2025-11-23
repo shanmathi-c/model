@@ -2307,9 +2307,6 @@ export default {
     filteredTickets() {
       let result = this.tickets
 
-      // Always exclude tickets in 'created' status from the main view
-      result = result.filter(ticket => ticket.status !== 'created')
-
       // Filter by search query
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase()

@@ -971,117 +971,90 @@ export class ticketController {
                 const queries = [
                     // Try with 'name' column and 'createdAt'
                     `SELECT t.*,
-                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
+                            COALESCE((SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1), NULL) as assignedAgentName,
+                            COALESCE((SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1), NULL) as importAction,
+                            COALESCE((SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1), NULL) as feedbackStatus,
+                            COALESCE((SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1), NULL) as feedbackRating,
+                            COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.createdAt DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'name' column and 'created_at'
                     `SELECT t.*,
-                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
+                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
+                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
+                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.created_at DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'name' column and 'id'
                     `SELECT t.*,
-                            CASE WHEN p.name IS NOT NULL THEN p.name ELSE 'No Product' END as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
+                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
+                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
+                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'product_name' column
                     `SELECT t.*,
-                            CASE WHEN p.product_name IS NOT NULL THEN p.product_name ELSE 'No Product' END as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            COALESCE((SELECT p1.product_name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
+                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
+                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
+                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'title' column
                     `SELECT t.*,
-                            CASE WHEN p.title IS NOT NULL THEN p.title ELSE 'No Product' END as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            COALESCE((SELECT p1.title FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
+                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
+                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
+                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'productName' column
                     `SELECT t.*,
-                            CASE WHEN p.productName IS NOT NULL THEN p.productName ELSE 'No Product' END as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            COALESCE((SELECT p1.productName FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
+                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
+                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
+                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN product p ON t.productId = p.productId
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Final fallback without product join
                     `SELECT t.*, 'No Product' as productName,
-                            a.agentName as assignedAgentName,
-                            at.importAction,
-                            f.deliveryStatus as feedbackStatus,
-                            f.rating as feedbackRating,
-                            f.feedbackComment
+                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
+                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
+                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
                      FROM tickets t
-                     LEFT JOIN \`assign-ticket\` at ON t.ticketId = at.ticketId
-                     LEFT JOIN agents a ON at.agentId = a.id
-                     LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                      ${whereClause}
                      ORDER BY t.id DESC
                      LIMIT ${limit} OFFSET ${offset}`
