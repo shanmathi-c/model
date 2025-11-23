@@ -2325,4 +2325,151 @@ export class ticketController {
             });
         }
     }
+
+    // Update ticket details and sync to calls table
+    static updateTicketDetails(req, res) {
+        const { id } = req.params;
+        const { subject, description, priority, followupDate, followupStatus, firstCallResolution, notes } = req.body;
+
+        try {
+            // First, get the ticket to find its ticketId
+            connection.query(
+                "SELECT id, ticketId FROM tickets WHERE id = ? OR ticketId = ?",
+                [id, id],
+                (err, ticketResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error finding ticket",
+                            error: err
+                        });
+                    }
+
+                    if (!ticketResult || ticketResult.length === 0) {
+                        return res.status(404).json({
+                            message: "Ticket not found"
+                        });
+                    }
+
+                    const ticketId = ticketResult[0].ticketId;
+                    const numericId = ticketResult[0].id;
+
+                    // Update tickets table - only update fields that exist in tickets table
+                    const ticketUpdateFields = [];
+                    const ticketUpdateValues = [];
+
+                    if (subject !== undefined) {
+                        ticketUpdateFields.push("subject = ?");
+                        ticketUpdateValues.push(subject);
+                    }
+                    if (description !== undefined) {
+                        ticketUpdateFields.push("description = ?");
+                        ticketUpdateValues.push(description);
+                    }
+
+                    // Update tickets table if there are fields to update
+                    const updateTicketsTable = (callback) => {
+                        if (ticketUpdateFields.length > 0) {
+                            ticketUpdateValues.push(numericId);
+                            const ticketUpdateQuery = `UPDATE tickets SET ${ticketUpdateFields.join(", ")} WHERE id = ?`;
+
+                            connection.query(ticketUpdateQuery, ticketUpdateValues, (updateErr) => {
+                                if (updateErr) {
+                                    return callback(updateErr);
+                                }
+                                callback(null);
+                            });
+                        } else {
+                            callback(null);
+                        }
+                    };
+
+                    // Execute tickets table update
+                    updateTicketsTable((ticketsErr) => {
+                        if (ticketsErr) {
+                            return res.status(500).json({
+                                message: "Error updating ticket",
+                                error: ticketsErr
+                            });
+                        }
+
+                        // Now update the calls table for this ticketId
+                        const callUpdateFields = [];
+                        const callUpdateValues = [];
+
+                        if (followupDate !== undefined) {
+                            callUpdateFields.push("followupDate = ?");
+                            callUpdateValues.push(followupDate);
+                        }
+                        if (followupStatus !== undefined) {
+                            callUpdateFields.push("followupStatus = ?");
+                            callUpdateValues.push(followupStatus);
+                        }
+                        if (priority !== undefined) {
+                            callUpdateFields.push("priority = ?");
+                            callUpdateValues.push(priority);
+                        }
+                        if (firstCallResolution !== undefined) {
+                            callUpdateFields.push("firstCall = ?");
+                            callUpdateValues.push(firstCallResolution);
+                        }
+                        if (notes !== undefined) {
+                            callUpdateFields.push("notes = ?");
+                            callUpdateValues.push(notes);
+                        }
+
+                        // Update resolvedOn if ticket is being resolved
+                        const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                        if (followupStatus === 'resolved') {
+                            callUpdateFields.push("resolvedOn = ?");
+                            callUpdateValues.push(currentTimestamp);
+                        }
+
+                        if (callUpdateFields.length > 0) {
+                            callUpdateValues.push(ticketId);
+                            const callUpdateQuery = `UPDATE calls SET ${callUpdateFields.join(", ")} WHERE ticketId = ?`;
+
+                            connection.query(callUpdateQuery, callUpdateValues, (callUpdateErr) => {
+                                if (callUpdateErr) {
+                                    console.error('Error updating calls table:', callUpdateErr);
+                                }
+
+                                return res.json({
+                                    message: "Ticket details updated successfully",
+                                    data: {
+                                        ticketId: ticketId,
+                                        updatedFields: {
+                                            subject,
+                                            description,
+                                            priority,
+                                            followupDate,
+                                            followupStatus,
+                                            firstCallResolution,
+                                            notes
+                                        }
+                                    }
+                                });
+                            });
+                        } else {
+                            return res.json({
+                                message: "Ticket details updated successfully",
+                                data: {
+                                    ticketId: ticketId,
+                                    updatedFields: {
+                                        subject,
+                                        description
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            );
+        } catch (error) {
+            console.error('Error in updateTicketDetails:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
 }

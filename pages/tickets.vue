@@ -619,7 +619,7 @@
 
             <!-- Quick Actions Bar -->
             <div class="flex gap-2 flex-wrap">
-              <button @click="editMode = !editMode" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+              <button @click="editMode ? saveTicketDetails() : editMode = true" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
                 {{ editMode ? 'Save Changes' : 'Edit Details' }}
               </button>
               <button @click="goToAssignTicket" class="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
@@ -1952,6 +1952,65 @@ export default {
       } catch (error) {
         console.error('Error updating FCR:', error)
         alert('Failed to update First Call Resolution')
+      }
+    },
+
+    // Save ticket details and sync to calls table
+    async saveTicketDetails() {
+      if (!this.selectedTicketDetails) return
+
+      try {
+        const ticketId = this.selectedTicketDetails.id
+
+        // Prepare the data to send
+        const updateData = {
+          subject: this.editedTicket.subject || this.selectedTicketDetails.notes,
+          description: this.editedTicket.description || this.selectedTicketDetails.description,
+          priority: this.editedTicket.priority || this.selectedTicketDetails.priority,
+          followupDate: this.editedTicket.followupDate || this.selectedTicketDetails.followupDate,
+          followupStatus: this.editedTicket.followupStatus || this.selectedTicketDetails.followupStatus,
+          firstCallResolution: this.selectedTicketDetails.firstCallResolution,
+          notes: this.editedTicket.notes || this.selectedTicketDetails.notes
+        }
+
+        console.log('Saving ticket details:', updateData)
+
+        // Call backend to update ticket details and calls table
+        const response = await fetch(`http://localhost:5001/tickets/${ticketId}/details`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData)
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to save ticket details')
+        }
+
+        // Update local ticket data
+        this.selectedTicketDetails = {
+          ...this.selectedTicketDetails,
+          ...updateData
+        }
+
+        const idx = this.tickets.findIndex(t => t.id === ticketId)
+        if (idx !== -1) {
+          this.tickets[idx] = {
+            ...this.tickets[idx],
+            ...updateData,
+            notes: updateData.subject
+          }
+        }
+
+        // Exit edit mode
+        this.editMode = false
+        console.log('Ticket details saved successfully')
+      } catch (error) {
+        console.error('Error saving ticket details:', error)
+        alert('Failed to save ticket details: ' + error.message)
       }
     },
 

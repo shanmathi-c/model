@@ -33,6 +33,7 @@ router.post("/bulk-assign", ticketController.bulkAssignTickets);
 router.put("/tickets/:id/status", ticketController.updateTicketStatus);
 router.put("/tickets/:id/update-all-status", ticketController.updateAllTablesStatus);
 router.put("/tickets/:id/fcr", ticketController.updateTicketFCR);
+router.put("/tickets/:id/details", ticketController.updateTicketDetails);
 
 // Feedback routes
 router.get("/feedback", ticketController.getFeedback);
