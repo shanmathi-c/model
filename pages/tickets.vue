@@ -622,12 +622,6 @@
               <button @click="editMode = !editMode" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
                 {{ editMode ? 'Save Changes' : 'Edit Details' }}
               </button>
-              <button class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
-                Assign Agent
-              </button>
-              <button @click="openStatusModal" class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors">
-                Change Status
-              </button>
               <button @click="goToAssignTicket" class="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
                 Link to Freshdesk
               </button>
@@ -741,11 +735,23 @@
             <!-- Follow-up Information -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Follow-up Information</h3>
-              <div>
-                <p class="text-xs text-gray-500">Follow-up Date</p>
-                <input v-if="editMode" type="date" v-model="editedTicket.followupDate"
-                       class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
-                <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupDate || 'Not set' }}</p>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Follow-up Date</p>
+                  <input v-if="editMode" type="date" v-model="editedTicket.followupDate"
+                         class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
+                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupDate || 'Not set' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Follow-up Status</p>
+                  <select v-if="editMode" v-model="editedTicket.followupStatus"
+                          class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    <option value="pending">Pending</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupStatus || 'Pending' }}</p>
+                </div>
               </div>
             </div>
 
