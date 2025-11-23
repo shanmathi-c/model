@@ -149,6 +149,67 @@
           </div>
         </div>
 
+        <!-- Sort By Button -->
+        <div ref="sortDropdownRef" class="relative">
+          <button
+            @click="toggleSortDropdown"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+            </svg>
+            Sort
+          </button>
+
+          <!-- Sort Dropdown -->
+          <div
+            v-if="showSortDropdown"
+            class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200"
+            style="z-index: 50;"
+          >
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-gray-900 mb-2">Sort By</h3>
+
+              <div class="space-y-1">
+                <label
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded text-sm"
+                  @click="setSortBy(option.value)"
+                >
+                  <input
+                    type="radio"
+                    :value="option.value"
+                    v-model="sortBy"
+                    class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <span class="text-gray-700">{{ option.label }}</span>
+                </label>
+              </div>
+
+              <div class="mt-3 pt-3 border-t border-gray-200">
+                <h4 class="text-xs font-semibold text-gray-900 mb-2">Order</h4>
+                <div class="flex gap-2">
+                  <button
+                    @click="sortOrder = 'asc'"
+                    class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                    :class="sortOrder === 'asc' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                  >
+                    Ascending
+                  </button>
+                  <button
+                    @click="sortOrder = 'desc'"
+                    class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                    :class="sortOrder === 'desc' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                  >
+                    Descending
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Display Settings Button -->
         <div ref="displayDropdownRef" class="relative">
           <button
@@ -1220,6 +1281,7 @@ export default {
       // Refs
       filterDropdownRef: null,
       displayDropdownRef: null,
+      sortDropdownRef: null,
 
       // Loading state
       loading: false,
@@ -1229,6 +1291,14 @@ export default {
       searchQuery: '',
       showFilterDropdown: false,
       showDisplayDropdown: false,
+      showSortDropdown: false,
+
+      // Sort options
+      sortBy: 'ticketId',
+      sortOrder: 'asc',
+      sortOptions: [
+        { value: 'ticketId', label: 'Ticket ID' }
+      ],
 
       // Filter options
       statusOptions: [
@@ -1487,6 +1557,16 @@ export default {
       this.showDisplayDropdown = !this.showDisplayDropdown
     },
 
+    // Toggle sort dropdown
+    toggleSortDropdown() {
+      this.showSortDropdown = !this.showSortDropdown
+    },
+
+    // Set sort by field
+    setSortBy(field) {
+      this.sortBy = field
+    },
+
     // Select all columns
     selectAllColumns() {
       Object.keys(this.visibleColumns).forEach(key => {
@@ -1545,6 +1625,14 @@ export default {
         const filterDropdown = this.$refs.filterDropdownRef;
         if (filterDropdown && !filterDropdown.contains(clickedElement)) {
           this.showFilterDropdown = false;
+        }
+      }
+
+      // Close sort dropdown if clicking outside
+      if (this.showSortDropdown) {
+        const sortDropdown = this.$refs.sortDropdownRef;
+        if (sortDropdown && !sortDropdown.contains(clickedElement)) {
+          this.showSortDropdown = false;
         }
       }
 
@@ -2542,6 +2630,50 @@ export default {
       if (this.activeFilters.fcr.includes('yes')) {
         result = result.filter(ticket => ticket.firstCallResolution === true)
       }
+
+      // Sort tickets
+      result = [...result].sort((a, b) => {
+        let valueA = a[this.sortBy]
+        let valueB = b[this.sortBy]
+
+        // Handle null/undefined values
+        if (valueA === null || valueA === undefined) valueA = ''
+        if (valueB === null || valueB === undefined) valueB = ''
+
+        // Handle ticketId sorting - extract numeric part if it exists
+        if (this.sortBy === 'ticketId') {
+          // Try to extract numbers from ticketId (e.g., "TCK-123" -> 123)
+          const numA = parseInt(String(valueA).match(/\d+/)?.[0] || '0')
+          const numB = parseInt(String(valueB).match(/\d+/)?.[0] || '0')
+
+          const comparison = numA - numB
+          return this.sortOrder === 'asc' ? comparison : -comparison
+        }
+
+        // Handle date sorting
+        if (this.sortBy === 'createdDate' || this.sortBy === 'resolvedDate') {
+          valueA = valueA ? new Date(valueA).getTime() : 0
+          valueB = valueB ? new Date(valueB).getTime() : 0
+        }
+
+        // Handle numeric sorting (CSAT rating, priority)
+        if (this.sortBy === 'csatRating') {
+          valueA = Number(valueA) || 0
+          valueB = Number(valueB) || 0
+        }
+
+        // Handle string sorting (case-insensitive)
+        if (typeof valueA === 'string') valueA = valueA.toLowerCase()
+        if (typeof valueB === 'string') valueB = valueB.toLowerCase()
+
+        // Compare values
+        let comparison = 0
+        if (valueA > valueB) comparison = 1
+        if (valueA < valueB) comparison = -1
+
+        // Apply sort order
+        return this.sortOrder === 'asc' ? comparison : -comparison
+      })
 
       return result
     },
