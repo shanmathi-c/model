@@ -2601,14 +2601,31 @@ export default {
 
       // Filter by search query
       if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase()
-        result = result.filter(ticket =>
-          ticket.id.toLowerCase().includes(query) ||
-          ticket.customerName.toLowerCase().includes(query) ||
-          ticket.customerContact.toLowerCase().includes(query) ||
-          ticket.agentName.toLowerCase().includes(query) ||
-          ticket.notes.toLowerCase().includes(query)
-        )
+        const query = this.searchQuery.toLowerCase().trim()
+        result = result.filter(ticket => {
+          // Search in ticket ID (formatted ID like "TCK-001")
+          const ticketIdMatch = ticket.ticketId && String(ticket.ticketId).toLowerCase().includes(query)
+
+          // Search in customer phone
+          const phoneMatch = ticket.phone && String(ticket.phone).toLowerCase().includes(query)
+
+          // Search in customer name
+          const nameMatch = ticket.customerName && String(ticket.customerName).toLowerCase().includes(query)
+
+          // Search in customer contact (email)
+          const contactMatch = ticket.customerContact && String(ticket.customerContact).toLowerCase().includes(query)
+
+          // Search in subject (keywords)
+          const subjectMatch = ticket.subject && String(ticket.subject).toLowerCase().includes(query)
+
+          // Search in description (keywords)
+          const descriptionMatch = ticket.description && String(ticket.description).toLowerCase().includes(query)
+
+          // Search in notes (keywords)
+          const notesMatch = ticket.notes && String(ticket.notes).toLowerCase().includes(query)
+
+          return ticketIdMatch || phoneMatch || nameMatch || contactMatch || subjectMatch || descriptionMatch || notesMatch
+        })
       }
 
       // Filter by status
