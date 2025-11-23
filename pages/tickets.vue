@@ -125,7 +125,7 @@
               </div>
 
               <!-- FCR Filter -->
-              <div>
+              <div class="mb-2">
                 <button
                   @click="toggleFilterSection('fcr')"
                   class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
@@ -141,8 +141,84 @@
                 <div v-if="expandedSections.fcr" class="mt-1 space-y-1 pl-2">
                   <label class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
                     <input type="checkbox" value="yes" v-model="activeFilters.fcr" class="w-3 h-3 text-blue-600 rounded border-gray-300">
-                    <span>First Call Resolution</span>
+                    <span>Yes</span>
                   </label>
+                  <label class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
+                    <input type="checkbox" value="no" v-model="activeFilters.fcr" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                    <span>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- CSAT Rating Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('csat')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>CSAT Rating</span>
+                  <img
+                    src="/chevron-right.svg"
+                    alt="expand"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.csat }"
+                  />
+                </button>
+                <div v-if="expandedSections.csat" class="mt-1 space-y-1 pl-2">
+                  <label v-for="rating in csatRatingOptions" :key="rating.value" class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
+                    <input type="checkbox" :value="rating.value" v-model="activeFilters.csatRating" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                    <span>{{ rating.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Date Range Filter -->
+              <div>
+                <button
+                  @click="toggleFilterSection('dateRange')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Date Range</span>
+                  <img
+                    src="/chevron-right.svg"
+                    alt="expand"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.dateRange }"
+                  />
+                </button>
+                <div v-if="expandedSections.dateRange" class="mt-1 space-y-2 pl-2">
+                  <!-- Created Date Range -->
+                  <div class="space-y-1">
+                    <label class="text-xs font-medium text-gray-600">Created Date</label>
+                    <input
+                      type="date"
+                      v-model="activeFilters.dateRange.createdFrom"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                      placeholder="From"
+                    />
+                    <input
+                      type="date"
+                      v-model="activeFilters.dateRange.createdTo"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                      placeholder="To"
+                    />
+                  </div>
+                  <!-- Resolved Date Range -->
+                  <div class="space-y-1">
+                    <label class="text-xs font-medium text-gray-600">Resolved Date</label>
+                    <input
+                      type="date"
+                      v-model="activeFilters.dateRange.resolvedFrom"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                      placeholder="From"
+                    />
+                    <input
+                      type="date"
+                      v-model="activeFilters.dateRange.resolvedTo"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                      placeholder="To"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1302,8 +1378,7 @@ export default {
 
       // Filter options
       statusOptions: [
-        { value: 'created', label: 'Created' },
-        { value: 'assigned', label: 'Assigned' },
+        { value: 'created', label: 'Unresolved' },
         { value: 'in-progress', label: 'In Progress' },
         { value: 'pending', label: 'Pending' },
         { value: 'resolved', label: 'Resolved' },
@@ -1312,13 +1387,27 @@ export default {
 
       agentOptions: [],
       productOptions: [],
+      csatRatingOptions: [
+        { value: '5', label: '5 - Excellent' },
+        { value: '4', label: '4 - Good' },
+        { value: '3', label: '3 - Average' },
+        { value: '2', label: '2 - Poor' },
+        { value: '1', label: '1 - Very Poor' }
+      ],
 
       // Active filters state
       activeFilters: {
         status: [],
         agents: [],
         products: [],
-        fcr: []
+        fcr: [],
+        csatRating: [],
+        dateRange: {
+          createdFrom: null,
+          createdTo: null,
+          resolvedFrom: null,
+          resolvedTo: null
+        }
       },
 
       // Expanded sections state
@@ -1326,7 +1415,9 @@ export default {
         status: false,
         agent: false,
         product: false,
-        fcr: false
+        fcr: false,
+        csat: false,
+        dateRange: false
       },
 
       // Call modal state
@@ -1467,8 +1558,8 @@ export default {
               status: ticket.status || 'assigned',
               createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
               resolvedDate: ticket.resolvedOn || ticket.resolvedAt || ticket.resolved_at || null,
-              csatRating: ticket.csatRating || ticket.csat_rating || null,
-              firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
+              csatRating: ticket.feedbackRating || ticket.csatRating || ticket.csat_rating || null,
+              firstCallResolution: ticket.fcr === 1 || ticket.first_call_resolution === 1 ? true : (ticket.fcr === 0 || ticket.first_call_resolution === 0 ? false : null),
               notes: ticket.notes || null,
               importAction: ticket.importAction || null,
               feedbackStatus: ticket.feedbackStatus || null,
@@ -1602,6 +1693,19 @@ export default {
           const fcrIndex = this.activeFilters.fcr.indexOf(value)
           if (fcrIndex > -1) this.activeFilters.fcr.splice(fcrIndex, 1)
           break
+        case 'csat':
+          const csatIndex = this.activeFilters.csatRating.indexOf(value)
+          if (csatIndex > -1) this.activeFilters.csatRating.splice(csatIndex, 1)
+          break
+        case 'dateRange':
+          if (value === 'created') {
+            this.activeFilters.dateRange.createdFrom = null
+            this.activeFilters.dateRange.createdTo = null
+          } else if (value === 'resolved') {
+            this.activeFilters.dateRange.resolvedFrom = null
+            this.activeFilters.dateRange.resolvedTo = null
+          }
+          break
       }
     },
 
@@ -1611,7 +1715,14 @@ export default {
         status: [],
         agents: [],
         products: [],
-        fcr: []
+        fcr: [],
+        csatRating: [],
+        dateRange: {
+          createdFrom: null,
+          createdTo: null,
+          resolvedFrom: null,
+          resolvedTo: null
+        }
       }
     },
 
@@ -2588,8 +2699,25 @@ export default {
         chips.push({ key: `product-${product}`, label: product, type: 'product', value: product })
       })
 
-      if (this.activeFilters.fcr.includes('yes')) {
-        chips.push({ key: 'fcr-yes', label: 'FCR', type: 'fcr', value: 'yes' })
+      this.activeFilters.fcr.forEach(fcr => {
+        chips.push({ key: `fcr-${fcr}`, label: `FCR: ${fcr}`, type: 'fcr', value: fcr })
+      })
+
+      this.activeFilters.csatRating.forEach(rating => {
+        const ratingOption = this.csatRatingOptions.find(r => r.value === rating)
+        if (ratingOption) {
+          chips.push({ key: `csat-${rating}`, label: `CSAT: ${ratingOption.label}`, type: 'csat', value: rating })
+        }
+      })
+
+      if (this.activeFilters.dateRange.createdFrom || this.activeFilters.dateRange.createdTo) {
+        const label = `Created: ${this.activeFilters.dateRange.createdFrom || '...'} - ${this.activeFilters.dateRange.createdTo || '...'}`
+        chips.push({ key: 'dateRange-created', label, type: 'dateRange', value: 'created' })
+      }
+
+      if (this.activeFilters.dateRange.resolvedFrom || this.activeFilters.dateRange.resolvedTo) {
+        const label = `Resolved: ${this.activeFilters.dateRange.resolvedFrom || '...'} - ${this.activeFilters.dateRange.resolvedTo || '...'}`
+        chips.push({ key: 'dateRange-resolved', label, type: 'dateRange', value: 'resolved' })
       }
 
       return chips
@@ -2644,8 +2772,63 @@ export default {
       }
 
       // Filter by FCR
-      if (this.activeFilters.fcr.includes('yes')) {
-        result = result.filter(ticket => ticket.firstCallResolution === true)
+      if (this.activeFilters.fcr.length > 0) {
+        result = result.filter(ticket => {
+          if (this.activeFilters.fcr.includes('yes') && ticket.firstCallResolution === true) return true
+          if (this.activeFilters.fcr.includes('no') && (ticket.firstCallResolution === false || ticket.firstCallResolution === null)) return true
+          return false
+        })
+      }
+
+      // Filter by CSAT Rating
+      if (this.activeFilters.csatRating.length > 0) {
+        result = result.filter(ticket => {
+          if (!ticket.csatRating) return false
+          const rating = String(ticket.csatRating)
+          return this.activeFilters.csatRating.includes(rating)
+        })
+      }
+
+      // Filter by Created Date Range
+      if (this.activeFilters.dateRange.createdFrom || this.activeFilters.dateRange.createdTo) {
+        result = result.filter(ticket => {
+          if (!ticket.createdDate) return false
+          const createdDate = new Date(ticket.createdDate)
+
+          if (this.activeFilters.dateRange.createdFrom) {
+            const fromDate = new Date(this.activeFilters.dateRange.createdFrom)
+            if (createdDate < fromDate) return false
+          }
+
+          if (this.activeFilters.dateRange.createdTo) {
+            const toDate = new Date(this.activeFilters.dateRange.createdTo)
+            toDate.setHours(23, 59, 59, 999) // Include the entire "to" day
+            if (createdDate > toDate) return false
+          }
+
+          return true
+        })
+      }
+
+      // Filter by Resolved Date Range
+      if (this.activeFilters.dateRange.resolvedFrom || this.activeFilters.dateRange.resolvedTo) {
+        result = result.filter(ticket => {
+          if (!ticket.resolvedDate) return false
+          const resolvedDate = new Date(ticket.resolvedDate)
+
+          if (this.activeFilters.dateRange.resolvedFrom) {
+            const fromDate = new Date(this.activeFilters.dateRange.resolvedFrom)
+            if (resolvedDate < fromDate) return false
+          }
+
+          if (this.activeFilters.dateRange.resolvedTo) {
+            const toDate = new Date(this.activeFilters.dateRange.resolvedTo)
+            toDate.setHours(23, 59, 59, 999) // Include the entire "to" day
+            if (resolvedDate > toDate) return false
+          }
+
+          return true
+        })
       }
 
       // Sort tickets
