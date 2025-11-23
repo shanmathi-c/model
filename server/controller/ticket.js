@@ -99,6 +99,64 @@ export class ticketController {
         });
     }
 
+    // Get assignment history for a ticket
+    static getAssignmentHistory(req, res) {
+        const { id } = req.params;
+
+        // First get the ticketId for this id
+        const getTicketIdQuery = `SELECT ticketId FROM tickets WHERE id = ? OR ticketId = ? LIMIT 1`;
+
+        connection.query(getTicketIdQuery, [id, id], (err, ticketResult) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "Error finding ticket",
+                    error: err
+                });
+            }
+
+            if (!ticketResult || ticketResult.length === 0) {
+                return res.json({
+                    message: "Ticket not found",
+                    data: []
+                });
+            }
+
+            const ticketId = ticketResult[0].ticketId;
+
+            // Get assignment history with agent details
+            const query = `
+                SELECT
+                    at.id,
+                    at.ticketId,
+                    at.agentId,
+                    at.status,
+                    at.importAction,
+                    at.createdAt,
+                    a.agentName,
+                    a.agentContact,
+                    a.agentEmail
+                FROM \`assign-ticket\` at
+                LEFT JOIN agents a ON at.agentId = a.id
+                WHERE at.ticketId = ?
+                ORDER BY at.createdAt DESC
+            `;
+
+            connection.query(query, [ticketId], (err, result) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error fetching assignment history",
+                        error: err
+                    });
+                }
+
+                return res.json({
+                    message: "Assignment history fetched successfully",
+                    data: result || []
+                });
+            });
+        });
+    }
+
     // Generate sequential userId
     static generateUserId() {
         return new Promise((resolve, reject) => {
@@ -1823,6 +1881,18 @@ export class ticketController {
     static getCallLogs(req, res) {
         // Fetch data ONLY from calls table, with customer names via subqueries
         // Using DISTINCT and subqueries to prevent any duplicates
+        const { ticketId } = req.query;
+
+        let whereClause = '';
+        let queryParams = [];
+
+        if (ticketId) {
+            // Match both formatted ticketId (T001) and numeric ID
+            // First check if calls.ticketId matches directly, OR resolve from tickets table
+            whereClause = 'WHERE (c.ticketId = ? OR c.ticketId = (SELECT t.ticketId FROM tickets t WHERE t.id = ? OR t.ticketId = ? LIMIT 1))';
+            queryParams.push(ticketId, ticketId, ticketId);
+        }
+
         const query = `
             SELECT DISTINCT
                    c.id,
@@ -1851,10 +1921,11 @@ export class ticketController {
                     WHERE phone = c.userPhone COLLATE utf8mb4_unicode_ci
                     LIMIT 1) AS callbackCustomerName
             FROM calls c
+            ${whereClause}
             ORDER BY c.createdAt DESC
         `;
 
-        connection.query(query, (err, result) => {
+        connection.query(query, queryParams, (err, result) => {
                 if (err) {
                     console.error('Error in getCallLogs query:', err);
                     return res.json({
@@ -1871,7 +1942,7 @@ export class ticketController {
                         callbackCustomerName: undefined
                     }));
 
-                    console.log(`Fetched ${processedResult.length} call logs from calls table`);
+                    console.log(`Fetched ${processedResult.length} call logs from calls table${ticketId ? ` for ticketId: ${ticketId}` : ''}`);
 
                     return res.json({
                         message: "Call logs fetched successfully",

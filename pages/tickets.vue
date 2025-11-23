@@ -718,15 +718,14 @@
                 </div>
                 <div>
                   <p class="text-xs text-gray-500 mb-2">Assignment History</p>
-                  <div class="space-y-1 text-xs text-gray-600">
-                    <div class="flex justify-between">
-                      <span>Agent John Doe</span>
-                      <span>2024-01-15 10:30 AM</span>
+                  <div v-if="assignmentHistory && assignmentHistory.length > 0" class="space-y-1 text-xs text-gray-600">
+                    <div v-for="assignment in assignmentHistory" :key="assignment.id" class="flex justify-between">
+                      <span>{{ assignment.agentName || 'Unknown Agent' }}</span>
+                      <span>{{ formatAssignmentDate(assignment.createdAt) }}</span>
                     </div>
-                    <div class="flex justify-between">
-                      <span>Agent Jane Smith</span>
-                      <span>2024-01-14 02:15 PM</span>
-                    </div>
+                  </div>
+                  <div v-else class="text-xs text-gray-500 italic">
+                    No assignment history available
                   </div>
                 </div>
               </div>
@@ -822,22 +821,27 @@
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Related Calls & Recordings</h3>
               <div class="space-y-2">
-                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div v-if="relatedCalls && relatedCalls.length > 0" v-for="call in relatedCalls" :key="call.id" class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                   <div class="flex items-center gap-3">
                     <svg class="w-4 h-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                     <div>
-                      <p class="text-sm font-medium">Call #C001</p>
-                      <p class="text-xs text-gray-500">Duration: 5:23 | 2024-01-15 10:30 AM</p>
+                      <p class="text-sm font-medium">Call #{{ call.callId || call.id }}</p>
+                      <p class="text-xs text-gray-500">
+                        {{ formatCallDuration(call.startTime, call.endTime) }} | {{ formatCallTime(call.startTime) }}
+                      </p>
                     </div>
                   </div>
-                  <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                  <button v-if="call.recordingUrl" @click="playRecording(call.recordingUrl)" class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
                     Play Recording
                   </button>
+                  <span v-else class="px-2 py-1 text-xs text-gray-400">
+                    No Recording
+                  </span>
                 </div>
-                <div class="text-center py-2 text-xs text-gray-500">
-                  No more related calls
+                <div v-if="!relatedCalls || relatedCalls.length === 0" class="text-center py-4 text-gray-500">
+                  <p class="text-sm">No calls connected</p>
                 </div>
               </div>
             </div>
@@ -1301,6 +1305,8 @@ export default {
       activityHistory: [],
       availableAgentsForTicket: [],
       changingAgent: false,
+      relatedCalls: [],
+      assignmentHistory: [],
 
       // Status modal state
       showStatusModal: false,
@@ -1380,6 +1386,9 @@ export default {
               customerName: ticket.name || '-',
               customerContact: ticket.email || '-',
               phone: ticket.phone || '-',
+              subject: ticket.subject || null,
+              description: ticket.description || null,
+              priority: ticket.priority || 'medium',
               agentName: ticket.assignedAgentName || ticket.agentName || '-',
               agentId: ticket.agentId || ticket.agent_id || ticket.assignedAgentId || this.extractAgentIdFromName(ticket.agentName || ticket.assignedAgentName),
               productCategory: ticket.productName || 'No Product',
@@ -1395,6 +1404,8 @@ export default {
               feedbackStatus: ticket.feedbackStatus || null,
               feedbackRating: ticket.feedbackRating || null,
               feedbackComment: ticket.feedbackComment || null,
+              followupDate: ticket.followupDate || ticket.followup_date || null,
+              followupStatus: ticket.followupStatus || ticket.followup_status || null,
               feedbackLink: null,
               feedbackLinkCopied: false
             }
@@ -1835,6 +1846,62 @@ export default {
       }
     },
 
+    // Format call duration
+    formatCallDuration(startTime, endTime) {
+      if (!startTime) return 'No duration'
+      if (!endTime) return 'Ongoing'
+
+      const start = new Date(startTime)
+      const end = new Date(endTime)
+      const durationMs = end - start
+
+      if (durationMs < 0) return 'Invalid'
+
+      const minutes = Math.floor(durationMs / 60000)
+      const seconds = Math.floor((durationMs % 60000) / 1000)
+
+      return `Duration: ${minutes}:${seconds.toString().padStart(2, '0')}`
+    },
+
+    // Format call time
+    formatCallTime(startTime) {
+      if (!startTime) return 'Unknown time'
+
+      const date = new Date(startTime)
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    },
+
+    // Play recording
+    playRecording(recordingUrl) {
+      if (recordingUrl) {
+        window.open(recordingUrl, '_blank')
+      } else {
+        alert('Recording URL not available')
+      }
+    },
+
+    // Format assignment date
+    formatAssignmentDate(dateString) {
+      if (!dateString) return 'Unknown date'
+
+      const date = new Date(dateString)
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    },
+
     // Ticket Details Side Panel Methods
     openTicketDetails(ticket) {
       this.selectedTicketDetails = { ...ticket }
@@ -1844,7 +1911,8 @@ export default {
       this.showAddNote = false
       this.newNote = ''
       // Load related data (calls, notes, history, etc.)
-      this.loadTicketRelatedData(ticket.id)
+      // Pass both numeric id and formatted ticketId
+      this.loadTicketRelatedData(ticket.id, ticket.ticketId)
     },
 
     closeTicketDetails() {
@@ -1855,11 +1923,18 @@ export default {
       this.newNote = ''
     },
 
-    async loadTicketRelatedData(ticketId) {
+    async loadTicketRelatedData(numericId, formattedTicketId) {
       this.internalNotes = []
       this.activityHistory = []
+      this.relatedCalls = []
+      this.assignmentHistory = []
 
-      if (!ticketId) return
+      if (!numericId && !formattedTicketId) return
+
+      // Use numeric ID for endpoints that accept it
+      const ticketId = numericId || formattedTicketId
+      // Use formatted ticketId for calls query (T001, T002, etc.)
+      const queryTicketId = formattedTicketId || numericId
 
       try {
         const response = await $fetch(`http://localhost:5001/tickets/${ticketId}/feedback`)
@@ -1875,6 +1950,34 @@ export default {
           ...this.selectedTicketDetails,
           feedback: []
         }
+      }
+
+      // Fetch related calls for this ticket - try both IDs
+      try {
+        // First try with formatted ticketId
+        let callsResponse = await $fetch(`http://localhost:5001/calls?ticketId=${queryTicketId}`)
+        this.relatedCalls = callsResponse.data || []
+
+        // If no calls found and we have both IDs, try numeric ID
+        if ((!this.relatedCalls || this.relatedCalls.length === 0) && formattedTicketId && numericId && formattedTicketId !== numericId) {
+          callsResponse = await $fetch(`http://localhost:5001/calls?ticketId=${numericId}`)
+          this.relatedCalls = callsResponse.data || []
+        }
+
+        console.log('Related calls loaded:', this.relatedCalls)
+      } catch (error) {
+        console.error('Error loading related calls:', error)
+        this.relatedCalls = []
+      }
+
+      // Fetch assignment history for this ticket
+      try {
+        const historyResponse = await $fetch(`http://localhost:5001/tickets/${ticketId}/assignment-history`)
+        this.assignmentHistory = historyResponse.data || []
+        console.log('Assignment history loaded:', this.assignmentHistory)
+      } catch (error) {
+        console.error('Error loading assignment history:', error)
+        this.assignmentHistory = []
       }
 
       // Parse existing notes and display them in the internal notes list
