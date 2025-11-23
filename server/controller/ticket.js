@@ -978,7 +978,8 @@ export class ticketController {
                             COALESCE((SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1), NULL) as feedbackRating,
                             COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment,
                             COALESCE((SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1), NULL) as resolvedOn,
-                            COALESCE((SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1), NULL) as notes
+                            COALESCE((SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1), NULL) as notes,
+                            COALESCE((SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1), NULL) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.createdAt DESC
@@ -993,7 +994,8 @@ export class ticketController {
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
+                            (SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.created_at DESC
@@ -1008,7 +1010,8 @@ export class ticketController {
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
+                            (SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1023,7 +1026,8 @@ export class ticketController {
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
+                            (SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1038,7 +1042,8 @@ export class ticketController {
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
+                            (SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1053,7 +1058,8 @@ export class ticketController {
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
+                            (SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1067,7 +1073,8 @@ export class ticketController {
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes
+                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
+                            (SELECT c3.firstCall FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
