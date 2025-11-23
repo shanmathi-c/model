@@ -1385,7 +1385,7 @@ export default {
               type: ticket.ticketType || 'general',
               status: ticket.status || 'assigned',
               createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
-              resolvedDate: ticket.resolvedAt || ticket.resolved_at || null,
+              resolvedDate: ticket.resolvedOn || ticket.resolvedAt || ticket.resolved_at || null,
               csatRating: ticket.csatRating || ticket.csat_rating || null,
               firstCallResolution: ticket.fcr || ticket.first_call_resolution || false,
               notes: ticket.subject || ticket.description || '-',

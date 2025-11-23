@@ -46,5 +46,6 @@ router.get("/", (req, res) => {
 });
 
 router.post("/fix-assign-ticket-ids", ticketController.fixAssignTicketIds);
+router.post("/cleanup-resolved-dates", ticketController.cleanupResolvedOnDates);
 
 export default router;

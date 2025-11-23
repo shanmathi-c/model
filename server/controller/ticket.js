@@ -976,7 +976,8 @@ export class ticketController {
                             COALESCE((SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1), NULL) as importAction,
                             COALESCE((SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1), NULL) as feedbackStatus,
                             COALESCE((SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1), NULL) as feedbackRating,
-                            COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment
+                            COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment,
+                            COALESCE((SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1), NULL) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.createdAt DESC
@@ -989,7 +990,8 @@ export class ticketController {
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.created_at DESC
@@ -1002,7 +1004,8 @@ export class ticketController {
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1015,7 +1018,8 @@ export class ticketController {
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1028,7 +1032,8 @@ export class ticketController {
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1041,7 +1046,8 @@ export class ticketController {
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1053,7 +1059,8 @@ export class ticketController {
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment
+                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
+                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -2410,6 +2417,17 @@ export class ticketController {
                         if (followupStatus !== undefined) {
                             callUpdateFields.push("followupStatus = ?");
                             callUpdateValues.push(followupStatus);
+
+                            // Only set resolvedOn if status is being changed to 'resolved'
+                            if (followupStatus === 'resolved') {
+                                const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                                callUpdateFields.push("resolvedOn = ?");
+                                callUpdateValues.push(currentTimestamp);
+                            } else {
+                                // If status is changed to something other than resolved, clear resolvedOn
+                                callUpdateFields.push("resolvedOn = ?");
+                                callUpdateValues.push(null);
+                            }
                         }
                         if (priority !== undefined) {
                             callUpdateFields.push("priority = ?");
@@ -2422,13 +2440,6 @@ export class ticketController {
                         if (notes !== undefined) {
                             callUpdateFields.push("notes = ?");
                             callUpdateValues.push(notes);
-                        }
-
-                        // Update resolvedOn if ticket is being resolved
-                        const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                        if (followupStatus === 'resolved') {
-                            callUpdateFields.push("resolvedOn = ?");
-                            callUpdateValues.push(currentTimestamp);
                         }
 
                         if (callUpdateFields.length > 0) {
@@ -2473,6 +2484,39 @@ export class ticketController {
             );
         } catch (error) {
             console.error('Error in updateTicketDetails:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
+    static cleanupResolvedOnDates(req, res) {
+        try {
+            const query = `
+                UPDATE calls
+                SET resolvedOn = NULL
+                WHERE followupStatus IS NOT NULL
+                AND followupStatus != 'resolved'
+                AND resolvedOn IS NOT NULL
+            `;
+
+            connection.query(query, (err, result) => {
+                if (err) {
+                    console.error('Error cleaning up resolvedOn dates:', err);
+                    return res.status(500).json({
+                        message: "Error cleaning up resolvedOn dates",
+                        error: err.message
+                    });
+                }
+
+                return res.json({
+                    message: "Successfully cleaned up resolvedOn dates",
+                    rowsAffected: result.affectedRows
+                });
+            });
+        } catch (error) {
+            console.error('Error in cleanupResolvedOnDates:', error);
             return res.status(500).json({
                 message: "Server error",
                 error: error.message
