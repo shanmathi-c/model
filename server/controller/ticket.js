@@ -1377,10 +1377,45 @@ export class ticketController {
             // Get current timestamp
             const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            // First, get all existing C-format callIds to determine the next one
-            connection.query(
-                "SELECT callId FROM calls WHERE callId REGEXP '^C[0-9]+$' ORDER BY CAST(SUBSTRING(callId, 2) AS UNSIGNED) DESC",
-                (err, callIdResult) => {
+            // First, if ticketId is provided, get the formatted ticketId from tickets table
+            const getFormattedTicketId = (callback) => {
+                if (!ticketId || ticketId === 0) {
+                    // No ticket, use callbackId or 0
+                    return callback(null, ticketId === 0 ? 0 : (ticketId || callbackId));
+                }
+
+                // Look up the formatted ticketId from tickets table
+                connection.query(
+                    "SELECT ticketId FROM tickets WHERE id = ? OR ticketId = ?",
+                    [ticketId, ticketId],
+                    (err, result) => {
+                        if (err) {
+                            console.error('Error looking up ticketId:', err);
+                            return callback(null, ticketId); // Fallback to provided ticketId
+                        }
+
+                        if (result && result.length > 0) {
+                            const formattedTicketId = result[0].ticketId;
+                            console.log('Found formatted ticketId:', formattedTicketId, 'for input:', ticketId);
+                            callback(null, formattedTicketId);
+                        } else {
+                            console.log('No ticket found, using provided ticketId:', ticketId);
+                            callback(null, ticketId);
+                        }
+                    }
+                );
+            };
+
+            // Get formatted ticketId first, then proceed with call creation
+            getFormattedTicketId((err, formattedTicketId) => {
+                if (err) {
+                    console.error('Error getting formatted ticketId:', err);
+                }
+
+                // Now get all existing C-format callIds to determine the next one
+                connection.query(
+                    "SELECT callId FROM calls WHERE callId REGEXP '^C[0-9]+$' ORDER BY CAST(SUBSTRING(callId, 2) AS UNSIGNED) DESC",
+                    (err, callIdResult) => {
                     let nextCallId;
 
                     if (err) {
@@ -1415,15 +1450,14 @@ export class ticketController {
                         }
                     }
 
-                    // Continue with insertion
-                    insertCallLog(nextCallId);
-                }
-            );
+                        // Continue with insertion
+                        insertCallLog(nextCallId, formattedTicketId);
+                    }
+                );
+            });
 
             // Helper function to insert call log
-            function insertCallLog(nextCallId) {
-                // Calculate the correct ticketId to use
-                const actualTicketId = ticketId === 0 ? 0 : (ticketId || callbackId);
+            function insertCallLog(nextCallId, actualTicketId) {
 
                 // Use explicit SQL to ensure callId is saved as string
                 const insertQuery = `
