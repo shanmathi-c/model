@@ -741,23 +741,11 @@
             <!-- Follow-up Information -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Follow-up Information</h3>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-xs text-gray-500">Follow-up Date</p>
-                  <input v-if="editMode" type="date" v-model="editedTicket.followupDate"
-                         class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
-                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupDate || 'Not set' }}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500">Follow-up Status</p>
-                  <select v-if="editMode" v-model="editedTicket.followupStatus"
-                          class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
-                    <option value="pending">Pending</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                  <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupStatus || 'Pending' }}</p>
-                </div>
+              <div>
+                <p class="text-xs text-gray-500">Follow-up Date</p>
+                <input v-if="editMode" type="date" v-model="editedTicket.followupDate"
+                       class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
+                <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupDate || 'Not set' }}</p>
               </div>
             </div>
 
