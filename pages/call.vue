@@ -2083,9 +2083,18 @@ export default {
           parsedNotes.push({
             id: Date.now(),
             text: notesText,
-            timestamp: 'Unknown'
+            timestamp: new Date().toLocaleString()
           })
         } else {
+          // Add the first note (before any separator)
+          if (notesParts[0] && notesParts[0].trim()) {
+            parsedNotes.push({
+              id: Date.now(),
+              text: notesParts[0].trim(),
+              timestamp: 'Initial Note'
+            })
+          }
+
           // Multiple notes with timestamps
           for (let i = 1; i < notesParts.length; i += 2) {
             if (notesParts[i] && notesParts[i + 1]) {
@@ -2096,17 +2105,10 @@ export default {
               })
             }
           }
-          // Add the first note (before any separator)
-          if (notesParts[0] && notesParts[0].trim()) {
-            parsedNotes.unshift({
-              id: Date.now(),
-              text: notesParts[0].trim(),
-              timestamp: 'Initial'
-            })
-          }
         }
 
-        this.callNotes = parsedNotes
+        // Reverse to show newest first
+        this.callNotes = parsedNotes.reverse()
       }
 
       // Load available agents for the call's product

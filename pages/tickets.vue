@@ -364,7 +364,7 @@
                   <!-- Notes Preview -->
                   <td v-if="visibleColumns.notes" class="px-4 py-4">
                     <div class="text-sm text-gray-600 max-w-xs truncate">
-                      {{ ticket.notes }}
+                      {{ getLatestNotePreview(ticket.notes) }}
                     </div>
                   </td>
 
@@ -752,16 +752,6 @@
                   </select>
                   <p v-else class="text-sm text-gray-900">{{ selectedTicketDetails?.followupStatus || 'Pending' }}</p>
                 </div>
-              </div>
-            </div>
-
-            <!-- Notes -->
-            <div class="bg-white rounded-lg p-4 border border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-900 mb-3">Notes</h3>
-              <div>
-                <textarea v-if="editMode" v-model="editedTicket.notes" rows="3" placeholder="Enter notes..."
-                          class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"></textarea>
-                <p v-else class="text-sm text-gray-900 whitespace-pre-wrap">{{ selectedTicketDetails?.notes || 'No notes' }}</p>
               </div>
             </div>
 
@@ -1433,6 +1423,31 @@ export default {
       }
     },
 
+    // Get latest note preview for table display (text only, truncated)
+    getLatestNotePreview(notes) {
+      if (!notes) return '-'
+
+      // Split by timestamp separator to get all notes
+      const notesParts = notes.split(/\n\n--- (.*?) ---\n/)
+
+      // Get the last note (most recent)
+      let latestNote = ''
+      if (notesParts.length === 1) {
+        // Single note without timestamp
+        latestNote = notes
+      } else if (notesParts.length > 1) {
+        // Get the last note text (after the last timestamp)
+        latestNote = notesParts[notesParts.length - 1]?.trim() || notesParts[0]?.trim() || ''
+      }
+
+      // Truncate if longer than 50 characters and add "..."
+      if (latestNote.length > 50) {
+        return latestNote.substring(0, 50) + '...'
+      }
+
+      return latestNote || '-'
+    },
+
     // Fetch all agents
     async fetchAgents() {
       try {
@@ -1877,9 +1892,19 @@ export default {
             id: Date.now(),
             text: notesText,
             author: 'Agent',
-            timestamp: 'Unknown'
+            timestamp: new Date().toLocaleString()
           })
         } else {
+          // Add the first note (before any separator)
+          if (notesParts[0] && notesParts[0].trim()) {
+            parsedNotes.push({
+              id: Date.now(),
+              text: notesParts[0].trim(),
+              author: 'Agent',
+              timestamp: 'Initial Note'
+            })
+          }
+
           // Multiple notes with timestamps
           for (let i = 1; i < notesParts.length; i += 2) {
             if (notesParts[i] && notesParts[i + 1]) {
@@ -1891,18 +1916,10 @@ export default {
               })
             }
           }
-          // Add the first note (before any separator)
-          if (notesParts[0] && notesParts[0].trim()) {
-            parsedNotes.unshift({
-              id: Date.now(),
-              text: notesParts[0].trim(),
-              author: 'Agent',
-              timestamp: 'Initial'
-            })
-          }
         }
 
-        this.internalNotes = parsedNotes
+        // Reverse to show newest first
+        this.internalNotes = parsedNotes.reverse()
       }
 
       // Load available agents for this ticket's product
