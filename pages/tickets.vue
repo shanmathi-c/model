@@ -240,46 +240,53 @@
           <!-- Sort Dropdown -->
           <div
             v-if="showSortDropdown"
-            class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200"
+            class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200"
             style="z-index: 50;"
           >
-            <div class="p-3">
-              <h3 class="text-sm font-semibold text-gray-900 mb-2">Sort By</h3>
-
-              <div class="space-y-1">
-                <label
-                  v-for="option in sortOptions"
-                  :key="option.value"
-                  class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded text-sm"
-                  @click="setSortBy(option.value)"
-                >
-                  <input
-                    type="radio"
-                    :value="option.value"
-                    v-model="sortBy"
-                    class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span class="text-gray-700">{{ option.label }}</span>
-                </label>
+            <div class="p-2">
+              <!-- Sort By Field -->
+              <div class="mb-2">
+                <div class="space-y-1">
+                  <label
+                    v-for="option in sortOptions"
+                    :key="option.value"
+                    class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs"
+                    @click="setSortBy(option.value)"
+                  >
+                    <input
+                      type="radio"
+                      :value="option.value"
+                      v-model="sortBy"
+                      class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span class="text-gray-700">{{ option.label }}</span>
+                  </label>
+                </div>
               </div>
 
-              <div class="mt-3 pt-3 border-t border-gray-200">
-                <h4 class="text-xs font-semibold text-gray-900 mb-2">Order</h4>
+              <!-- Sort Order -->
+              <div class="pt-1 border-t border-gray-200">
                 <div class="flex gap-2">
-                  <button
-                    @click="sortOrder = 'asc'"
-                    class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
-                    :class="sortOrder === 'asc' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                  >
-                    Ascending
-                  </button>
-                  <button
-                    @click="sortOrder = 'desc'"
-                    class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
-                    :class="sortOrder === 'desc' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                  >
-                    Descending
-                  </button>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value="asc"
+                      v-model="sortOrder"
+                      class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      @change="applySorting"
+                    />
+                    <span class="ml-1 text-xs text-gray-700">Asc</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value="desc"
+                      v-model="sortOrder"
+                      class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      @change="applySorting"
+                    />
+                    <span class="ml-1 text-xs text-gray-700">Desc</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -1373,7 +1380,15 @@ export default {
       sortBy: 'ticketId',
       sortOrder: 'asc',
       sortOptions: [
-        { value: 'ticketId', label: 'Ticket ID' }
+        { value: 'ticketId', label: 'Ticket ID' },
+        { value: 'customerName', label: 'Customer Name' },
+        { value: 'agentName', label: 'Agent Name' },
+        { value: 'productName', label: 'Product Name' },
+        { value: 'status', label: 'Status' },
+        { value: 'priority', label: 'Priority' },
+        { value: 'createdDate', label: 'Created Date' },
+        { value: 'resolvedDate', label: 'Resolved Date' },
+        { value: 'csatRating', label: 'CSAT Rating' }
       ],
 
       // Filter options
@@ -2857,7 +2872,7 @@ export default {
         }
 
         // Handle numeric sorting (CSAT rating, priority)
-        if (this.sortBy === 'csatRating') {
+        if (this.sortBy === 'csatRating' || this.sortBy === 'priority') {
           valueA = Number(valueA) || 0
           valueB = Number(valueB) || 0
         }
