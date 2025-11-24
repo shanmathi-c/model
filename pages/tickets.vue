@@ -2789,8 +2789,18 @@ export default {
       // Filter by FCR
       if (this.activeFilters.fcr.length > 0) {
         result = result.filter(ticket => {
-          if (this.activeFilters.fcr.includes('yes') && ticket.firstCallResolution === true) return true
-          if (this.activeFilters.fcr.includes('no') && (ticket.firstCallResolution === false || ticket.firstCallResolution === null)) return true
+          const fcrValue = ticket.firstCallResolution
+
+          if (this.activeFilters.fcr.includes('yes')) {
+            // Check for any truthy FCR value (true, 1, '1', 'yes')
+            return fcrValue === true || fcrValue === 1 || fcrValue === '1' || String(fcrValue).toLowerCase() === 'yes'
+          }
+
+          if (this.activeFilters.fcr.includes('no')) {
+            // Check for any falsy/No FCR value (false, 0, '0', 'no', null, undefined)
+            return fcrValue === false || fcrValue === 0 || fcrValue === '0' || String(fcrValue).toLowerCase() === 'no' || fcrValue === null || fcrValue === undefined
+          }
+
           return false
         })
       }
@@ -2934,6 +2944,50 @@ export default {
     // Check if any filters are active
     hasActiveFilters() {
       return this.activeFiltersCount > 0
+    }
+  },
+
+  watch: {
+    // Watch for changes in activeFilters and reset to page 1
+    'activeFilters.status': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
+    },
+    'activeFilters.agents': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
+    },
+    'activeFilters.products': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
+    },
+    'activeFilters.fcr': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
+    },
+    'activeFilters.csatRating': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
+    },
+    'activeFilters.dateRange': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
+    },
+    // Watch search query
+    searchQuery() {
+      this.currentPage = 1
     }
   }
 }
