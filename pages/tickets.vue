@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-gray-50 flex flex-col ">
+  <div class="h-full bg-gray-50 flex flex-col ">
     <!-- Fixed Header Section - Sticky -->
     <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
       <!-- Header Title -->
@@ -366,10 +366,10 @@
       </div>
     </div>
 
-    <!-- Scrollable Content Area with padding for fixed pagination -->
-    <div class="flex-1 overflow-auto scrollbar-thin pb-20" style="min-height: calc(100vh - 200px);">
+    <!-- Scrollable Content Area -->
+    <div class="flex-1 overflow-auto scrollbar-thin flex flex-col pb-16" style="min-height: calc(60vh - 250px); ">
         <!-- Table View -->
-        <div class="overflow-x-auto scrollbar-thin" style="min-height: calc(100vh - 300px);">
+        <div class="" style="min-height: calc(40vh - 300px);">
           <table class="w-full" style="min-width: 1200px;">
               <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
@@ -1300,18 +1300,18 @@
       </div>
     </div>
 
-    <!-- Fixed Pagination Controls -->
-    <div class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white border-t border-gray-200 z-10">
+    <!-- Pagination Controls -->
+    <div class="px-4 bg-white border-t border-gray-200">
       <div class="flex flex-col gap-2">
         <!-- Info row -->
-        <div class="text-sm text-gray-700">
+        <!-- <div class="text-sm text-gray-700">
           Showing <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span> to
           <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredTickets.length) }}</span> of
           <span class="font-medium">{{ filteredTickets.length }}</span> tickets (Page {{ currentPage }} of {{ totalPages }})
-        </div>
+        </div> -->
 
         <!-- Controls row -->
-        <div class="flex items-center justify-center">
+        <div class="flex items-center justify-center pt-3">
           <!-- Previous Button -->
           <button
             @click="previousPage"
