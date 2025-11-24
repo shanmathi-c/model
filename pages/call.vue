@@ -167,6 +167,70 @@
           </div>
         </div>
 
+        <!-- Sort By Button -->
+        <div ref="sortDropdownRef" class="relative">
+          <button
+            @click="toggleSortDropdown"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            title="Sort By"
+          >
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span class="text-sm font-medium">Sort By</span>
+          </button>
+
+          <!-- Sort Dropdown -->
+          <div
+            v-if="showSortDropdown"
+            class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+          >
+            <div class="p-2">
+              <!-- Sort By Field -->
+              <div class="mb-2">
+                <div class="space-y-1">
+                  <label v-for="option in sortOptions" :key="option.value" class="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="radio"
+                      :value="option.value"
+                      v-model="sortBy"
+                      class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      @change="applySorting"
+                    />
+                    <span class="ml-1.5 text-xs text-gray-700">{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Sort Order -->
+              <div class="pt-1 border-t border-gray-200">
+                <div class="flex gap-2">
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value="asc"
+                      v-model="sortOrder"
+                      class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      @change="applySorting"
+                    />
+                    <span class="ml-1 text-xs text-gray-700">Asc</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      value="desc"
+                      v-model="sortOrder"
+                      class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      @change="applySorting"
+                    />
+                    <span class="ml-1 text-xs text-gray-700">Desc</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Display Settings Button -->
         <div ref="displayDropdownRef" class="relative">
           <button
@@ -1126,7 +1190,21 @@ export default {
       callTypeFilter: '',
       showFilter: false,
       showFilterDropdown: false,
+      showSortDropdown: false,
       showDisplayDropdown: false,
+
+      // Sort options
+      sortBy: 'callId',
+      sortOrder: 'asc',
+      sortOptions: [
+        { value: 'callId', label: 'Call ID' },
+        { value: 'customerName', label: 'Customer Name' },
+        { value: 'agentName', label: 'Agent Name' },
+        { value: 'callType', label: 'Call Type' },
+        { value: 'status', label: 'Status' },
+        { value: 'duration', label: 'Duration' },
+        { value: 'callDateTime', label: 'Call Date & Time' }
+      ],
 
       // Filter options
       callTypeOptions: [
@@ -1342,6 +1420,45 @@ export default {
         })
       }
 
+      // Sort calls
+      filtered = [...filtered].sort((a, b) => {
+        let valueA = a[this.sortBy]
+        let valueB = b[this.sortBy]
+
+        // Handle null/undefined values
+        if (valueA === null || valueA === undefined) valueA = ''
+        if (valueB === null || valueB === undefined) valueB = ''
+
+        // Handle callId sorting - extract numeric part if it exists
+        if (this.sortBy === 'callId') {
+          // Try to extract numbers from callId (e.g., "C001" -> 1)
+          const numA = parseInt(String(valueA).match(/\d+/)?.[0] || '0')
+          const numB = parseInt(String(valueB).match(/\d+/)?.[0] || '0')
+          valueA = numA
+          valueB = numB
+        }
+
+        // Handle date sorting
+        if (this.sortBy === 'callDateTime') {
+          valueA = valueA ? new Date(valueA).getTime() : 0
+          valueB = valueB ? new Date(valueB).getTime() : 0
+        }
+
+        // Handle numeric sorting (duration)
+        if (this.sortBy === 'duration') {
+          valueA = Number(valueA) || 0
+          valueB = Number(valueB) || 0
+        }
+
+        // Compare values
+        let comparison = 0
+        if (valueA > valueB) comparison = 1
+        if (valueA < valueB) comparison = -1
+
+        // Apply sort order
+        return this.sortOrder === 'desc' ? comparison * -1 : comparison
+      })
+
       return filtered
     },
 
@@ -1497,6 +1614,17 @@ export default {
     // Toggle filter dropdown
     toggleFilterDropdown() {
       this.showFilterDropdown = !this.showFilterDropdown
+    },
+
+    // Toggle sort dropdown
+    toggleSortDropdown() {
+      this.showSortDropdown = !this.showSortDropdown
+    },
+
+    // Apply sorting
+    applySorting() {
+      // Reset to first page when sorting changes
+      this.currentPage = 1
     },
 
     // Toggle filter section
@@ -1695,6 +1823,14 @@ export default {
         const filterDropdown = this.$refs.filterDropdownRef;
         if (filterDropdown && !filterDropdown.contains(clickedElement)) {
           this.showFilterDropdown = false;
+        }
+      }
+
+      // Close sort dropdown if clicking outside
+      if (this.showSortDropdown) {
+        const sortDropdown = this.$refs.sortDropdownRef;
+        if (sortDropdown && !sortDropdown.contains(clickedElement)) {
+          this.showSortDropdown = false;
         }
       }
 
