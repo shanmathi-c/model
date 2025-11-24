@@ -163,6 +163,44 @@
                   </select>
                 </div>
               </div>
+
+              <!-- Date Range Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('dateRange')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Date Range</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.dateRange }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.dateRange" class="mt-1 space-y-2 pl-2">
+                  <!-- Call Date Range -->
+                  <div class="space-y-1">
+                    <label class="text-xs font-medium text-gray-600">Call Date</label>
+                    <input
+                      type="date"
+                      v-model="activeFilters.dateRange.callDateFrom"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      placeholder="From"
+                    />
+                    <input
+                      type="date"
+                      v-model="activeFilters.dateRange.callDateTo"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      placeholder="To"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1226,7 +1264,11 @@ export default {
         callTypes: [],
         status: [],
         agents: [],
-        duration: ''
+        duration: '',
+        dateRange: {
+          callDateFrom: null,
+          callDateTo: null
+        }
       },
 
       // Available agents (will be populated from data)
@@ -1237,7 +1279,8 @@ export default {
         callType: false,
         status: false,
         agent: false,
-        duration: false
+        duration: false,
+        dateRange: false
       },
 
       // Display settings
@@ -1300,7 +1343,9 @@ export default {
       return this.activeFilters.callTypes.length > 0 ||
              this.activeFilters.status.length > 0 ||
              this.activeFilters.agents.length > 0 ||
-             this.activeFilters.duration !== ''
+             this.activeFilters.duration !== '' ||
+             this.activeFilters.dateRange.callDateFrom !== null ||
+             this.activeFilters.dateRange.callDateTo !== null
     },
 
     // Generate active filter chips
@@ -1355,6 +1400,17 @@ export default {
           label: durationLabels[this.activeFilters.duration] || this.activeFilters.duration,
           type: 'duration',
           value: this.activeFilters.duration
+        })
+      }
+
+      // Date Range chip
+      if (this.activeFilters.dateRange.callDateFrom || this.activeFilters.dateRange.callDateTo) {
+        const label = `Date: ${this.activeFilters.dateRange.callDateFrom || '...'} - ${this.activeFilters.dateRange.callDateTo || '...'}`
+        chips.push({
+          key: 'dateRange-callDate',
+          label,
+          type: 'dateRange',
+          value: 'callDate'
         })
       }
 
@@ -1417,6 +1473,29 @@ export default {
             default:
               return true
           }
+        })
+      }
+
+      // Apply Call Date Range filter
+      if (this.activeFilters.dateRange.callDateFrom || this.activeFilters.dateRange.callDateTo) {
+        filtered = filtered.filter(call => {
+          const callDateTime = call.callDateTime || call.createdAt || call.created_at
+          if (!callDateTime) return false
+
+          const callDate = new Date(callDateTime)
+
+          if (this.activeFilters.dateRange.callDateFrom) {
+            const fromDate = new Date(this.activeFilters.dateRange.callDateFrom)
+            if (callDate < fromDate) return false
+          }
+
+          if (this.activeFilters.dateRange.callDateTo) {
+            const toDate = new Date(this.activeFilters.dateRange.callDateTo)
+            toDate.setHours(23, 59, 59, 999) // Include the entire "to" day
+            if (callDate > toDate) return false
+          }
+
+          return true
         })
       }
 
@@ -1652,6 +1731,12 @@ export default {
         case 'duration':
           this.activeFilters.duration = ''
           break
+        case 'dateRange':
+          if (value === 'callDate') {
+            this.activeFilters.dateRange.callDateFrom = null
+            this.activeFilters.dateRange.callDateTo = null
+          }
+          break
       }
       this.currentPage = 1
     },
@@ -1663,7 +1748,11 @@ export default {
         callTypes: [],
         status: [],
         agents: [],
-        duration: ''
+        duration: '',
+        dateRange: {
+          callDateFrom: null,
+          callDateTo: null
+        }
       }
       this.showFilterDropdown = false
       this.currentPage = 1
@@ -2454,6 +2543,15 @@ export default {
         // Reset to previous status on error
         this.selectedCallDetailsStatus = this.selectedCallDetails.callStatus || this.selectedCallDetails.status || 'pending'
       }
+    }
+  },
+
+  watch: {
+    'activeFilters.dateRange': {
+      handler() {
+        this.currentPage = 1
+      },
+      deep: true
     }
   }
 }
