@@ -46,6 +46,13 @@
             >
               Call
             </NuxtLink>
+            <NuxtLink
+              to="/analytics"
+              class="block p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
+              active-class="bg-blue-50 text-blue-600 border-l-2 border-blue-600"
+            >
+              Analytics
+            </NuxtLink>
           </div>
         </transition>
       </div>
