@@ -2509,11 +2509,14 @@ export class ticketController {
                                 const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
                                 callUpdateFields.push("resolvedOn = ?");
                                 callUpdateValues.push(currentTimestamp);
-                            } else {
-                                // If status is changed to something other than resolved, clear resolvedOn
+                            } else if (followupStatus !== 'closed') {
+                                // If status is changed to something other than resolved or closed, clear resolvedOn
+                                // When transitioning to 'closed', preserve the existing resolvedOn date
                                 callUpdateFields.push("resolvedOn = ?");
                                 callUpdateValues.push(null);
                             }
+                            // When followupStatus is 'closed', we don't update resolvedOn field,
+                            // thus preserving the existing resolvedOn date
                         }
                         if (priority !== undefined) {
                             callUpdateFields.push("priority = ?");
