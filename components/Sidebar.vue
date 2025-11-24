@@ -13,7 +13,10 @@
           class="flex items-center justify-between p-3 hover:bg-gray-100 rounded cursor-pointer transition-colors"
           @click="toggleSupport"
         >
-          <span class="font-medium text-gray-800">Support</span>
+          <div class="flex items-center">
+            <img src="/person.svg" alt="Support" class="w-5 h-5 mr-3" />
+            <span class="font-medium text-gray-800">Support</span>
+          </div>
           <img
             src="/chevron-right.svg"
             alt="toggle"
@@ -34,23 +37,26 @@
           <div v-show="isSupportOpen" class="ml-4 overflow-hidden">
             <NuxtLink
               to="/tickets"
-              class="block p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
+              class="flex items-center p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
               active-class="bg-blue-50 text-blue-600 border-l-2 border-blue-600"
             >
+              <img src="/ticket.svg" alt="Tickets" class="w-5 h-5 mr-3" />
               Tickets
             </NuxtLink>
             <NuxtLink
               to="/call"
-              class="block p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
+              class="flex items-center p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
               active-class="bg-blue-50 text-blue-600 border-l-2 border-blue-600"
             >
+              <img src="/phone-call.svg" alt="Call" class="w-5 h-5 mr-3" />
               Call
             </NuxtLink>
             <NuxtLink
               to="/analytics"
-              class="block p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
+              class="flex items-center p-2 pl-4 hover:bg-gray-100 rounded my-1 transition-colors text-gray-700"
               active-class="bg-blue-50 text-blue-600 border-l-2 border-blue-600"
             >
+              <img src="/analytics-graph.svg" alt="Analytics" class="w-5 h-5 mr-3" />
               Analytics
             </NuxtLink>
           </div>
