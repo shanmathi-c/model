@@ -1,19 +1,20 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-2 shadow-md">
       <!-- Header Title -->
-      <div class="mb-4">
+      <div class="">
         <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
         <p class="text-gray-600 mt-1">View and analyze support performance metrics</p>
       </div>
 
-      <!-- Date Range Picker -->
-      <div class="flex items-center gap-4 mb-4">
+      <!-- Date Range and Filters Row -->
+      <div class="flex flex-wrap items-center gap-4 mb-4">
+        <!-- Date Range Selector -->
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700">Date Range:</label>
-          <select 
-            v-model="selectedDateRange" 
+          <select
+            v-model="selectedDateRange"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="7">Last 7 days</option>
@@ -22,27 +23,131 @@
             <option value="custom">Custom Range</option>
           </select>
         </div>
-        
+
         <!-- Custom Date Range Picker (shown when 'custom' is selected) -->
         <div v-if="selectedDateRange === 'custom'" class="flex items-center gap-2">
-          <input 
-            type="date" 
-            v-model="dateRange.start" 
+          <input
+            type="date"
+            v-model="dateRange.start"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
           <span class="text-gray-500">to</span>
-          <input 
-            type="date" 
-            v-model="dateRange.end" 
+          <input
+            type="date"
+            v-model="dateRange.end"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-          <button 
+          <button
             @click="applyDateRange"
             class="ml-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Apply
           </button>
         </div>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Agent Selection Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Agent:</label>
+          <div class="relative">
+            <select
+              v-model="selectedAgent"
+              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
+              style="min-width: 150px;"
+            >
+              <option value="all">All Agents</option>
+              <option value="john_doe">John Doe</option>
+              <option value="jane_smith">Jane Smith</option>
+              <option value="mike_wilson">Mike Wilson</option>
+              <option value="sarah_jones">Sarah Jones</option>
+              <option value="alex_brown">Alex Brown</option>
+            </select>
+            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Product Category Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Product:</label>
+          <div class="relative">
+            <select
+              v-model="selectedProductCategory"
+              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
+              style="min-width: 150px;"
+            >
+              <option value="all">All Products</option>
+              <option value="software">Software</option>
+              <option value="hardware">Hardware</option>
+              <option value="services">Services</option>
+              <option value="subscription">Subscription</option>
+            </select>
+            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Ticket Type Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Type:</label>
+          <div class="relative">
+            <select
+              v-model="selectedTicketType"
+              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
+              style="min-width: 150px;"
+            >
+              <option value="all">All Types</option>
+              <option value="incident">Incident</option>
+              <option value="request">Request</option>
+              <option value="complaint">Complaint</option>
+              <option value="inquiry">Inquiry</option>
+            </select>
+            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Agent Team/Group Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Team:</label>
+          <div class="relative">
+            <select
+              v-model="selectedTeam"
+              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
+              style="min-width: 150px;"
+            >
+              <option value="all">All Teams</option>
+              <option value="tier1">Tier 1 Support</option>
+              <option value="tier2">Tier 2 Support</option>
+              <option value="specialist">Specialist Team</option>
+              <option value="escalation">Escalation Team</option>
+            </select>
+            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Apply Filters Button -->
+        <button
+          @click="applyFilters"
+          class="px-4 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+        >
+          Apply Filters
+        </button>
+
+        <!-- Clear Filters Button -->
+        <button
+          @click="clearFilters"
+          class="px-4 py-1.5 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+        >
+          Clear
+        </button>
       </div>
     </div>
 
@@ -131,75 +236,7 @@
         </div>
       </div>
 
-      <!-- Charts Row 1 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <!-- Tickets by Status -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Tickets by Status</h3>
-            <select v-model="ticketsByStatusPeriod" class="text-sm border border-gray-300 rounded-md px-2 py-1">
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
-          </div>
-          <div class="h-64">
-            <!-- Chart will be rendered here -->
-            <div class="flex items-center justify-center h-full text-gray-400">
-              <p>Ticket status chart will be displayed here</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tickets by Priority -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Tickets by Priority</h3>
-            <select v-model="ticketsByPriorityPeriod" class="text-sm border border-gray-300 rounded-md px-2 py-1">
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
-          </div>
-          <div class="h-64">
-            <!-- Chart will be rendered here -->
-            <div class="flex items-center justify-center h-full text-gray-400">
-              <p>Priority distribution chart will be displayed here</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Charts Row 2 -->
-      <div class="grid grid-cols-1 gap-6">
-        <!-- Ticket Volume Over Time -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Ticket Volume Over Time</h3>
-            <div class="flex gap-2">
-              <button 
-                v-for="period in ['day', 'week', 'month']" 
-                :key="period"
-                @click="ticketVolumePeriod = period"
-                :class="[
-                  'px-3 py-1 text-sm rounded-md',
-                  ticketVolumePeriod === period 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                ]"
-              >
-                {{ period.charAt(0).toUpperCase() + period.slice(1) }}
-              </button>
-            </div>
-          </div>
-          <div class="h-80">
-            <!-- Chart will be rendered here -->
-            <div class="flex items-center justify-center h-full text-gray-400">
-              <p>Ticket volume over time chart will be displayed here</p>
-            </div>
-          </div>
-        </div>
-      </div>
+   
     </div>
   </div>
 </template>
@@ -215,6 +252,11 @@ export default {
         start: this.getDateDaysAgo(30),
         end: this.getDateDaysAgo(0)
       },
+      // Filter properties
+      selectedAgent: 'all',
+      selectedProductCategory: 'all',
+      selectedTicketType: 'all',
+      selectedTeam: 'all',
       metrics: {
         totalTickets: 1, // Placeholder value
         ticketsChange: 5.2, // Placeholder value
@@ -244,11 +286,62 @@ export default {
       // Here you would typically call a method to fetch data with the new date range
     },
 
+    // Apply all filters
+    applyFilters() {
+      console.log('Applying filters:', {
+        dateRange: this.selectedDateRange,
+        agent: this.selectedAgent,
+        product: this.selectedProductCategory,
+        ticketType: this.selectedTicketType,
+        team: this.selectedTeam
+      });
+
+      // In a real app, this would trigger an API call with all filter parameters
+      // Example API call would be something like:
+      // this.fetchFilteredAnalyticsData();
+
+      // For now, just log the filters
+      this.fetchAnalyticsData();
+    },
+
+    // Clear all filters
+    clearFilters() {
+      this.selectedAgent = 'all';
+      this.selectedProductCategory = 'all';
+      this.selectedTicketType = 'all';
+      this.selectedTeam = 'all';
+      this.selectedDateRange = '30';
+
+      console.log('Filters cleared');
+      // In a real app, this would reset the analytics data
+      this.fetchAnalyticsData();
+    },
+
     // In a real app, you would have methods to fetch data from your API
-    fetchAnalyticsData() {
-      // This would be an API call to fetch the analytics data
-      // For now, we're just using placeholder data
-      console.log('Fetching analytics data...');
+    async fetchAnalyticsData() {
+      try {
+        // This would be an API call to fetch the analytics data
+        // For now, we're just using placeholder data
+        console.log('Fetching analytics data...');
+
+        // Example API call structure with error handling:
+        // const response = await $fetch('http://localhost:5001/analytics', {
+        //   method: 'GET',
+        //   query: {
+        //     dateRange: this.selectedDateRange,
+        //     agent: this.selectedAgent,
+        //     product: this.selectedProductCategory,
+        //     ticketType: this.selectedTicketType,
+        //     team: this.selectedTeam
+        //   }
+        // });
+        // this.metrics = response.data;
+
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        // Handle H3 error or network errors gracefully
+        // You could show a user-friendly error message here
+      }
     }
   },
 

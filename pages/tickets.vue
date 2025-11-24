@@ -1,7 +1,7 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col ">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
+    <div class="flex-shrink-0 px-6 py-4">
       <!-- Header Title -->
       <div class="mb-4">
         <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
@@ -367,7 +367,7 @@
     </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-auto scrollbar-thin flex flex-col pb-16" style="min-height: calc(60vh - 250px); ">
+    <div class="flex-1 overflow-scroll  flex flex-col" style="min-height: calc(100vh - 250px); ">
         <!-- Table View -->
         <div class="" style="min-height: calc(40vh - 300px);">
           <table class="w-full" style="min-width: 1200px;">
@@ -1300,8 +1300,8 @@
       </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="px-4 bg-white border-t border-gray-200">
+    <!-- Pagination Controls - Fixed at Bottom -->
+    <div class="px-4 py-3 bg-white border-t border-gray-200 mt-auto">
       <div class="flex flex-col gap-2">
         <!-- Info row -->
         <!-- <div class="text-sm text-gray-700">
@@ -3056,9 +3056,6 @@ export default {
   height: 4px !important;
 }
 
-.overflow-x-auto::-webkit-scrollbar {
-  height: 4px !important;
-}
 
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px !important;
