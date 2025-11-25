@@ -348,6 +348,8 @@
           </div>
         </div>
 
+      </div>
+
       <!-- Active Filter Chips (Below search bar) -->
       <div v-if="hasActiveFilters" class="flex gap-1.5 flex-wrap items-center mt-2">
         <span
@@ -364,10 +366,9 @@
           </button>
         </span>
       </div>
-    </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-scroll  flex flex-col" style="min-height: calc(100vh - 250px); ">
+    <div class="flex-1 overflow-scroll  flex flex-col pt-5" style="min-height: calc(100vh - 250px); ">
         <!-- Table View -->
         <div class="" style="min-height: calc(40vh - 300px);">
           <table class="w-full" style="min-width: 1200px;">
