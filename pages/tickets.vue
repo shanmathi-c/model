@@ -1283,14 +1283,14 @@
                   <div class="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
                   <div class="flex-1">
                     <p class="text-sm text-gray-900">Assigned to {{ selectedTicketDetails?.agentName }}</p>
-                    <p class="text-xs text-gray-500">2 hours ago</p>
+                    <p class="text-xs text-gray-500">{{ selectedTicketDetails?.assignedDate ? formatDate(selectedTicketDetails.assignedDate) : 'Assignment date not available' }}</p>
                   </div>
                 </div>
                 <div class="flex gap-3">
                   <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5"></div>
                   <div class="flex-1">
-                    <p class="text-sm text-gray-900">Status changed to In Progress</p>
-                    <p class="text-xs text-gray-500">1 hour ago</p>
+                    <p class="text-sm text-gray-900">Status changed to {{ selectedTicketDetails?.status || 'In Progress' }}</p>
+                    <p class="text-xs text-gray-500">{{ selectedTicketDetails?.statusUpdatedAt ? formatDate(selectedTicketDetails.statusUpdatedAt) : 'Status update time not available' }}</p>
                   </div>
                 </div>
               </div>
@@ -1573,6 +1573,8 @@ export default {
               type: ticket.ticketType || 'general',
               status: ticket.status || 'assigned',
               createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
+              assignedDate: ticket.assignedAt || ticket.assigned_at || ticket.assignedDate || null,
+              statusUpdatedAt: ticket.statusUpdatedAt || ticket.status_updated_at || ticket.updatedAt || ticket.updated_at || null,
               resolvedDate: ticket.resolvedOn || ticket.resolvedAt || ticket.resolved_at || null,
               csatRating: ticket.feedbackRating || ticket.csatRating || ticket.csat_rating || null,
               firstCallResolution: ticket.fcr === 1 || ticket.first_call_resolution === 1 ? true : (ticket.fcr === 0 || ticket.first_call_resolution === 0 ? false : null),
@@ -2433,12 +2435,7 @@ export default {
       }
     },
 
-    formatDate(date) {
-      if (!date) return 'N/A'
-      const d = new Date(date)
-      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()
-    },
-
+    
     // Update ticket status from sidebar (updates all tables)
     async updateTicketStatusFromSidebar() {
       if (!this.sidebarSelectedStatus || !this.selectedTicketDetails) {
