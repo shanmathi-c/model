@@ -254,6 +254,7 @@
         </div>
       </div>
 
+      <!-- Charts Section -->
       <!-- Line Chart Section -->
       <div class="mb-6">
         <!-- Tickets Created vs Resolved Over Time -->
@@ -266,17 +267,32 @@
           @period-change="updateTicketTrendsPeriod"
         />
       </div>
+
+      <!-- Time Distribution Chart Section -->
+      <div class="mb-6">
+        <!-- Time Distribution -->
+        <TimeDistributionChart
+          title="Ticket Distribution by Time"
+          :time-data="timeDistributionData"
+          :period="timeDistributionPeriod"
+          @period-change="updateTimeDistributionPeriod"
+          @tooltip-show="onTooltipShow"
+          @tooltip-hide="onTooltipHide"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import LineChart from '~/components/LineChart.vue'
+import TimeDistributionChart from '~/components/TimeDistributionChart.vue'
 
 export default {
   name: 'AnalyticsPage',
   components: {
-    LineChart
+    LineChart,
+    TimeDistributionChart
   },
 
   data() {
@@ -335,7 +351,50 @@ export default {
         created: [45, 52, 38, 65, 48, 59, 67, 72, 58, 81, 69, 74, 62, 88, 76, 92, 85, 98, 103, 95, 108, 112, 105, 118, 125, 119, 132, 128, 135, 142],
         resolved: [42, 48, 45, 58, 52, 61, 63, 68, 65, 74, 71, 78, 75, 82, 79, 85, 88, 91, 95, 98, 102, 105, 108, 112, 115, 118, 122, 125, 128, 130],
         labels: this.generateDateLabels(30)
-      }
+      },
+      timeDistributionPeriod: '30',
+      timeDistributionData: [
+        {
+          timeRange: '00:00-06:00',
+          total: 45,
+          agents: [
+            { name: 'John Doe', count: 12 },
+            { name: 'Jane Smith', count: 8 },
+            { name: 'Mike Wilson', count: 15 },
+            { name: 'Sarah Jones', count: 10 }
+          ]
+        },
+        {
+          timeRange: '06:00-12:00',
+          total: 156,
+          agents: [
+            { name: 'John Doe', count: 45 },
+            { name: 'Jane Smith', count: 38 },
+            { name: 'Mike Wilson', count: 42 },
+            { name: 'Sarah Jones', count: 31 }
+          ]
+        },
+        {
+          timeRange: '12:00-18:00',
+          total: 234,
+          agents: [
+            { name: 'John Doe', count: 68 },
+            { name: 'Jane Smith', count: 52 },
+            { name: 'Mike Wilson', count: 61 },
+            { name: 'Sarah Jones', count: 53 }
+          ]
+        },
+        {
+          timeRange: '18:00-00:00',
+          total: 128,
+          agents: [
+            { name: 'John Doe', count: 35 },
+            { name: 'Jane Smith', count: 28 },
+            { name: 'Mike Wilson', count: 32 },
+            { name: 'Sarah Jones', count: 33 }
+          ]
+        }
+      ]
     };
   },
 
@@ -450,6 +509,66 @@ export default {
       this.ticketTrends.created = this.generateRandomData(dataPoints, 30, 150);
       this.ticketTrends.resolved = this.generateRandomData(dataPoints, 25, 145);
       this.ticketTrends.labels = this.generateDateLabels(days);
+    },
+
+    updateTimeDistributionPeriod(period) {
+      this.timeDistributionPeriod = period;
+
+      // Generate new time distribution data based on period
+      const multiplier = parseInt(period) / 30; // Base on 30 days
+      this.timeDistributionData = [
+        {
+          timeRange: '00:00-06:00',
+          total: Math.round(45 * multiplier),
+          agents: [
+            { name: 'John Doe', count: Math.round(12 * multiplier) },
+            { name: 'Jane Smith', count: Math.round(8 * multiplier) },
+            { name: 'Mike Wilson', count: Math.round(15 * multiplier) },
+            { name: 'Sarah Jones', count: Math.round(10 * multiplier) }
+          ]
+        },
+        {
+          timeRange: '06:00-12:00',
+          total: Math.round(156 * multiplier),
+          agents: [
+            { name: 'John Doe', count: Math.round(45 * multiplier) },
+            { name: 'Jane Smith', count: Math.round(38 * multiplier) },
+            { name: 'Mike Wilson', count: Math.round(42 * multiplier) },
+            { name: 'Sarah Jones', count: Math.round(31 * multiplier) }
+          ]
+        },
+        {
+          timeRange: '12:00-18:00',
+          total: Math.round(234 * multiplier),
+          agents: [
+            { name: 'John Doe', count: Math.round(68 * multiplier) },
+            { name: 'Jane Smith', count: Math.round(52 * multiplier) },
+            { name: 'Mike Wilson', count: Math.round(61 * multiplier) },
+            { name: 'Sarah Jones', count: Math.round(53 * multiplier) }
+          ]
+        },
+        {
+          timeRange: '18:00-00:00',
+          total: Math.round(128 * multiplier),
+          agents: [
+            { name: 'John Doe', count: Math.round(35 * multiplier) },
+            { name: 'Jane Smith', count: Math.round(28 * multiplier) },
+            { name: 'Mike Wilson', count: Math.round(32 * multiplier) },
+            { name: 'Sarah Jones', count: Math.round(33 * multiplier) }
+          ]
+        }
+      ];
+    },
+
+    // Tooltip event handlers
+    onTooltipShow(data) {
+      console.log('Tooltip show:', data);
+      // You can add custom tooltip handling here if needed
+    },
+
+    onTooltipHide() {
+      console.log('Tooltip hide');
+      // You can add custom tooltip hiding here if needed
     },
 
   
