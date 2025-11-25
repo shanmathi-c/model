@@ -324,6 +324,17 @@
           @period-change="updateProductPerformancePeriod"
         />
       </div>
+
+      <!-- Callback Status Chart Section -->
+      <div class="mb-6">
+        <!-- Callback Status -->
+        <CallbackStatusChart
+          title="Callback Status"
+          :callback-data="callbackStatusData"
+          :period="callbackStatusPeriod"
+          @period-change="updateCallbackStatusPeriod"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -335,6 +346,7 @@ import CustomerSatisfactionChart from '~/components/CustomerSatisfactionChart.vu
 import AgentPerformanceTable from '~/components/AgentPerformanceTable.vue'
 import CallStatisticsChart from '~/components/CallStatisticsChart.vue'
 import ProductPerformanceTable from '~/components/ProductPerformanceTable.vue'
+import CallbackStatusChart from '~/components/CallbackStatusChart.vue'
 
 export default {
   name: 'AnalyticsPage',
@@ -344,7 +356,8 @@ export default {
     CustomerSatisfactionChart,
     AgentPerformanceTable,
     CallStatisticsChart,
-    ProductPerformanceTable
+    ProductPerformanceTable,
+    CallbackStatusChart
   },
 
   data() {
@@ -595,7 +608,19 @@ export default {
           csatTrend: 0.6,
           sparkline: [28, 32, 36, 41, 46, 51, 58, 64, 71]
         }
-      ]
+      ],
+      callbackStatusPeriod: '30',
+      callbackStatusData: {
+        pending: 89,         // Pending callbacks
+        missed: 24,          // Missed callbacks
+        successful: 324,     // Successful callbacks
+        total: 437,          // Total callbacks
+        priorityCallbacks: 12, // High priority pending
+        successRate: 74.1,   // Success rate percentage
+        completionRate: 89.5, // Completion rate percentage
+        escalationRate: 5.2,  // Escalation rate percentage
+        avgResponseTime: 18.5 // Average response time in minutes
+      }
     };
   },
 
@@ -940,6 +965,36 @@ export default {
         sparkline.push(Math.round(base + (Math.random() * 40) - 20));
       }
       return sparkline;
+    },
+
+    updateCallbackStatusPeriod(period) {
+      this.callbackStatusPeriod = period;
+
+      // Generate new callback status data based on period
+      const multiplier = parseInt(period) / 30; // Base on 30 days
+
+      const baseCallbacks = {
+        pending: 89,
+        missed: 24,
+        successful: 324,
+        priorityCallbacks: 12,
+        successRate: 74.1,
+        completionRate: 89.5,
+        escalationRate: 5.2,
+        avgResponseTime: 18.5
+      };
+
+      this.callbackStatusData = {
+        pending: Math.round(baseCallbacks.pending * multiplier),
+        missed: Math.round(baseCallbacks.missed * multiplier),
+        successful: Math.round(baseCallbacks.successful * multiplier),
+        total: Math.round((baseCallbacks.pending + baseCallbacks.missed + baseCallbacks.successful) * multiplier),
+        priorityCallbacks: Math.round(baseCallbacks.priorityCallbacks * multiplier),
+        successRate: baseCallbacks.successRate + (Math.random() * 10 - 5), // Add variation
+        completionRate: baseCallbacks.completionRate + (Math.random() * 8 - 4),
+        escalationRate: Math.max(0, baseCallbacks.escalationRate + (Math.random() * 6 - 3)),
+        avgResponseTime: baseCallbacks.avgResponseTime + (Math.random() * 10 - 5)
+      };
     },
 
     calculateAverageRating() {
