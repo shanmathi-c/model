@@ -3199,4 +3199,107 @@ export class ticketController {
             });
         }
     }
+
+    // Get agent performance data
+    static async getAgentPerformance(req, res) {
+        try {
+            const { dateRange, products, status } = req.query;
+
+            // Calculate date range filter
+            let days = 30; // default
+            if (dateRange && dateRange !== 'custom') {
+                days = parseInt(dateRange);
+            }
+
+            let dateFilter = `AND t.createdAt >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+
+            // Build filter conditions
+            let productFilter = '';
+            const queryParams = [];
+
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+                queryParams.push(...productList);
+            }
+
+            let statusFilter = '';
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+                queryParams.push(...statusList);
+            }
+
+            // Query to get agent performance data
+            const query = `
+                SELECT
+                    a.id as agentId,
+                    a.agentName,
+                    COUNT(DISTINCT at.ticketId) as assigned,
+                    COUNT(DISTINCT CASE WHEN t.status IN ('Resolved', 'Closed') THEN at.ticketId END) as resolved,
+                    AVG(
+                        CASE
+                            WHEN c.resolvedOn IS NOT NULL AND c.startTime IS NOT NULL THEN
+                                TIMESTAMPDIFF(MINUTE, c.startTime, c.resolvedOn)
+                            WHEN c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
+                                TIMESTAMPDIFF(MINUTE, c.startTime, c.endTime)
+                            ELSE NULL
+                        END
+                    ) as avgResolutionTime,
+                    (COUNT(DISTINCT CASE WHEN c.firstCall = 1 THEN at.ticketId END) /
+                     NULLIF(COUNT(DISTINCT at.ticketId), 0)) * 100 as fcrRate,
+                    AVG(f.rating) as avgCsat,
+                    COUNT(DISTINCT f.id) as csatCount
+                FROM agents a
+                LEFT JOIN \`assign-ticket\` at ON a.id = at.agentId
+                LEFT JOIN tickets t ON at.ticketId = t.ticketId
+                LEFT JOIN calls c ON t.ticketId = c.ticketId AND (c.resolvedOn IS NOT NULL OR c.endTime IS NOT NULL)
+                LEFT JOIN feedbacks f ON t.ticketId = f.ticketId AND f.rating IS NOT NULL
+                WHERE 1=1
+                ${dateFilter}
+                ${productFilter}
+                ${statusFilter}
+                GROUP BY a.id, a.agentName
+                HAVING assigned > 0
+                ORDER BY resolved DESC, avgCsat DESC
+            `;
+
+            connection.query(query, queryParams, (err, result) => {
+                if (err) {
+                    console.error('Error in getAgentPerformance query:', err);
+                    return res.status(500).json({
+                        message: "Error fetching agent performance data",
+                        error: err.message
+                    });
+                }
+
+                // Format the data
+                const agentPerformance = result.map((row, index) => ({
+                    id: row.agentId,
+                    rank: index + 1,
+                    name: row.agentName,
+                    assigned: row.assigned || 0,
+                    resolved: row.resolved || 0,
+                    resolutionTime: Math.round(row.avgResolutionTime || 0),
+                    fcrRate: Math.round((row.fcrRate || 0) * 10) / 10,
+                    csatRating: Math.round((row.avgCsat || 0) * 10) / 10,
+                    csatCount: row.csatCount || 0
+                }));
+
+                return res.json({
+                    message: "Agent performance data fetched successfully",
+                    data: agentPerformance
+                });
+            });
+
+        } catch (error) {
+            console.error('Error in getAgentPerformance:', error);
+            return res.status(500).json({
+                message: "Error fetching agent performance data",
+                error: error.message
+            });
+        }
+    }
 }

@@ -454,62 +454,7 @@ export default {
       },
       customerSatisfactionDataKey: 0,
       agentPerformancePeriod: '30',
-      agentPerformanceData: [
-        {
-          id: 1,
-          name: 'Sarah Jones',
-          assigned: 324,
-          resolved: 298,
-          resolutionTime: 45, // minutes
-          fcrRate: 82.5,
-          csatRating: 4.6
-        },
-        {
-          id: 2,
-          name: 'John Doe',
-          assigned: 298,
-          resolved: 265,
-          resolutionTime: 52,
-          fcrRate: 78.2,
-          csatRating: 4.3
-        },
-        {
-          id: 3,
-          name: 'Jane Smith',
-          assigned: 267,
-          resolved: 239,
-          resolutionTime: 38,
-          fcrRate: 85.1,
-          csatRating: 4.7
-        },
-        {
-          id: 4,
-          name: 'Mike Wilson',
-          assigned: 245,
-          resolved: 218,
-          resolutionTime: 48,
-          fcrRate: 76.8,
-          csatRating: 4.1
-        },
-        {
-          id: 5,
-          name: 'Alex Brown',
-          assigned: 189,
-          resolved: 167,
-          resolutionTime: 55,
-          fcrRate: 74.2,
-          csatRating: 4.0
-        },
-        {
-          id: 6,
-          name: 'Emily Davis',
-          assigned: 156,
-          resolved: 143,
-          resolutionTime: 42,
-          fcrRate: 79.6,
-          csatRating: 4.4
-        }
-      ],
+      agentPerformanceData: [],
       callStatisticsPeriod: '30',
       callStatisticsData: {
         inbound: 2847,      // Total inbound calls
@@ -749,65 +694,8 @@ export default {
 
     updateAgentPerformancePeriod(period) {
       this.agentPerformancePeriod = period;
-
-      // Generate new agent performance data based on period
-      const multiplier = parseInt(period) / 30; // Base on 30 days
-      this.agentPerformanceData = [
-        {
-          id: 1,
-          name: 'Sarah Jones',
-          assigned: Math.round(324 * multiplier),
-          resolved: Math.round(298 * multiplier),
-          resolutionTime: 45 + Math.random() * 20, // Add some variation
-          fcrRate: 82.5 + Math.random() * 10 - 5, // Add variation +/- 5%
-          csatRating: 4.6 + Math.random() * 0.4 - 0.2 // Add variation +/- 0.2
-        },
-        {
-          id: 2,
-          name: 'John Doe',
-          assigned: Math.round(298 * multiplier),
-          resolved: Math.round(265 * multiplier),
-          resolutionTime: 52 + Math.random() * 20,
-          fcrRate: 78.2 + Math.random() * 10 - 5,
-          csatRating: 4.3 + Math.random() * 0.4 - 0.2
-        },
-        {
-          id: 3,
-          name: 'Jane Smith',
-          assigned: Math.round(267 * multiplier),
-          resolved: Math.round(239 * multiplier),
-          resolutionTime: 38 + Math.random() * 20,
-          fcrRate: 85.1 + Math.random() * 10 - 5,
-          csatRating: 4.7 + Math.random() * 0.4 - 0.2
-        },
-        {
-          id: 4,
-          name: 'Mike Wilson',
-          assigned: Math.round(245 * multiplier),
-          resolved: Math.round(218 * multiplier),
-          resolutionTime: 48 + Math.random() * 20,
-          fcrRate: 76.8 + Math.random() * 10 - 5,
-          csatRating: 4.1 + Math.random() * 0.4 - 0.2
-        },
-        {
-          id: 5,
-          name: 'Alex Brown',
-          assigned: Math.round(189 * multiplier),
-          resolved: Math.round(167 * multiplier),
-          resolutionTime: 55 + Math.random() * 20,
-          fcrRate: 74.2 + Math.random() * 10 - 5,
-          csatRating: 4.0 + Math.random() * 0.4 - 0.2
-        },
-        {
-          id: 6,
-          name: 'Emily Davis',
-          assigned: Math.round(156 * multiplier),
-          resolved: Math.round(143 * multiplier),
-          resolutionTime: 42 + Math.random() * 20,
-          fcrRate: 79.6 + Math.random() * 10 - 5,
-          csatRating: 4.4 + Math.random() * 0.4 - 0.2
-        }
-      ];
+      // Fetch real data from backend
+      this.fetchAgentPerformance(period);
     },
 
   updateCallStatisticsPeriod(period) {
@@ -1043,6 +931,13 @@ export default {
         this.updateCustomerSatisfactionPeriod(this.analyticsFilters.dateRange)
       } else {
         this.fetchCustomerSatisfactionDistribution()
+      }
+
+      // Update agent performance
+      if (this.analyticsFilters.dateRange !== this.agentPerformancePeriod) {
+        this.updateAgentPerformancePeriod(this.analyticsFilters.dateRange)
+      } else {
+        this.fetchAgentPerformance()
       }
 
       // Fetch updated analytics data with filters
@@ -1357,6 +1252,55 @@ export default {
         console.error('Error fetching customer satisfaction distribution data:', error);
         // Keep existing data if API fails
       }
+    },
+
+    // Fetch agent performance data
+    async fetchAgentPerformance(period = null) {
+      try {
+        console.log('Fetching agent performance data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.agentPerformancePeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+        queryParams.append('dateRange', dateRange);
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/agent-performance${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update agent performance data with real data
+          this.agentPerformanceData = response.data;
+
+          console.log('Agent performance data updated:', this.agentPerformanceData);
+        }
+
+      } catch (error) {
+        console.error('Error fetching agent performance data:', error);
+        // Keep existing data if API fails
+      }
     }
   },
 
@@ -1379,6 +1323,7 @@ export default {
     this.fetchTicketTrends();
     this.fetchResolutionTimeDistribution();
     this.fetchCustomerSatisfactionDistribution();
+    this.fetchAgentPerformance();
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)

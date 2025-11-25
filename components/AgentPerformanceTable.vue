@@ -148,8 +148,8 @@
               {{ agent.assigned.toLocaleString() }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center gap-1">
-                <span class="text-sm text-gray-900">{{ agent.resolved.toLocaleString() }}</span>
+              <div class="flex flex-col">
+                <span class="text-sm text-gray-900 font-medium">{{ agent.resolved.toLocaleString() }}</span>
                 <span class="text-xs text-gray-500">({{ getResolutionRate(agent) }}%)</span>
               </div>
             </td>
@@ -172,36 +172,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- Summary Stats -->
-    <div v-if="showSummary" class="p-6 border-t border-gray-200 bg-gray-50">
-      <div class="grid grid-cols-6 gap-4 text-center">
-        <div>
-          <div class="text-2xl font-bold text-gray-900">{{ getSummaryStats().totalAgents }}</div>
-          <div class="text-xs text-gray-500">Total Agents</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold text-blue-600">{{ getSummaryStats().totalAssigned.toLocaleString() }}</div>
-          <div class="text-xs text-gray-500">Total Assigned</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold text-green-600">{{ getSummaryStats().totalResolved.toLocaleString() }}</div>
-          <div class="text-xs text-gray-500">Total Resolved</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold text-purple-600">{{ formatResolutionTime(getSummaryStats().avgResolutionTime) }}</div>
-          <div class="text-xs text-gray-500">Avg Resolution</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold text-indigo-600">{{ getSummaryStats().avgFcrRate.toFixed(1) }}%</div>
-          <div class="text-xs text-gray-500">Avg FCR Rate</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold text-emerald-600">{{ getSummaryStats().avgCsat.toFixed(1) }}</div>
-          <div class="text-xs text-gray-500">Avg CSAT</div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -332,12 +302,13 @@ export default {
       return 'text-red-600'
     },
 
-    getSummaryStats() {
+    getTotals() {
       if (this.agentData.length === 0) {
         return {
           totalAgents: 0,
           totalAssigned: 0,
           totalResolved: 0,
+          overallResolutionRate: 0,
           avgResolutionTime: 0,
           avgFcrRate: 0,
           avgCsat: 0
@@ -347,6 +318,7 @@ export default {
       const totalAgents = this.agentData.length
       const totalAssigned = this.agentData.reduce((sum, agent) => sum + agent.assigned, 0)
       const totalResolved = this.agentData.reduce((sum, agent) => sum + agent.resolved, 0)
+      const overallResolutionRate = totalAssigned > 0 ? ((totalResolved / totalAssigned) * 100).toFixed(1) : 0
       const avgResolutionTime = this.agentData.reduce((sum, agent) => sum + agent.resolutionTime, 0) / totalAgents
       const avgFcrRate = this.agentData.reduce((sum, agent) => sum + agent.fcrRate, 0) / totalAgents
       const avgCsat = this.agentData.reduce((sum, agent) => sum + agent.csatRating, 0) / totalAgents
@@ -355,6 +327,7 @@ export default {
         totalAgents,
         totalAssigned,
         totalResolved,
+        overallResolutionRate,
         avgResolutionTime,
         avgFcrRate,
         avgCsat
