@@ -302,6 +302,17 @@
           @period-change="updateAgentPerformancePeriod"
         />
       </div>
+
+      <!-- Call Statistics Chart Section -->
+      <div class="mb-6">
+        <!-- Call Statistics -->
+        <CallStatisticsChart
+          title="Call Statistics"
+          :call-data="callStatisticsData"
+          :period="callStatisticsPeriod"
+          @period-change="updateCallStatisticsPeriod"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -311,6 +322,7 @@ import LineChart from '~/components/LineChart.vue'
 import TimeDistributionChart from '~/components/TimeDistributionChart.vue'
 import CustomerSatisfactionChart from '~/components/CustomerSatisfactionChart.vue'
 import AgentPerformanceTable from '~/components/AgentPerformanceTable.vue'
+import CallStatisticsChart from '~/components/CallStatisticsChart.vue'
 
 export default {
   name: 'AnalyticsPage',
@@ -318,7 +330,8 @@ export default {
     LineChart,
     TimeDistributionChart,
     CustomerSatisfactionChart,
-    AgentPerformanceTable
+    AgentPerformanceTable,
+    CallStatisticsChart
   },
 
   data() {
@@ -485,7 +498,16 @@ export default {
           fcrRate: 79.6,
           csatRating: 4.4
         }
-      ]
+      ],
+      callStatisticsPeriod: '30',
+      callStatisticsData: {
+        inbound: 2847,      // Total inbound calls
+        outbound: 1653,     // Total outbound calls
+        completed: 4186,    // Total completed calls
+        missed: 314,        // Total missed calls
+        callbacks: 186,     // Total callbacks made
+        avgDuration: 12.5   // Average call duration in minutes
+      }
     };
   },
 
@@ -730,6 +752,28 @@ export default {
           csatRating: 4.4 + Math.random() * 0.4 - 0.2
         }
       ];
+    },
+
+  updateCallStatisticsPeriod(period) {
+      this.callStatisticsPeriod = period;
+
+      // Generate new call statistics data based on period
+      const multiplier = parseInt(period) / 30; // Base on 30 days
+      const baseInbound = 2847;
+      const baseOutbound = 1653;
+      const baseCompleted = 4186;
+      const baseMissed = 314;
+      const baseCallbacks = 186;
+      const baseAvgDuration = 12.5;
+
+      this.callStatisticsData = {
+        inbound: Math.round(baseInbound * multiplier),
+        outbound: Math.round(baseOutbound * multiplier),
+        completed: Math.round(baseCompleted * multiplier),
+        missed: Math.round(baseMissed * multiplier),
+        callbacks: Math.round(baseCallbacks * multiplier),
+        avgDuration: baseAvgDuration + Math.random() * 5 - 2.5 // Add variation
+      };
     },
 
     calculateAverageRating() {
