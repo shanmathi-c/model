@@ -313,6 +313,17 @@
           @period-change="updateCallStatisticsPeriod"
         />
       </div>
+
+      <!-- Product Performance Table Section -->
+      <div class="mb-6">
+        <!-- Product Performance Breakdown -->
+        <ProductPerformanceTable
+          title="Product Performance Breakdown"
+          :product-data="productPerformanceData"
+          :period="productPerformancePeriod"
+          @period-change="updateProductPerformancePeriod"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -323,6 +334,7 @@ import TimeDistributionChart from '~/components/TimeDistributionChart.vue'
 import CustomerSatisfactionChart from '~/components/CustomerSatisfactionChart.vue'
 import AgentPerformanceTable from '~/components/AgentPerformanceTable.vue'
 import CallStatisticsChart from '~/components/CallStatisticsChart.vue'
+import ProductPerformanceTable from '~/components/ProductPerformanceTable.vue'
 
 export default {
   name: 'AnalyticsPage',
@@ -331,7 +343,8 @@ export default {
     TimeDistributionChart,
     CustomerSatisfactionChart,
     AgentPerformanceTable,
-    CallStatisticsChart
+    CallStatisticsChart,
+    ProductPerformanceTable
   },
 
   data() {
@@ -507,7 +520,82 @@ export default {
         missed: 314,        // Total missed calls
         callbacks: 186,     // Total callbacks made
         avgDuration: 12.5   // Average call duration in minutes
-      }
+      },
+      productPerformancePeriod: '30',
+      productPerformanceData: [
+        {
+          id: 1,
+          category: 'Software',
+          description: 'Desktop and web applications',
+          volume: 892,
+          resolutionTime: 35.2,
+          csat: 4.2,
+          volumeTrend: 8.5,       // +8.5% vs previous period
+          resolutionTimeTrend: -3.2, // -3.2% (faster resolution is better)
+          csatTrend: 0.3,        // +0.3 points
+          sparkline: [65, 72, 68, 75, 82, 78, 85, 88, 92] // Last 9 data points
+        },
+        {
+          id: 2,
+          category: 'Hardware',
+          description: 'Physical devices and equipment',
+          volume: 634,
+          resolutionTime: 48.7,
+          csat: 3.8,
+          volumeTrend: -2.1,
+          resolutionTimeTrend: 5.8,  // Slower resolution
+          csatTrend: -0.2,
+          sparkline: [88, 82, 85, 79, 76, 78, 74, 71, 68]
+        },
+        {
+          id: 3,
+          category: 'Services',
+          description: 'Professional and consulting services',
+          volume: 567,
+          resolutionTime: 42.1,
+          csat: 4.5,
+          volumeTrend: 12.3,
+          resolutionTimeTrend: -1.5,
+          csatTrend: 0.4,
+          sparkline: [45, 48, 52, 58, 63, 68, 72, 75, 79]
+        },
+        {
+          id: 4,
+          category: 'Subscription',
+          description: 'Monthly and annual subscriptions',
+          volume: 423,
+          resolutionTime: 28.3,
+          csat: 4.7,
+          volumeTrend: 15.8,
+          resolutionTimeTrend: -8.2,
+          csatTrend: 0.5,
+          sparkline: [32, 38, 42, 48, 55, 62, 68, 74, 82]
+        },
+        {
+          id: 5,
+          category: 'Mobile App',
+          description: 'iOS and Android applications',
+          volume: 356,
+          resolutionTime: 31.8,
+          csat: 4.1,
+          volumeTrend: 6.2,
+          resolutionTimeTrend: 2.1,
+          csatTrend: 0.1,
+          sparkline: [42, 45, 43, 48, 51, 49, 54, 57, 60]
+        },
+        {
+          id: 6,
+          category: 'Cloud',
+          description: 'Cloud infrastructure and platforms',
+          volume: 289,
+          resolutionTime: 38.5,
+          csat: 4.3,
+          volumeTrend: 18.4,
+          resolutionTimeTrend: -4.7,
+          csatTrend: 0.6,
+          sparkline: [28, 32, 36, 41, 46, 51, 58, 64, 71]
+        }
+      ]
     };
   },
 
@@ -774,6 +862,84 @@ export default {
         callbacks: Math.round(baseCallbacks * multiplier),
         avgDuration: baseAvgDuration + Math.random() * 5 - 2.5 // Add variation
       };
+    },
+
+    updateProductPerformancePeriod(period) {
+      this.productPerformancePeriod = period;
+
+      // Generate new product performance data based on period
+      const multiplier = parseInt(period) / 30; // Base on 30 days
+
+      const baseProducts = [
+        {
+          id: 1,
+          category: 'Software',
+          description: 'Desktop and web applications',
+          baseVolume: 892,
+          baseResolutionTime: 35.2,
+          baseCsat: 4.2
+        },
+        {
+          id: 2,
+          category: 'Hardware',
+          description: 'Physical devices and equipment',
+          baseVolume: 634,
+          baseResolutionTime: 48.7,
+          baseCsat: 3.8
+        },
+        {
+          id: 3,
+          category: 'Services',
+          description: 'Professional and consulting services',
+          baseVolume: 567,
+          baseResolutionTime: 42.1,
+          baseCsat: 4.5
+        },
+        {
+          id: 4,
+          category: 'Subscription',
+          description: 'Monthly and annual subscriptions',
+          baseVolume: 423,
+          baseResolutionTime: 28.3,
+          baseCsat: 4.7
+        },
+        {
+          id: 5,
+          category: 'Mobile App',
+          description: 'iOS and Android applications',
+          baseVolume: 356,
+          baseResolutionTime: 31.8,
+          baseCsat: 4.1
+        },
+        {
+          id: 6,
+          category: 'Cloud',
+          description: 'Cloud infrastructure and platforms',
+          baseVolume: 289,
+          baseResolutionTime: 38.5,
+          baseCsat: 4.3
+        }
+      ];
+
+      this.productPerformanceData = baseProducts.map(product => ({
+        ...product,
+        volume: Math.round(product.baseVolume * multiplier),
+        resolutionTime: product.baseResolutionTime + Math.random() * 10 - 5,
+        csat: product.baseCsat + Math.random() * 0.4 - 0.2,
+        volumeTrend: (Math.random() * 30) - 10, // -10% to +20%
+        resolutionTimeTrend: (Math.random() * 20) - 10, // -10% to +10%
+        csatTrend: (Math.random() * 1) - 0.3, // -0.3 to +0.7
+        sparkline: this.generateSparkline(9)
+      }));
+    },
+
+    generateSparkline(length) {
+      const sparkline = [];
+      const base = 50;
+      for (let i = 0; i < length; i++) {
+        sparkline.push(Math.round(base + (Math.random() * 40) - 20));
+      }
+      return sparkline;
     },
 
     calculateAverageRating() {
