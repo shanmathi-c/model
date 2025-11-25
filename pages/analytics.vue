@@ -1,20 +1,21 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-2 shadow-md">
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-2 shadow-sm">
       <!-- Header Title -->
-      <div class="">
-        <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-        <p class="text-gray-600 mt-1">View and analyze support performance metrics</p>
+      <div class="mb-2">
+        <h1 class="text-xl font-bold text-gray-900">Analytics Dashboard</h1>
+        <p class="text-gray-600 mt-0.5 text-sm">View and analyze support performance metrics</p>
       </div>
 
-      <!-- Date Range and Filters Row -->
-      <div class="flex flex-wrap items-center gap-4 mb-4">
+      <!-- Search and Filter Bar -->
+      <div class="flex items-center gap-3">
         <!-- Date Range Selector -->
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700">Date Range:</label>
           <select
-            v-model="selectedDateRange"
+            v-model="analyticsFilters.dateRange"
+            @change="applyFilters"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="7">Last 7 days</option>
@@ -25,129 +26,146 @@
         </div>
 
         <!-- Custom Date Range Picker (shown when 'custom' is selected) -->
-        <div v-if="selectedDateRange === 'custom'" class="flex items-center gap-2">
+        <div v-if="analyticsFilters.dateRange === 'custom'" class="flex items-center gap-2">
           <input
             type="date"
-            v-model="dateRange.start"
+            v-model="customDateRange.start"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
           <span class="text-gray-500">to</span>
           <input
             type="date"
-            v-model="dateRange.end"
+            v-model="customDateRange.end"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
           <button
-            @click="applyDateRange"
+            @click="applyCustomDateRange"
             class="ml-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Apply
           </button>
         </div>
+
+        <!-- Filter Button -->
+        <div ref="filterDropdownRef" class="relative">
+          <button
+            @click="toggleFilterDropdown"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            :class="{ 'bg-blue-50 border-blue-500': hasActiveFilters }"
+          >
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter
+          </button>
+
+          <!-- Filter Dropdown -->
+          <div
+            v-if="showFilterDropdown"
+            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200"
+            style="z-index: 50;"
+          >
+            <div class="p-3">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
+                <div class="flex gap-1">
+                  <button
+                    @click="selectAllFilters"
+                    class="text-xs text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded hover:bg-blue-50"
+                  >
+                    All
+                  </button>
+                  <button
+                    @click="clearAllFilters"
+                    class="text-xs text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded hover:bg-blue-50"
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+
+              <!-- Agents -->
+              <div class="mb-3">
+                <label class="text-xs font-semibold text-gray-700 block mb-1">Agents</label>
+                <div class="space-y-1 max-h-24 overflow-y-auto">
+                  <label
+                    v-for="agent in agentOptions"
+                    :key="agent.value"
+                    class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="agent.value"
+                      v-model="analyticsFilters.agents"
+                      @change="applyFilters"
+                      class="w-3 h-3 text-blue-600 rounded border-gray-300"
+                    />
+                    <span>{{ agent.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Products -->
+              <div class="mb-3">
+                <label class="text-xs font-semibold text-gray-700 block mb-1">Products</label>
+                <div class="space-y-1 max-h-24 overflow-y-auto">
+                  <label
+                    v-for="product in productOptions"
+                    :key="product.value"
+                    class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="product.value"
+                      v-model="analyticsFilters.products"
+                      @change="applyFilters"
+                      class="w-3 h-3 text-blue-600 rounded border-gray-300"
+                    />
+                    <span>{{ product.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div>
+                <label class="text-xs font-semibold text-gray-700 block mb-1">Status</label>
+                <div class="space-y-1 max-h-24 overflow-y-auto">
+                  <label
+                    v-for="status in statusOptions"
+                    :key="status.value"
+                    class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="status.value"
+                      v-model="analyticsFilters.status"
+                      @change="applyFilters"
+                      class="w-3 h-3 text-blue-600 rounded border-gray-300"
+                    />
+                    <span>{{ status.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Filters Row -->
-      <div class="flex flex-wrap items-center gap-3">
-        <!-- Agent Selection Filter -->
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Agent:</label>
-          <div class="relative">
-            <select
-              v-model="selectedAgent"
-              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
-              style="min-width: 150px;"
-            >
-              <option value="all">All Agents</option>
-              <option value="john_doe">John Doe</option>
-              <option value="jane_smith">Jane Smith</option>
-              <option value="mike_wilson">Mike Wilson</option>
-              <option value="sarah_jones">Sarah Jones</option>
-              <option value="alex_brown">Alex Brown</option>
-            </select>
-            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-
-        <!-- Product Category Filter -->
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Product:</label>
-          <div class="relative">
-            <select
-              v-model="selectedProductCategory"
-              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
-              style="min-width: 150px;"
-            >
-              <option value="all">All Products</option>
-              <option value="software">Software</option>
-              <option value="hardware">Hardware</option>
-              <option value="services">Services</option>
-              <option value="subscription">Subscription</option>
-            </select>
-            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-
-        <!-- Ticket Type Filter -->
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Type:</label>
-          <div class="relative">
-            <select
-              v-model="selectedTicketType"
-              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
-              style="min-width: 150px;"
-            >
-              <option value="all">All Types</option>
-              <option value="incident">Incident</option>
-              <option value="request">Request</option>
-              <option value="complaint">Complaint</option>
-              <option value="inquiry">Inquiry</option>
-            </select>
-            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-
-        <!-- Agent Team/Group Filter -->
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Team:</label>
-          <div class="relative">
-            <select
-              v-model="selectedTeam"
-              class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-8"
-              style="min-width: 150px;"
-            >
-              <option value="all">All Teams</option>
-              <option value="tier1">Tier 1 Support</option>
-              <option value="tier2">Tier 2 Support</option>
-              <option value="specialist">Specialist Team</option>
-              <option value="escalation">Escalation Team</option>
-            </select>
-            <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-
-        <!-- Apply Filters Button -->
-        <button
-          @click="applyFilters"
-          class="px-4 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+      <!-- Active Filter Chips (Below search bar) -->
+      <div v-if="hasActiveFilters" class="flex gap-1.5 flex-wrap items-center mt-2">
+        <span
+          v-for="chip in activeFilterChips"
+          :key="chip.key"
+          class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200 shadow-sm"
         >
-          Apply Filters
-        </button>
-
-        <!-- Clear Filters Button -->
-        <button
-          @click="clearFilters"
-          class="px-4 py-1.5 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-        >
-          Clear
-        </button>
+          {{ chip.label }}
+          <button
+            @click.stop="removeFilter(chip.key)"
+            class="hover:text-blue-900 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+          >
+            ×
+          </button>
+        </span>
       </div>
     </div>
 
@@ -263,16 +281,44 @@ export default {
 
   data() {
     return {
-      selectedDateRange: '30',
-      dateRange: {
+          // Filter dropdown state
+      showFilterDropdown: false,
+
+      // Analytics filters
+      analyticsFilters: {
+        dateRange: '30',
+        agents: [],
+        products: [],
+        status: []
+      },
+
+      // Custom date range
+      customDateRange: {
         start: this.getDateDaysAgo(30),
         end: this.getDateDaysAgo(0)
       },
-      // Filter properties
-      selectedAgent: 'all',
-      selectedProductCategory: 'all',
-      selectedTicketType: 'all',
-      selectedTeam: 'all',
+
+      // Filter options
+      agentOptions: [
+        { value: 'john_doe', label: 'John Doe' },
+        { value: 'jane_smith', label: 'Jane Smith' },
+        { value: 'mike_wilson', label: 'Mike Wilson' },
+        { value: 'sarah_jones', label: 'Sarah Jones' },
+        { value: 'alex_brown', label: 'Alex Brown' }
+      ],
+      productOptions: [
+        { value: 'software', label: 'Software' },
+        { value: 'hardware', label: 'Hardware' },
+        { value: 'services', label: 'Services' },
+        { value: 'subscription', label: 'Subscription' }
+      ],
+      statusOptions: [
+        { value: 'open', label: 'Open' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'resolved', label: 'Resolved' },
+        { value: 'closed', label: 'Closed' }
+      ],
       metrics: {
         totalTickets: 1247, // Updated placeholder value
         ticketsChange: 5.2, // Placeholder value
@@ -291,6 +337,80 @@ export default {
         labels: this.generateDateLabels(30)
       }
     };
+  },
+
+  computed: {
+    // Check if any filters are active
+    hasActiveFilters() {
+      return this.analyticsFilters.agents.length > 0 ||
+             this.analyticsFilters.products.length > 0 ||
+             this.analyticsFilters.status.length > 0 ||
+             this.analyticsFilters.dateRange !== '30'
+    },
+
+    // Generate active filter chips for display
+    activeFilterChips() {
+      const chips = []
+
+      // Date range chip
+      if (this.analyticsFilters.dateRange !== '30') {
+        const dateRangeOption = [
+          { value: '7', label: 'Last 7 days' },
+          { value: '30', label: 'Last 30 days' },
+          { value: '90', label: 'Last 90 days' }
+        ]
+        const option = dateRangeOption.find(d => d.value === this.analyticsFilters.dateRange)
+        if (option) {
+          chips.push({
+            key: `dateRange-${this.analyticsFilters.dateRange}`,
+            label: `Date: ${option.label}`,
+            type: 'dateRange',
+            value: this.analyticsFilters.dateRange
+          })
+        }
+      }
+
+      // Agent chips
+      this.analyticsFilters.agents.forEach(agent => {
+        const agentOption = this.agentOptions.find(a => a.value === agent)
+        if (agentOption) {
+          chips.push({
+            key: `agent-${agent}`,
+            label: agentOption.label,
+            type: 'agent',
+            value: agent
+          })
+        }
+      })
+
+      // Product chips
+      this.analyticsFilters.products.forEach(product => {
+        const productOption = this.productOptions.find(p => p.value === product)
+        if (productOption) {
+          chips.push({
+            key: `product-${product}`,
+            label: productOption.label,
+            type: 'product',
+            value: product
+          })
+        }
+      })
+
+      // Status chips
+      this.analyticsFilters.status.forEach(status => {
+        const statusOption = this.statusOptions.find(s => s.value === status)
+        if (statusOption) {
+          chips.push({
+            key: `status-${status}`,
+            label: statusOption.label,
+            type: 'status',
+            value: status
+          })
+        }
+      })
+
+      return chips
+    }
   },
 
   methods: {
@@ -341,41 +461,72 @@ export default {
       return data;
     },
 
-    applyDateRange() {
-      // In a real app, this would trigger a data refresh with the new date range
-      console.log('Applying date range:', this.dateRange);
-      // Here you would typically call a method to fetch data with the new date range
+    // Toggle filter dropdown
+    toggleFilterDropdown() {
+      this.showFilterDropdown = !this.showFilterDropdown
     },
 
-    // Apply all filters
-    applyFilters() {
-      console.log('Applying filters:', {
-        dateRange: this.selectedDateRange,
-        agent: this.selectedAgent,
-        product: this.selectedProductCategory,
-        ticketType: this.selectedTicketType,
-        team: this.selectedTeam
-      });
-
-      // In a real app, this would trigger an API call with all filter parameters
-      // Example API call would be something like:
-      // this.fetchFilteredAnalyticsData();
-
-      // For now, just log the filters
-      this.fetchAnalyticsData();
+    // Select all filters
+    selectAllFilters() {
+      this.analyticsFilters.agents = this.agentOptions.map(a => a.value)
+      this.analyticsFilters.products = this.productOptions.map(p => p.value)
+      this.analyticsFilters.status = this.statusOptions.map(s => s.value)
+      this.applyFilters()
     },
 
     // Clear all filters
-    clearFilters() {
-      this.selectedAgent = 'all';
-      this.selectedProductCategory = 'all';
-      this.selectedTicketType = 'all';
-      this.selectedTeam = 'all';
-      this.selectedDateRange = '30';
+    clearAllFilters() {
+      this.analyticsFilters.agents = []
+      this.analyticsFilters.products = []
+      this.analyticsFilters.status = []
+      this.analyticsFilters.dateRange = '30'
+      this.applyFilters()
+    },
 
-      console.log('Filters cleared');
-      // In a real app, this would reset the analytics data
-      this.fetchAnalyticsData();
+    // Remove individual filter
+    removeFilter(key) {
+      const [type, value] = key.split('-')
+
+      if (type === 'dateRange') {
+        this.analyticsFilters.dateRange = '30'
+      } else if (type === 'agent') {
+        this.analyticsFilters.agents = this.analyticsFilters.agents.filter(a => a !== value)
+      } else if (type === 'product') {
+        this.analyticsFilters.products = this.analyticsFilters.products.filter(p => p !== value)
+      } else if (type === 'status') {
+        this.analyticsFilters.status = this.analyticsFilters.status.filter(s => s !== value)
+      }
+
+      this.applyFilters()
+    },
+
+    // Apply custom date range
+    applyCustomDateRange() {
+      console.log('Applying custom date range:', this.customDateRange)
+      // Update analytics filters with custom range
+      this.applyFilters()
+    },
+
+    // Apply filters and update analytics data
+    applyFilters() {
+      console.log('Applying analytics filters:', this.analyticsFilters)
+
+      // Update ticket trends based on date range
+      if (this.analyticsFilters.dateRange !== this.ticketTrendsPeriod) {
+        this.updateTicketTrendsPeriod(this.analyticsFilters.dateRange)
+      }
+
+      // In a real app, you would make an API call to fetch filtered analytics data
+      // For now, just regenerate some data to simulate filtering
+      this.fetchAnalyticsData()
+    },
+
+    // Close dropdown when clicking outside
+    handleClickOutside(event) {
+      const filterDropdown = this.$refs.filterDropdownRef
+      if (filterDropdown && !filterDropdown.contains(event.target)) {
+        this.showFilterDropdown = false
+      }
     },
 
     // In a real app, you would have methods to fetch data from your API
@@ -422,6 +573,14 @@ export default {
   mounted() {
     // In a real app, you would fetch the initial data here
     this.fetchAnalyticsData();
+
+    // Add click outside listener for dropdown
+    document.addEventListener('click', this.handleClickOutside)
+  },
+
+  beforeDestroy() {
+    // Clean up click outside listener
+    document.removeEventListener('click', this.handleClickOutside)
   }
 };
 </script>
