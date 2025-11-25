@@ -1230,7 +1230,7 @@ export class ticketController {
 
     // Create a new callback request
     static async createCallback(req, res) {
-        const { productId, name, email, countryCode, phone, subject, description, status } = req.body;
+        const { productId, name, email, countryCode, phone, subject, description, status, agentId, callType } = req.body;
 
         // Validate required fields
         if (!name || !phone || !subject || !description) {
@@ -1256,7 +1256,9 @@ export class ticketController {
                 phone: fullPhone,
                 subject: subject,
                 description: description,
-                status: status || 'inbound'  // Use status from request or default to 'inbound'
+                status: status || 'inbound',  // Use status from request or default to 'inbound'
+                agentId: agentId || 0,
+                callType: callType || 'inbound'
             };
 
             connection.query("INSERT INTO callback SET ?", callbackData, (err, result) => {
@@ -1337,10 +1339,10 @@ export class ticketController {
         const { callbackId } = req.params;
         const { status } = req.body;
 
-        if (!['inbound', 'pending', 'scheduled', 'completed', 'cancelled'].includes(status)) {
+        if (!['inbound', 'pending', 'scheduled', 'completed', 'cancelled', 'missed'].includes(status)) {
             return res.status(400).json({
                 message: "Invalid status",
-                validStatuses: ['inbound', 'pending', 'scheduled', 'completed', 'cancelled']
+                validStatuses: ['inbound', 'pending', 'scheduled', 'completed', 'cancelled', 'missed']
             });
         }
 

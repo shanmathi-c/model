@@ -1123,7 +1123,11 @@ export default {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000)
 
-        // Send ALL form data
+        // First, assign agent based on productId BEFORE creating callback
+        await this.assignAgentToCallback(this.formData.productId || null)
+
+        console.log('Creating callback payload, assignedAgent:', this.assignedAgent)
+
         const callbackPayload = {
           productId: this.formData.productId || null,
           name: this.formData.name,
@@ -1132,8 +1136,12 @@ export default {
           phone: this.cleanPhoneNumber(this.formData.phone),
           subject: this.formData.subject,
           description: this.formData.description,
-          status: 'inbound'  // Add status as inbound
+          status: 'inbound',  // Add status as inbound
+          agentId: this.assignedAgent?.agentId || this.assignedAgent?.id || 0,
+          callType: 'inbound'  // Customer requests callback, so inbound
         }
+
+        console.log('Callback payload agentId:', callbackPayload.agentId)
 
         const response = await fetch('http://localhost:5001/callback', {
           method: 'POST',
@@ -1154,8 +1162,39 @@ export default {
 
         const result = await response.json()
 
-        // Fetch and assign agent based on productId
-        await this.assignAgentToCallback(callbackPayload.productId)
+        // Create call log entry immediately after callback is created
+        try {
+          const callLogResponse = await fetch('http://localhost:5001/calls', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+              callbackId: result.data && result.data.callbackId ? result.data.callbackId : null,
+              ticketId: 0, // No ticketId from callback form, use 0
+              agentId: this.assignedAgent?.id || this.assignedAgent?.agentId || 0,
+              agentName: this.getAgentName(),
+              agentNumber: this.getAgentPhone(),
+              customerPhone: this.formData.countryCode + ' ' + this.formData.phone,
+              customerName: this.formData.name,
+              productId: callbackPayload.productId || null,
+              subject: this.formData.subject,
+              callType: 'inbound',
+              ticketStatus: 'callback requested'
+            })
+          })
+
+          if (callLogResponse.ok) {
+            const callLogResult = await callLogResponse.json()
+            this.currentCallLog = callLogResult.data
+            console.log('Call log created successfully:', callLogResult.data)
+          } else {
+            console.error('Error creating call log:', callLogResponse.statusText)
+          }
+        } catch (callLogError) {
+          console.error('Error creating call log:', callLogError)
+        }
 
         // Show success modal
         this.showSuccess = true
@@ -1419,32 +1458,23 @@ export default {
       this.callStatus = 'connecting'
 
       try {
-        // Create call log entry when call starts
-        const response = await fetch('http://localhost:5001/calls', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify({
-            callbackId: this.ticketDetails.callbackId,
-            ticketId: 0, // No ticketId from callback form, use 0
-            agentId: this.assignedAgent.id || this.assignedAgent.agentId,
-            agentName: this.getAgentName(),
-            agentNumber: this.getAgentPhone(),
-            customerPhone: this.ticketDetails.phone,
-            customerName: this.ticketDetails.name,
-            productId: this.ticketDetails.productId || null,
-            subject: this.ticketDetails.subject || 'Callback request from customer',
-            callType: 'inbound', // Customer requests callback, so inbound
-            ticketStatus: this.ticketDetails.status || 'callback requested' // Send callback status
+        // Update callback status to 'pending' when starting call
+        if (this.ticketDetails && this.ticketDetails.callbackId) {
+          await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              status: 'pending'
+            })
           })
-        })
+          console.log('Callback status updated to pending')
+        }
 
-        if (response.ok) {
-          const result = await response.json()
-          this.currentCallLog = result.data
-          console.log('Call log created:', result.data)
+        // Check if we already have a call log from callback creation
+        if (this.currentCallLog && this.currentCallLog.callId) {
+          console.log('Using existing call log:', this.currentCallLog)
 
           // Simulate connection time and then set to connected
           setTimeout(() => {
@@ -1452,7 +1482,7 @@ export default {
             console.log('Call connected, recording:', this.currentCallLog.recordingUrl)
           }, 2000)
         } else {
-          console.error('Error creating call log:', response.statusText)
+          console.error('No call log found, cannot start call')
           this.callStatus = 'pending'
         }
       } catch (error) {
@@ -1490,65 +1520,27 @@ export default {
         if (this.ticketDetails && this.ticketDetails.callbackId) {
           const callDuration = this.currentCallLog ? this.currentCallLog.duration : Math.floor(Math.random() * 600)
 
-          await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
+          console.log('Updating callback status to pending for callbackId:', this.ticketDetails.callbackId)
+
+          const response = await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              status: 'completed',
+              status: 'pending',
               agentName: this.getAgentName(),
               callDuration: callDuration,
               recordingUrl: this.currentCallLog?.recordingUrl
             })
-          })
-        }
-      } catch (error) {
-        console.error('Error in endCall:', error)
-      }
-    },
-
-    // End call
-    async endCall() {
-      this.callStatus = 'closed' // Set to closed to disable all buttons
-
-      try {
-        // Update call log with end time and duration
-        if (this.currentCallLog && this.currentCallLog.callId) {
-          const response = await fetch(`http://localhost:5001/calls/${this.currentCallLog.callId}/end`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            }
           })
 
           if (response.ok) {
             const result = await response.json()
-            console.log('Call ended successfully:', result.data)
-            // Update current call log with end data
-            this.currentCallLog = { ...this.currentCallLog, ...result.data }
+            console.log('Callback status updated to pending successfully:', result.data)
           } else {
-            console.error('Error ending call:', response.statusText)
+            console.error('Error updating callback status to pending:', response.statusText)
           }
-        }
-
-        // Update callback status in backend
-        if (this.ticketDetails && this.ticketDetails.callbackId) {
-          const callDuration = this.currentCallLog ? this.currentCallLog.duration : Math.floor(Math.random() * 600)
-
-          await fetch(`http://localhost:5001/callback/${this.ticketDetails.callbackId}/status`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              status: 'completed',
-              agentName: this.getAgentName(),
-              callDuration: callDuration,
-              recordingUrl: this.currentCallLog?.recordingUrl
-            })
-          })
         }
       } catch (error) {
         console.error('Error in endCall:', error)
@@ -1586,7 +1578,7 @@ export default {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              status: 'disconnected',
+              status: 'missed',
               agentName: this.getAgentName(),
               reason: 'User disconnected the call'
             })
