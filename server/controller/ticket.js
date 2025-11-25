@@ -2977,4 +2977,126 @@ export class ticketController {
             });
         }
     }
+
+    // Get resolution time distribution data
+    static async getResolutionTimeDistribution(req, res) {
+        try {
+            const { dateRange, agents, products, status } = req.query;
+
+            // Calculate date range filter
+            let days = 30; // default
+            if (dateRange && dateRange !== 'custom') {
+                days = parseInt(dateRange);
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            let productFilter = '';
+            let statusFilter = '';
+            const queryParams = [days];
+
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND EXISTS (
+                    SELECT 1 FROM \`assign-ticket\` at
+                    JOIN agents a ON at.agentId = a.id
+                    WHERE at.ticketId = t.ticketId
+                    AND a.agentName IN (${agentPlaceholders})
+                )`;
+                queryParams.push(...agentList);
+            }
+
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+                queryParams.push(...productList);
+            }
+
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+                queryParams.push(...statusList);
+            }
+
+            // Query to get resolution time distribution
+            // Use subquery to get only the most recent call per ticket to avoid duplicate counting
+            const query = `
+                SELECT
+                    CASE
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) < 60 THEN 'under_1_hour'
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) >= 60
+                            AND TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) < 240 THEN '1_to_4_hours'
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) >= 240
+                            AND TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) < 1440 THEN '4_to_24_hours'
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) >= 1440 THEN 'over_24_hours'
+                        ELSE 'unknown'
+                    END as timeRange,
+                    COUNT(DISTINCT t.ticketId) as count
+                FROM tickets t
+                INNER JOIN (
+                    SELECT c1.ticketId, c1.startTime, c1.resolvedOn, c1.endTime, c1.createdAt
+                    FROM calls c1
+                    INNER JOIN (
+                        SELECT ticketId, MAX(id) as maxId
+                        FROM calls
+                        WHERE startTime IS NOT NULL
+                        AND (resolvedOn IS NOT NULL OR endTime IS NOT NULL)
+                        AND createdAt >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                        GROUP BY ticketId
+                    ) c2 ON c1.ticketId = c2.ticketId AND c1.id = c2.maxId
+                ) latest_call ON t.ticketId = latest_call.ticketId
+                WHERE 1=1
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                GROUP BY timeRange
+            `;
+
+            connection.query(query, queryParams, (err, result) => {
+                if (err) {
+                    console.error('Error in getResolutionTimeDistribution query:', err);
+                    return res.status(500).json({
+                        message: "Error fetching resolution time distribution data",
+                        error: err.message
+                    });
+                }
+
+                // Initialize all time ranges with 0
+                const distribution = {
+                    'under_1_hour': 0,
+                    '1_to_4_hours': 0,
+                    '4_to_24_hours': 0,
+                    'over_24_hours': 0
+                };
+
+                // Fill in the actual counts
+                result.forEach(row => {
+                    if (row.timeRange !== 'unknown') {
+                        distribution[row.timeRange] = row.count;
+                    }
+                });
+
+                return res.json({
+                    message: "Resolution time distribution data fetched successfully",
+                    data: distribution
+                });
+            });
+
+        } catch (error) {
+            console.error('Error in getResolutionTimeDistribution:', error);
+            return res.status(500).json({
+                message: "Error fetching resolution time distribution data",
+                error: error.message
+            });
+        }
+    }
 }

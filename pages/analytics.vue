@@ -263,13 +263,14 @@
         />
       </div>
 
-      <!-- Time Distribution Chart Section -->
+      <!-- Resolution Time Distribution Chart Section -->
       <div class="mb-6">
-        <!-- Time Distribution -->
+        <!-- Resolution Time Distribution -->
         <TimeDistributionChart
-          title="Ticket Distribution by Time"
+          title="Resolution Time Distribution"
           :time-data="timeDistributionData"
           :period="timeDistributionPeriod"
+          :show-summary="false"
           @period-change="updateTimeDistributionPeriod"
           @tooltip-show="onTooltipShow"
           @tooltip-hide="onTooltipHide"
@@ -421,44 +422,24 @@ export default {
       timeDistributionPeriod: '30',
       timeDistributionData: [
         {
-          timeRange: '00:00-06:00',
-          total: 45,
-          agents: [
-            { name: 'John Doe', count: 12 },
-            { name: 'Jane Smith', count: 8 },
-            { name: 'Mike Wilson', count: 15 },
-            { name: 'Sarah Jones', count: 10 }
-          ]
+          timeRange: '< 1 hour',
+          total: 0,
+          agents: [{ name: 'Tickets', count: 0 }]
         },
         {
-          timeRange: '06:00-12:00',
-          total: 156,
-          agents: [
-            { name: 'John Doe', count: 45 },
-            { name: 'Jane Smith', count: 38 },
-            { name: 'Mike Wilson', count: 42 },
-            { name: 'Sarah Jones', count: 31 }
-          ]
+          timeRange: '1-4 hours',
+          total: 0,
+          agents: [{ name: 'Tickets', count: 0 }]
         },
         {
-          timeRange: '12:00-18:00',
-          total: 234,
-          agents: [
-            { name: 'John Doe', count: 68 },
-            { name: 'Jane Smith', count: 52 },
-            { name: 'Mike Wilson', count: 61 },
-            { name: 'Sarah Jones', count: 53 }
-          ]
+          timeRange: '4-24 hours',
+          total: 0,
+          agents: [{ name: 'Tickets', count: 0 }]
         },
         {
-          timeRange: '18:00-00:00',
-          total: 128,
-          agents: [
-            { name: 'John Doe', count: 35 },
-            { name: 'Jane Smith', count: 28 },
-            { name: 'Mike Wilson', count: 32 },
-            { name: 'Sarah Jones', count: 33 }
-          ]
+          timeRange: '> 24 hours',
+          total: 0,
+          agents: [{ name: 'Tickets', count: 0 }]
         }
       ],
       customerSatisfactionPeriod: '30',
@@ -753,51 +734,8 @@ export default {
 
     updateTimeDistributionPeriod(period) {
       this.timeDistributionPeriod = period;
-
-      // Generate new time distribution data based on period
-      const multiplier = parseInt(period) / 30; // Base on 30 days
-      this.timeDistributionData = [
-        {
-          timeRange: '00:00-06:00',
-          total: Math.round(45 * multiplier),
-          agents: [
-            { name: 'John Doe', count: Math.round(12 * multiplier) },
-            { name: 'Jane Smith', count: Math.round(8 * multiplier) },
-            { name: 'Mike Wilson', count: Math.round(15 * multiplier) },
-            { name: 'Sarah Jones', count: Math.round(10 * multiplier) }
-          ]
-        },
-        {
-          timeRange: '06:00-12:00',
-          total: Math.round(156 * multiplier),
-          agents: [
-            { name: 'John Doe', count: Math.round(45 * multiplier) },
-            { name: 'Jane Smith', count: Math.round(38 * multiplier) },
-            { name: 'Mike Wilson', count: Math.round(42 * multiplier) },
-            { name: 'Sarah Jones', count: Math.round(31 * multiplier) }
-          ]
-        },
-        {
-          timeRange: '12:00-18:00',
-          total: Math.round(234 * multiplier),
-          agents: [
-            { name: 'John Doe', count: Math.round(68 * multiplier) },
-            { name: 'Jane Smith', count: Math.round(52 * multiplier) },
-            { name: 'Mike Wilson', count: Math.round(61 * multiplier) },
-            { name: 'Sarah Jones', count: Math.round(53 * multiplier) }
-          ]
-        },
-        {
-          timeRange: '18:00-00:00',
-          total: Math.round(128 * multiplier),
-          agents: [
-            { name: 'John Doe', count: Math.round(35 * multiplier) },
-            { name: 'Jane Smith', count: Math.round(28 * multiplier) },
-            { name: 'Mike Wilson', count: Math.round(32 * multiplier) },
-            { name: 'Sarah Jones', count: Math.round(33 * multiplier) }
-          ]
-        }
-      ];
+      // Fetch real data from backend
+      this.fetchResolutionTimeDistribution(period);
     },
 
     updateCustomerSatisfactionPeriod(period) {
@@ -1102,6 +1040,13 @@ export default {
         this.fetchTicketTrends()
       }
 
+      // Update resolution time distribution
+      if (this.analyticsFilters.dateRange !== this.timeDistributionPeriod) {
+        this.updateTimeDistributionPeriod(this.analyticsFilters.dateRange)
+      } else {
+        this.fetchResolutionTimeDistribution()
+      }
+
       // Fetch updated analytics data with filters
       this.fetchAnalyticsData()
     },
@@ -1269,6 +1214,85 @@ export default {
         console.error('Error fetching ticket trends data:', error);
         // Keep existing data if API fails
       }
+    },
+
+    // Fetch resolution time distribution data
+    async fetchResolutionTimeDistribution(period = null) {
+      try {
+        console.log('Fetching resolution time distribution data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.timeDistributionPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+        queryParams.append('dateRange', dateRange);
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/resolution-time-distribution${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Transform data into format expected by TimeDistributionChart
+          const data = response.data;
+
+          this.timeDistributionData = [
+            {
+              timeRange: '< 1 hour',
+              total: data.under_1_hour || 0,
+              agents: [{ name: 'Tickets', count: data.under_1_hour || 0 }]
+            },
+            {
+              timeRange: '1-4 hours',
+              total: data['1_to_4_hours'] || 0,
+              agents: [{ name: 'Tickets', count: data['1_to_4_hours'] || 0 }]
+            },
+            {
+              timeRange: '4-24 hours',
+              total: data['4_to_24_hours'] || 0,
+              agents: [{ name: 'Tickets', count: data['4_to_24_hours'] || 0 }]
+            },
+            {
+              timeRange: '> 24 hours',
+              total: data.over_24_hours || 0,
+              agents: [{ name: 'Tickets', count: data.over_24_hours || 0 }]
+            }
+          ];
+
+          console.log('Resolution time distribution data updated:', this.timeDistributionData);
+        }
+
+      } catch (error) {
+        console.error('Error fetching resolution time distribution data:', error);
+        // Keep existing data if API fails
+      }
     }
   },
 
@@ -1289,6 +1313,7 @@ export default {
     // Fetch initial data from backend
     this.fetchAnalyticsData();
     this.fetchTicketTrends();
+    this.fetchResolutionTimeDistribution();
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)
