@@ -172,84 +172,94 @@
     <!-- Main Content Area -->
     <div class="flex-1 overflow-auto p-6">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div class="grid grid-cols-5 gap-2 mb-6">
         <!-- Total Tickets -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Total Tickets</p>
-              <p class="text-2xl font-semibold text-gray-900">{{ metrics.totalTickets }}</p>
-              <p class="text-xs text-gray-500 mt-1">
-                <span :class="metrics.ticketsChange >= 0 ? 'text-green-600' : 'text-red-600'">
-                  {{ Math.abs(metrics.ticketsChange) }}% {{ metrics.ticketsChange >= 0 ? '↑' : '↓' }}
-                </span> vs previous period
-              </p>
-            </div>
-            <div class="p-3 bg-blue-100 rounded-lg">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
+          <div class="flex flex-col items-center text-center">
+            <div class="p-1 bg-blue-100 rounded-lg mb-1">
+              <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
+            <p class="text-base font-semibold text-gray-900">{{ metrics.totalTickets }}</p>
+            <p class="text-xs text-gray-500">Total</p>
+            <p class="text-xs mt-1">
+              <span :class="metrics.ticketsChange >= 0 ? 'text-green-600' : 'text-red-600'">
+                {{ Math.abs(metrics.ticketsChange) }}%
+              </span>
+            </p>
           </div>
         </div>
 
         <!-- First Call Resolution -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">First Call Resolution</p>
-              <p class="text-2xl font-semibold text-gray-900">{{ metrics.fcrRate }}%</p>
-              <p class="text-xs text-gray-500 mt-1">
-                <span :class="metrics.fcrChange >= 0 ? 'text-green-600' : 'text-red-600'">
-                  {{ Math.abs(metrics.fcrChange) }}% {{ metrics.fcrChange >= 0 ? '↑' : '↓' }}
-                </span> vs previous period
-              </p>
-            </div>
-            <div class="p-3 bg-green-100 rounded-lg">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
+          <div class="flex flex-col items-center text-center">
+            <div class="p-1 bg-green-100 rounded-lg mb-1">
+              <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
+            <p class="text-base font-semibold text-gray-900">{{ metrics.fcrRate }}%</p>
+            <p class="text-xs text-gray-500">FCR</p>
+            <p class="text-xs mt-1">
+              <span :class="metrics.fcrChange >= 0 ? 'text-green-600' : 'text-red-600'">
+                {{ Math.abs(metrics.fcrChange) }}%
+              </span>
+            </p>
           </div>
         </div>
 
-        <!-- Average Response Time -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Avg. Response Time</p>
-              <p class="text-2xl font-semibold text-gray-900">{{ metrics.avgResponseTime }}m</p>
-              <p class="text-xs text-gray-500 mt-1">
-                <span :class="metrics.responseTimeChange <= 0 ? 'text-green-600' : 'text-red-600'">
-                  {{ Math.abs(metrics.responseTimeChange) }}% {{ metrics.responseTimeChange <= 0 ? '↓' : '↑' }}
-                </span> vs previous period
-              </p>
-            </div>
-            <div class="p-3 bg-yellow-100 rounded-lg">
-              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Avg Response Time -->
+        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
+          <div class="flex flex-col items-center text-center">
+            <div class="p-1 bg-yellow-100 rounded-lg mb-1">
+              <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
+            <p class="text-base font-semibold text-gray-900">{{ metrics.avgResponseTime }}m</p>
+            <p class="text-xs text-gray-500">Response</p>
+            <p class="text-xs mt-1">
+              <span :class="metrics.responseTimeChange <= 0 ? 'text-green-600' : 'text-red-600'">
+                {{ Math.abs(metrics.responseTimeChange) }}%
+              </span>
+            </p>
           </div>
         </div>
 
         <!-- Customer Satisfaction -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Customer Satisfaction</p>
-              <p class="text-2xl font-semibold text-gray-900">{{ metrics.csatScore }}/5</p>
-              <p class="text-xs text-gray-500 mt-1">
-                <span :class="metrics.csatChange >= 0 ? 'text-green-600' : 'text-red-600'">
-                  {{ Math.abs(metrics.csatChange) }}% {{ metrics.csatChange >= 0 ? '↑' : '↓' }}
-                </span> vs previous period
-              </p>
-            </div>
-            <div class="p-3 bg-purple-100 rounded-lg">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
+          <div class="flex flex-col items-center text-center">
+            <div class="p-1 bg-purple-100 rounded-lg mb-1">
+              <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
               </svg>
             </div>
+            <p class="text-base font-semibold text-gray-900">{{ metrics.csatScore }}/5</p>
+            <p class="text-xs text-gray-500">CSAT</p>
+            <p class="text-xs mt-1">
+              <span :class="metrics.csatChange >= 0 ? 'text-green-600' : 'text-red-600'">
+                {{ Math.abs(metrics.csatChange) }}%
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Active Agents -->
+        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
+          <div class="flex flex-col items-center text-center">
+            <div class="p-1 bg-indigo-100 rounded-lg mb-1">
+              <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </div>
+            <p class="text-base font-semibold text-gray-900">{{ metrics.activeAgents }}</p>
+            <p class="text-xs text-gray-500">Agents</p>
+            <p class="text-xs mt-1">
+              <span class="text-blue-600">
+                {{ metrics.onlineAgents }} online
+              </span>
+            </p>
           </div>
         </div>
       </div>
@@ -408,7 +418,9 @@ export default {
         avgResponseTime: 12, // Placeholder value
         responseTimeChange: -3.1, // Placeholder value
         csatScore: 4.2, // Placeholder value
-        csatChange: 1.8 // Placeholder value
+        csatChange: 1.8, // Placeholder value
+        activeAgents: 18, // New placeholder value
+        onlineAgents: 14 // New placeholder value
       },
       ticketTrendsPeriod: '30',
       // Chart data
