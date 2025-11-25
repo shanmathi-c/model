@@ -280,6 +280,17 @@
           @tooltip-hide="onTooltipHide"
         />
       </div>
+
+      <!-- Customer Satisfaction Chart Section -->
+      <div class="mb-6">
+        <!-- Customer Satisfaction Distribution -->
+        <CustomerSatisfactionChart
+          title="Customer Satisfaction Distribution"
+          :csat-data="customerSatisfactionData"
+          :period="customerSatisfactionPeriod"
+          @period-change="updateCustomerSatisfactionPeriod"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -287,12 +298,14 @@
 <script>
 import LineChart from '~/components/LineChart.vue'
 import TimeDistributionChart from '~/components/TimeDistributionChart.vue'
+import CustomerSatisfactionChart from '~/components/CustomerSatisfactionChart.vue'
 
 export default {
   name: 'AnalyticsPage',
   components: {
     LineChart,
-    TimeDistributionChart
+    TimeDistributionChart,
+    CustomerSatisfactionChart
   },
 
   data() {
@@ -394,7 +407,15 @@ export default {
             { name: 'Sarah Jones', count: 33 }
           ]
         }
-      ]
+      ],
+      customerSatisfactionPeriod: '30',
+      customerSatisfactionData: {
+        5: 512,  // Very Satisfied
+        4: 289,  // Satisfied
+        3: 156,  // Neutral
+        2: 42,   // Dissatisfied
+        1: 18    // Very Dissatisfied
+      }
     };
   },
 
@@ -558,6 +579,37 @@ export default {
           ]
         }
       ];
+    },
+
+    updateCustomerSatisfactionPeriod(period) {
+      this.customerSatisfactionPeriod = period;
+
+      // Generate new CSAT data based on period
+      const multiplier = parseInt(period) / 30; // Base on 30 days
+      this.customerSatisfactionData = {
+        5: Math.round(512 * multiplier),  // Very Satisfied
+        4: Math.round(289 * multiplier),  // Satisfied
+        3: Math.round(156 * multiplier),  // Neutral
+        2: Math.round(42 * multiplier),   // Dissatisfied
+        1: Math.round(18 * multiplier)    // Very Dissatisfied
+      };
+
+      // Update the summary metrics as well
+      this.metrics.csatScore = parseFloat(this.calculateAverageRating()).toFixed(1);
+      this.metrics.csatChange = 1.8; // Placeholder change value
+    },
+
+    calculateAverageRating() {
+      const data = this.customerSatisfactionData;
+      let weightedSum = 0;
+      let total = 0;
+
+      for (const [rating, count] of Object.entries(data)) {
+        weightedSum += parseInt(rating) * count;
+        total += count;
+      }
+
+      return total > 0 ? (weightedSum / total).toFixed(1) : '0.0';
     },
 
     // Tooltip event handlers
