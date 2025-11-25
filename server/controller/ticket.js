@@ -2840,4 +2840,141 @@ export class ticketController {
             });
         }
     }
+
+    // Get ticket trends data for line chart (created vs resolved over time)
+    static async getTicketTrends(req, res) {
+        try {
+            const { dateRange, agents, products, status } = req.query;
+
+            // Calculate date range filter
+            let days = 30; // default
+            if (dateRange && dateRange !== 'custom') {
+                days = parseInt(dateRange);
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            let productFilter = '';
+            let statusFilter = '';
+            const queryParams = [days];
+
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND EXISTS (
+                    SELECT 1 FROM \`assign-ticket\` at
+                    JOIN agents a ON at.agentId = a.id
+                    WHERE at.ticketId = t.ticketId
+                    AND a.agentName IN (${agentPlaceholders})
+                )`;
+                queryParams.push(...agentList);
+            }
+
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+                queryParams.push(...productList);
+            }
+
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+                queryParams.push(...statusList);
+            }
+
+            // Query to get tickets created per day
+            const createdQuery = `
+                SELECT
+                    DATE(t.createdAt) as date,
+                    COUNT(*) as count
+                FROM tickets t
+                WHERE t.createdAt >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                GROUP BY DATE(t.createdAt)
+                ORDER BY date ASC
+            `;
+
+            // Query to get tickets resolved per day (from calls table)
+            const resolvedQuery = `
+                SELECT
+                    DATE(c.resolvedOn) as date,
+                    COUNT(DISTINCT t.ticketId) as count
+                FROM tickets t
+                LEFT JOIN calls c ON t.ticketId = c.ticketId
+                WHERE c.resolvedOn >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                AND c.resolvedOn IS NOT NULL
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                GROUP BY DATE(c.resolvedOn)
+                ORDER BY date ASC
+            `;
+
+            // Execute both queries
+            const [createdResults, resolvedResults] = await Promise.all([
+                new Promise((resolve, reject) => {
+                    connection.query(createdQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(resolvedQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                })
+            ]);
+
+            // Generate date labels for the last N days
+            const labels = [];
+            const createdData = [];
+            const resolvedData = [];
+
+            // Create maps for quick lookup
+            const createdMap = new Map(createdResults.map(r => [r.date.toISOString().split('T')[0], r.count]));
+            const resolvedMap = new Map(resolvedResults.map(r => [r.date.toISOString().split('T')[0], r.count]));
+
+            // Generate data for each day
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                // Format label based on days
+                let label;
+                if (days <= 7) {
+                    // For 7 days, show day names
+                    label = date.toLocaleDateString('en-US', { weekday: 'short' });
+                } else {
+                    // For longer periods, show month/day
+                    label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+
+                labels.push(label);
+                createdData.push(createdMap.get(dateStr) || 0);
+                resolvedData.push(resolvedMap.get(dateStr) || 0);
+            }
+
+            return res.json({
+                message: "Ticket trends data fetched successfully",
+                data: {
+                    labels,
+                    created: createdData,
+                    resolved: resolvedData
+                }
+            });
+
+        } catch (error) {
+            console.error('Error in getTicketTrends:', error);
+            return res.status(500).json({
+                message: "Error fetching ticket trends data",
+                error: error.message
+            });
+        }
+    }
 }

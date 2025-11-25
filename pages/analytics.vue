@@ -747,14 +747,8 @@ export default {
 
     updateTicketTrendsPeriod(period) {
       this.ticketTrendsPeriod = period;
-
-      // Generate new data based on period
-      const days = parseInt(period);
-      const dataPoints = Math.min(days, 30); // Show max 30 data points
-
-      this.ticketTrends.created = this.generateRandomData(dataPoints, 30, 150);
-      this.ticketTrends.resolved = this.generateRandomData(dataPoints, 25, 145);
-      this.ticketTrends.labels = this.generateDateLabels(days);
+      // Fetch real data from backend
+      this.fetchTicketTrends(period);
     },
 
     updateTimeDistributionPeriod(period) {
@@ -1103,10 +1097,12 @@ export default {
       // Update ticket trends based on date range
       if (this.analyticsFilters.dateRange !== this.ticketTrendsPeriod) {
         this.updateTicketTrendsPeriod(this.analyticsFilters.dateRange)
+      } else {
+        // Refresh with current period if filters changed but period didn't
+        this.fetchTicketTrends()
       }
 
-      // In a real app, you would make an API call to fetch filtered analytics data
-      // For now, just regenerate some data to simulate filtering
+      // Fetch updated analytics data with filters
       this.fetchAnalyticsData()
     },
 
@@ -1211,6 +1207,68 @@ export default {
         this.metrics.callbackCompletionRate = 0;
         this.metrics.callbackCount = 0;
       }
+    },
+
+    // Fetch ticket trends data for line chart
+    async fetchTicketTrends(period = null) {
+      try {
+        console.log('Fetching ticket trends data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.ticketTrendsPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+        queryParams.append('dateRange', dateRange);
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/ticket-trends${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update ticket trends with real data
+          this.ticketTrends.labels = response.data.labels;
+          this.ticketTrends.created = response.data.created;
+          this.ticketTrends.resolved = response.data.resolved;
+
+          console.log('Ticket trends data updated:', {
+            labels: this.ticketTrends.labels.length,
+            created: this.ticketTrends.created,
+            resolved: this.ticketTrends.resolved
+          });
+        }
+
+      } catch (error) {
+        console.error('Error fetching ticket trends data:', error);
+        // Keep existing data if API fails
+      }
     }
   },
 
@@ -1228,8 +1286,9 @@ export default {
   },
 
   mounted() {
-    // In a real app, you would fetch the initial data here
+    // Fetch initial data from backend
     this.fetchAnalyticsData();
+    this.fetchTicketTrends();
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)

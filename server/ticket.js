@@ -44,6 +44,7 @@ router.put("/feedback/:id/response", ticketController.updateFeedbackResponse);
 
 // Analytics routes
 router.get("/analytics/cards", ticketController.getAnalyticsCards);
+router.get("/analytics/ticket-trends", ticketController.getTicketTrends);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");
