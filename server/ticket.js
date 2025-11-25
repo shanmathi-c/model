@@ -46,6 +46,7 @@ router.put("/feedback/:id/response", ticketController.updateFeedbackResponse);
 router.get("/analytics/cards", ticketController.getAnalyticsCards);
 router.get("/analytics/ticket-trends", ticketController.getTicketTrends);
 router.get("/analytics/resolution-time-distribution", ticketController.getResolutionTimeDistribution);
+router.get("/analytics/customer-satisfaction-distribution", ticketController.getCustomerSatisfactionDistribution);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");

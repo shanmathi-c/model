@@ -281,9 +281,11 @@
       <div class="mb-6">
         <!-- Customer Satisfaction Distribution -->
         <CustomerSatisfactionChart
+          :key="customerSatisfactionDataKey"
           title="Customer Satisfaction Distribution"
           :csat-data="customerSatisfactionData"
           :period="customerSatisfactionPeriod"
+          :show-summary="false"
           @period-change="updateCustomerSatisfactionPeriod"
         />
       </div>
@@ -444,12 +446,13 @@ export default {
       ],
       customerSatisfactionPeriod: '30',
       customerSatisfactionData: {
-        5: 512,  // Very Satisfied
-        4: 289,  // Satisfied
-        3: 156,  // Neutral
-        2: 42,   // Dissatisfied
-        1: 18    // Very Dissatisfied
+        5: 0,  // Very Satisfied
+        4: 0,  // Satisfied
+        3: 0,  // Neutral
+        2: 0,  // Dissatisfied
+        1: 0   // Very Dissatisfied
       },
+      customerSatisfactionDataKey: 0,
       agentPerformancePeriod: '30',
       agentPerformanceData: [
         {
@@ -740,20 +743,8 @@ export default {
 
     updateCustomerSatisfactionPeriod(period) {
       this.customerSatisfactionPeriod = period;
-
-      // Generate new CSAT data based on period
-      const multiplier = parseInt(period) / 30; // Base on 30 days
-      this.customerSatisfactionData = {
-        5: Math.round(512 * multiplier),  // Very Satisfied
-        4: Math.round(289 * multiplier),  // Satisfied
-        3: Math.round(156 * multiplier),  // Neutral
-        2: Math.round(42 * multiplier),   // Dissatisfied
-        1: Math.round(18 * multiplier)    // Very Dissatisfied
-      };
-
-      // Update the summary metrics as well
-      this.metrics.csatScore = parseFloat(this.calculateAverageRating()).toFixed(1);
-      this.metrics.csatChange = 1.8; // Placeholder change value
+      // Fetch real data from backend
+      this.fetchCustomerSatisfactionDistribution(period);
     },
 
     updateAgentPerformancePeriod(period) {
@@ -1047,6 +1038,13 @@ export default {
         this.fetchResolutionTimeDistribution()
       }
 
+      // Update customer satisfaction distribution
+      if (this.analyticsFilters.dateRange !== this.customerSatisfactionPeriod) {
+        this.updateCustomerSatisfactionPeriod(this.analyticsFilters.dateRange)
+      } else {
+        this.fetchCustomerSatisfactionDistribution()
+      }
+
       // Fetch updated analytics data with filters
       this.fetchAnalyticsData()
     },
@@ -1293,6 +1291,72 @@ export default {
         console.error('Error fetching resolution time distribution data:', error);
         // Keep existing data if API fails
       }
+    },
+
+    // Fetch customer satisfaction distribution data
+    async fetchCustomerSatisfactionDistribution(period = null) {
+      try {
+        console.log('Fetching customer satisfaction distribution data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.customerSatisfactionPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+        queryParams.append('dateRange', dateRange);
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/customer-satisfaction-distribution${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update customer satisfaction data with real data
+          // Create new object with numeric keys and values
+          const data = response.data;
+
+          this.customerSatisfactionData = {
+            1: Number(data['1']) || 0,
+            2: Number(data['2']) || 0,
+            3: Number(data['3']) || 0,
+            4: Number(data['4']) || 0,
+            5: Number(data['5']) || 0
+          };
+
+          // Force component re-render
+          this.customerSatisfactionDataKey++;
+        }
+
+      } catch (error) {
+        console.error('Error fetching customer satisfaction distribution data:', error);
+        // Keep existing data if API fails
+      }
     }
   },
 
@@ -1314,6 +1378,7 @@ export default {
     this.fetchAnalyticsData();
     this.fetchTicketTrends();
     this.fetchResolutionTimeDistribution();
+    this.fetchCustomerSatisfactionDistribution();
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)

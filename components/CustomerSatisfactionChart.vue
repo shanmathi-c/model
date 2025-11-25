@@ -16,85 +16,85 @@
       </div>
     </div>
 
-    <!-- Compact Chart Container -->
-    <div class="relative">
-      <!-- Centered Pie Chart -->
-      <div class="flex justify-center">
-        <div class="relative">
-          <svg :width="svgSize" :height="svgSize" class="w-full h-full">
-            <!-- Pie slices -->
-            <g v-for="(slice, index) in pieSlices" :key="index">
-              <path
-                :d="slice.path"
-                :fill="slice.color"
-                stroke="white"
-                stroke-width="2"
-                class="cursor-pointer hover:opacity-80 transition-opacity"
-                @mouseover="showTooltip($event, slice)"
-                @mouseout="hideTooltip"
-              />
-            </g>
-
-            <!-- Center circle for donut effect -->
-            <circle
-              :cx="center"
-              :cy="center"
-              :r="innerRadius"
-              fill="white"
+    <!-- Chart Container with Pie and Legend Side by Side -->
+    <div class="flex items-center justify-center gap-8">
+      <!-- Pie Chart -->
+      <div class="relative">
+        <svg :width="svgSize" :height="svgSize" class="w-full h-full">
+          <!-- Pie slices -->
+          <g v-for="(slice, index) in pieSlices" :key="index">
+            <path
+              :d="slice.path"
+              :fill="slice.color"
+              stroke="white"
+              stroke-width="2"
+              class="cursor-pointer hover:opacity-80 transition-opacity"
+              @mouseover="showTooltip($event, slice)"
+              @mouseout="hideTooltip"
             />
+          </g>
 
-            <!-- Center text -->
-            <text
-              :x="center"
-              :y="center - 10"
-              text-anchor="middle"
-              class="text-3xl font-bold fill-gray-900"
-            >
-              {{ averageRating }}
-            </text>
-            <text
-              :x="center"
-              :y="center + 12"
-              text-anchor="middle"
-              class="text-sm fill-gray-500"
-            >
-              Avg Rating
-            </text>
-          </svg>
+          <!-- Center circle for donut effect -->
+          <circle
+            :cx="center"
+            :cy="center"
+            :r="innerRadius"
+            fill="white"
+          />
 
-          <!-- Tooltip -->
-          <div
-            v-if="tooltip.visible"
-            class="absolute bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg border border-gray-700 pointer-events-none z-50"
-            :style="{
-              left: tooltip.x + 'px',
-              top: tooltip.y + 'px',
-              transform: 'translate(-50%, -100%)'
-            }"
+          <!-- Center text -->
+          <text
+            :x="center"
+            :y="center - 10"
+            text-anchor="middle"
+            class="text-3xl font-bold fill-gray-900"
           >
-            <div class="text-sm font-semibold mb-1">{{ tooltip.label }}</div>
-            <div class="text-xs text-gray-300">
-              {{ tooltip.count }} responses ({{ tooltip.percentage }}%)
-            </div>
-            <div class="text-xs text-blue-300 mt-1">
-              Rating: {{ tooltip.rating }}/5
-            </div>
-            <!-- Tooltip Arrow -->
-            <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-              <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-            </div>
+            {{ averageRating }}
+          </text>
+          <text
+            :x="center"
+            :y="center + 12"
+            text-anchor="middle"
+            class="text-sm fill-gray-500"
+          >
+            Avg Rating
+          </text>
+        </svg>
+
+        <!-- Tooltip -->
+        <div
+          v-if="tooltip.visible"
+          class="absolute bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg border border-gray-700 pointer-events-none z-50"
+          :style="{
+            left: tooltip.x + 'px',
+            top: tooltip.y + 'px',
+            transform: 'translate(-50%, -100%)'
+          }"
+        >
+          <div class="text-sm font-semibold mb-1">{{ tooltip.label }}</div>
+          <div class="text-xs text-gray-300">
+            {{ tooltip.count }} responses ({{ tooltip.percentage }}%)
+          </div>
+          <div class="text-xs text-blue-300 mt-1">
+            Rating: {{ tooltip.rating }}/5
+          </div>
+          <!-- Tooltip Arrow -->
+          <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+            <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
           </div>
         </div>
       </div>
 
-      <!-- Minimal Inline Legend -->
-      <div class="mt-4 flex justify-center gap-4">
-        <div v-for="(slice, index) in pieSlices" :key="index" class="flex items-center gap-1.5">
+      <!-- Legend - Vertical on Right Side -->
+      <div class="flex flex-col gap-3">
+        <div v-for="rating in [5, 4, 3, 2, 1]" :key="rating" class="flex items-center gap-2">
           <div
-            class="w-2 h-2 rounded-full flex-shrink-0"
-            :style="{ backgroundColor: slice.color }"
+            class="w-4 h-4 rounded-sm flex-shrink-0"
+            :style="{ backgroundColor: ratingColors[rating] }"
           ></div>
-          <span class="text-xs text-gray-600">{{ slice.label }}</span>
+          <span class="text-sm text-gray-700">
+            Ratings-{{ rating }}: <span class="font-semibold">{{ csatData[rating] || 0 }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -164,11 +164,11 @@ export default {
         rating: 0
       },
       ratingColors: {
-        5: '#10b981', // emerald-500
-        4: '#22c55e', // green-600
-        3: '#f59e0b', // amber-500
-        2: '#f97316', // orange-500
-        1: '#ef4444'  // red-500
+        5: '#10b981', // green
+        4: '#f97316', // orange
+        3: '#3b82f6', // blue
+        2: '#eab308', // yellow
+        1: '#ef4444'  // red
       }
     }
   },
@@ -206,7 +206,8 @@ export default {
         const angle = (count / this.total) * 360
 
         const startAngle = currentAngle
-        const endAngle = currentAngle + angle
+        // If this is 100% (or very close), make it slightly less than 360 degrees
+        const endAngle = angle >= 359.9 ? currentAngle + 359.9 : currentAngle + angle
 
         const path = this.createSlicePath(startAngle, endAngle)
 

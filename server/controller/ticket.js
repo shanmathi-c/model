@@ -3099,4 +3099,104 @@ export class ticketController {
             });
         }
     }
+
+    // Get customer satisfaction distribution data from feedbacks table
+    static async getCustomerSatisfactionDistribution(req, res) {
+        try {
+            const { dateRange, agents, products, status } = req.query;
+
+            // Calculate date range filter
+            let days = 30; // default
+            if (dateRange && dateRange !== 'custom') {
+                days = parseInt(dateRange);
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            let productFilter = '';
+            let statusFilter = '';
+            const queryParams = [days];
+
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND EXISTS (
+                    SELECT 1 FROM \`assign-ticket\` at
+                    JOIN agents a ON at.agentId = a.id
+                    WHERE at.ticketId = t.ticketId
+                    AND a.agentName IN (${agentPlaceholders})
+                )`;
+                queryParams.push(...agentList);
+            }
+
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+                queryParams.push(...productList);
+            }
+
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+                queryParams.push(...statusList);
+            }
+
+            // Query to get customer satisfaction distribution from feedbacks table
+            const query = `
+                SELECT
+                    f.rating,
+                    COUNT(*) as count
+                FROM feedbacks f
+                LEFT JOIN tickets t ON f.ticketId = t.ticketId
+                WHERE f.rating IS NOT NULL
+                AND f.rating BETWEEN 1 AND 5
+                AND f.createdAt >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                GROUP BY f.rating
+                ORDER BY f.rating DESC
+            `;
+
+            connection.query(query, queryParams, (err, result) => {
+                if (err) {
+                    console.error('Error in getCustomerSatisfactionDistribution query:', err);
+                    return res.status(500).json({
+                        message: "Error fetching customer satisfaction distribution data",
+                        error: err.message
+                    });
+                }
+
+                // Initialize distribution as an object with numeric values
+                const distribution = {};
+
+                // Initialize all ratings with 0
+                for (let i = 1; i <= 5; i++) {
+                    distribution[i] = 0;
+                }
+
+                // Fill in the actual counts
+                result.forEach(row => {
+                    const rating = parseInt(row.rating);
+                    if (rating >= 1 && rating <= 5) {
+                        distribution[rating] = parseInt(row.count);
+                    }
+                });
+
+                return res.json({
+                    message: "Customer satisfaction distribution data fetched successfully",
+                    data: distribution
+                });
+            });
+
+        } catch (error) {
+            console.error('Error in getCustomerSatisfactionDistribution:', error);
+            return res.status(500).json({
+                message: "Error fetching customer satisfaction distribution data",
+                error: error.message
+            });
+        }
+    }
 }
