@@ -236,15 +236,31 @@
         </div>
       </div>
 
-   
+      <!-- Line Chart Section -->
+      <div class="mb-6">
+        <!-- Tickets Created vs Resolved Over Time -->
+        <LineChart
+          title="Tickets Created vs Resolved Over Time"
+          :created-data="ticketTrends.created"
+          :resolved-data="ticketTrends.resolved"
+          :x-labels="ticketTrends.labels"
+          :period="ticketTrendsPeriod"
+          @period-change="updateTicketTrendsPeriod"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import LineChart from '~/components/LineChart.vue'
+
 export default {
   name: 'AnalyticsPage',
-  
+  components: {
+    LineChart
+  },
+
   data() {
     return {
       selectedDateRange: '30',
@@ -258,7 +274,7 @@ export default {
       selectedTicketType: 'all',
       selectedTeam: 'all',
       metrics: {
-        totalTickets: 1, // Placeholder value
+        totalTickets: 1247, // Updated placeholder value
         ticketsChange: 5.2, // Placeholder value
         fcrRate: 78.5, // Placeholder value
         fcrChange: 2.3, // Placeholder value
@@ -267,9 +283,13 @@ export default {
         csatScore: 4.2, // Placeholder value
         csatChange: 1.8 // Placeholder value
       },
-      ticketsByStatusPeriod: '30',
-      ticketsByPriorityPeriod: '30',
-      ticketVolumePeriod: 'week'
+      ticketTrendsPeriod: '30',
+      // Chart data
+      ticketTrends: {
+        created: [45, 52, 38, 65, 48, 59, 67, 72, 58, 81, 69, 74, 62, 88, 76, 92, 85, 98, 103, 95, 108, 112, 105, 118, 125, 119, 132, 128, 135, 142],
+        resolved: [42, 48, 45, 58, 52, 61, 63, 68, 65, 74, 71, 78, 75, 82, 79, 85, 88, 91, 95, 98, 102, 105, 108, 112, 115, 118, 122, 125, 128, 130],
+        labels: this.generateDateLabels(30)
+      }
     };
   },
 
@@ -278,6 +298,47 @@ export default {
       const date = new Date();
       date.setDate(date.getDate() - days);
       return date.toISOString().split('T')[0];
+    },
+
+    generateDateLabels(days) {
+      const labels = [];
+      const today = new Date();
+
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+
+        if (days <= 7) {
+          // For 7 days, show day names
+          labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+        } else {
+          // For longer periods, show month/day
+          labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        }
+      }
+
+      return labels;
+    },
+
+    updateTicketTrendsPeriod(period) {
+      this.ticketTrendsPeriod = period;
+
+      // Generate new data based on period
+      const days = parseInt(period);
+      const dataPoints = Math.min(days, 30); // Show max 30 data points
+
+      this.ticketTrends.created = this.generateRandomData(dataPoints, 30, 150);
+      this.ticketTrends.resolved = this.generateRandomData(dataPoints, 25, 145);
+      this.ticketTrends.labels = this.generateDateLabels(days);
+    },
+
+  
+    generateRandomData(count, min, max) {
+      const data = [];
+      for (let i = 0; i < count; i++) {
+        data.push(Math.floor(Math.random() * (max - min + 1)) + min);
+      }
+      return data;
     },
 
     applyDateRange() {
@@ -355,21 +416,6 @@ export default {
         };
         this.applyDateRange();
       }
-    },
-    
-    ticketsByStatusPeriod() {
-      // In a real app, this would refresh the tickets by status data
-      console.log('Updating tickets by status data for period:', this.ticketsByStatusPeriod);
-    },
-    
-    ticketsByPriorityPeriod() {
-      // In a real app, this would refresh the tickets by priority data
-      console.log('Updating tickets by priority data for period:', this.ticketsByPriorityPeriod);
-    },
-    
-    ticketVolumePeriod() {
-      // In a real app, this would refresh the ticket volume data
-      console.log('Updating ticket volume data for period:', this.ticketVolumePeriod);
     }
   },
 
