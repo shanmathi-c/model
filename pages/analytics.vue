@@ -172,94 +172,79 @@
     <!-- Main Content Area -->
     <div class="flex-1 overflow-auto p-6">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-5 gap-2 mb-6">
+      <div class="grid grid-cols-5 gap-1 mb-6">
         <!-- Total Tickets -->
-        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
-          <div class="flex flex-col items-center text-center">
-            <div class="p-1 bg-blue-100 rounded-lg mb-1">
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-blue-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <p class="text-base font-semibold text-gray-900">{{ metrics.totalTickets }}</p>
-            <p class="text-xs text-gray-500">Total</p>
-            <p class="text-xs mt-1">
-              <span :class="metrics.ticketsChange >= 0 ? 'text-green-600' : 'text-red-600'">
-                {{ Math.abs(metrics.ticketsChange) }}%
-              </span>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatNumber(metrics.totalTickets) }}
             </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Total Tickets</p>
           </div>
         </div>
 
-        <!-- First Call Resolution -->
-        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
-          <div class="flex flex-col items-center text-center">
-            <div class="p-1 bg-green-100 rounded-lg mb-1">
-              <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="text-base font-semibold text-gray-900">{{ metrics.fcrRate }}%</p>
-            <p class="text-xs text-gray-500">FCR</p>
-            <p class="text-xs mt-1">
-              <span :class="metrics.fcrChange >= 0 ? 'text-green-600' : 'text-red-600'">
-                {{ Math.abs(metrics.fcrChange) }}%
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <!-- Avg Response Time -->
-        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
-          <div class="flex flex-col items-center text-center">
-            <div class="p-1 bg-yellow-100 rounded-lg mb-1">
+        <!-- Avg Resolution Time -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-yellow-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="text-base font-semibold text-gray-900">{{ metrics.avgResponseTime }}m</p>
-            <p class="text-xs text-gray-500">Response</p>
-            <p class="text-xs mt-1">
-              <span :class="metrics.responseTimeChange <= 0 ? 'text-green-600' : 'text-red-600'">
-                {{ Math.abs(metrics.responseTimeChange) }}%
-              </span>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatResolutionTime(metrics.avgResolutionTimeMinutes) }}
             </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Resolution Time</p>
           </div>
         </div>
 
-        <!-- Customer Satisfaction -->
-        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
-          <div class="flex flex-col items-center text-center">
-            <div class="p-1 bg-purple-100 rounded-lg mb-1">
+        <!-- First Call Resolution Rate -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-green-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : `${metrics.fcrRate}%(${formatNumber(metrics.fcrCount)})` }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">First-Call-Resolution Rate (%)</p>
+          </div>
+        </div>
+
+        <!-- Avg Customer Satisfaction -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-purple-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
               </svg>
             </div>
-            <p class="text-base font-semibold text-gray-900">{{ metrics.csatScore }}/5</p>
-            <p class="text-xs text-gray-500">CSAT</p>
-            <p class="text-xs mt-1">
-              <span :class="metrics.csatChange >= 0 ? 'text-green-600' : 'text-red-600'">
-                {{ Math.abs(metrics.csatChange) }}%
-              </span>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : `${metrics.csatScore}/5(${formatNumber(metrics.csatCount)})` }}
             </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Customer Satisfaction (star rating)</p>
           </div>
         </div>
 
-        <!-- Active Agents -->
-        <div class="bg-white rounded-lg shadow p-2 border border-gray-200">
-          <div class="flex flex-col items-center text-center">
-            <div class="p-1 bg-indigo-100 rounded-lg mb-1">
-              <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+        <!-- Callback Completion Rate -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
             </div>
-            <p class="text-base font-semibold text-gray-900">{{ metrics.activeAgents }}</p>
-            <p class="text-xs text-gray-500">Agents</p>
-            <p class="text-xs mt-1">
-              <span class="text-blue-600">
-                {{ metrics.onlineAgents }} online
-              </span>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : `${metrics.callbackCompletionRate}%(${formatNumber(metrics.callbackCount)})` }}
             </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Callback Completion Rate (%)</p>
           </div>
         </div>
       </div>
@@ -411,16 +396,20 @@ export default {
         { value: 'closed', label: 'Closed' }
       ],
       metrics: {
-        totalTickets: 1247, // Updated placeholder value
-        ticketsChange: 5.2, // Placeholder value
-        fcrRate: 78.5, // Placeholder value
-        fcrChange: 2.3, // Placeholder value
-        avgResponseTime: 12, // Placeholder value
-        responseTimeChange: -3.1, // Placeholder value
-        csatScore: 4.2, // Placeholder value
-        csatChange: 1.8, // Placeholder value
-        activeAgents: 18, // New placeholder value
-        onlineAgents: 14 // New placeholder value
+        totalTickets: 0,
+        ticketsChange: 0,
+        avgResolutionTimeMinutes: 0,
+        fcrRate: 0,
+        fcrCount: 0,
+        fcrChange: 0,
+        avgResponseTime: 0,
+        responseTimeChange: 0,
+        csatScore: 0,
+        csatCount: 0,
+        csatChange: 0,
+        callbackCompletionRate: 0,
+        callbackCount: 0,
+        isLoading: true
       },
       ticketTrendsPeriod: '30',
       // Chart data
@@ -711,6 +700,25 @@ export default {
   },
 
   methods: {
+    // Helper method to format numbers with commas
+    formatNumber(num) {
+      if (num === null || num === undefined || isNaN(num)) return '0';
+      return Math.round(num).toLocaleString();
+    },
+
+    // Helper method to format resolution time
+    formatResolutionTime(minutes) {
+      if (minutes === null || minutes === undefined || isNaN(minutes)) return '0m';
+
+      if (minutes < 60) {
+        return `${Math.round(minutes)}m`;
+      } else {
+        const hours = Math.floor(minutes / 60);
+        const mins = Math.round(minutes % 60);
+        return `${hours}h ${mins}m`;
+      }
+    },
+
     getDateDaysAgo(days) {
       const date = new Date();
       date.setDate(date.getDate() - days);
@@ -1110,30 +1118,98 @@ export default {
       }
     },
 
-    // In a real app, you would have methods to fetch data from your API
+    // Fetch analytics card data from backend
     async fetchAnalyticsData() {
       try {
-        // This would be an API call to fetch the analytics data
-        // For now, we're just using placeholder data
-        console.log('Fetching analytics data...');
+        this.metrics.isLoading = true;
+        console.log('Fetching analytics cards data...');
 
-        // Example API call structure with error handling:
-        // const response = await $fetch('http://localhost:5001/analytics', {
-        //   method: 'GET',
-        //   query: {
-        //     dateRange: this.selectedDateRange,
-        //     agent: this.selectedAgent,
-        //     product: this.selectedProductCategory,
-        //     ticketType: this.selectedTicketType,
-        //     team: this.selectedTeam
-        //   }
-        // });
-        // this.metrics = response.data;
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+
+        // Add date range if not custom
+        if (this.analyticsFilters.dateRange !== 'custom') {
+          queryParams.append('dateRange', this.analyticsFilters.dateRange);
+        }
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/cards${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update metrics with real backend data
+          const data = response.data;
+
+          this.metrics.totalTickets = data.totalTickets || 0;
+          this.metrics.avgResolutionTimeMinutes = data.avgResolutionTime?.minutes || 0;
+          this.metrics.fcrRate = data.firstCallResolution?.rate || 0;
+          this.metrics.fcrCount = data.firstCallResolution?.fcr || 0;
+          this.metrics.csatScore = data.avgCustomerSatisfaction?.score || 0;
+          this.metrics.csatCount = data.avgCustomerSatisfaction?.totalRatings || 0;
+          this.metrics.callbackCompletionRate = data.callbackCompletionRate?.rate || 0;
+          this.metrics.callbackCount = data.callbackCompletionRate?.completed || 0;
+
+          // Calculate placeholder change percentages for now
+          // In a real implementation, you might want these from the backend as well
+          this.metrics.ticketsChange = 5.2;
+          this.metrics.fcrChange = 2.3;
+          this.metrics.responseTimeChange = -3.1;
+          this.metrics.csatChange = 1.8;
+
+          console.log('Analytics cards data updated:', {
+            totalTickets: this.metrics.totalTickets,
+            avgResolutionTime: this.metrics.avgResolutionTimeMinutes,
+            fcrRate: this.metrics.fcrRate,
+            fcrCount: this.metrics.fcrCount,
+            csatScore: this.metrics.csatScore,
+            csatCount: this.metrics.csatCount,
+            callbackCompletionRate: this.metrics.callbackCompletionRate,
+            callbackCount: this.metrics.callbackCount
+          });
+        }
+
+        this.metrics.isLoading = false;
 
       } catch (error) {
-        console.error('Error fetching analytics data:', error);
-        // Handle H3 error or network errors gracefully
-        // You could show a user-friendly error message here
+        console.error('Error fetching analytics cards data:', error);
+        this.metrics.isLoading = false;
+
+        // Set fallback values if API fails
+        this.metrics.totalTickets = 0;
+        this.metrics.avgResolutionTimeMinutes = 0;
+        this.metrics.fcrRate = 0;
+        this.metrics.fcrCount = 0;
+        this.metrics.csatScore = 0;
+        this.metrics.csatCount = 0;
+        this.metrics.callbackCompletionRate = 0;
+        this.metrics.callbackCount = 0;
       }
     }
   },

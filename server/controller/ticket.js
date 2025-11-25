@@ -2649,4 +2649,195 @@ export class ticketController {
             });
         }
     }
+
+    // Get analytics cards data with real backend calculations
+    static async getAnalyticsCards(req, res) {
+        try {
+            const { dateRange, agents, products, status } = req.query;
+
+            // Calculate date range filter
+            let dateFilter = '';
+            if (dateRange && dateRange !== 'custom') {
+                const days = parseInt(dateRange);
+                dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND EXISTS (
+                    SELECT 1 FROM \`assign-ticket\` at
+                    JOIN agents a ON at.agentId = a.id
+                    WHERE at.ticketId = t.ticketId
+                    AND a.agentName IN (${agentPlaceholders})
+                )`;
+            }
+
+            let productFilter = '';
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+            }
+
+            let statusFilter = '';
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+            }
+
+            // Get parameters for queries
+            const queryParams = [];
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                queryParams.push(...agentList);
+            }
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                queryParams.push(...productList);
+            }
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                queryParams.push(...statusList);
+            }
+
+            // 1. Total Tickets Count
+            const totalTicketsQuery = `
+                SELECT COUNT(*) as total
+                FROM tickets t
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+            `;
+
+            // 2. Average Resolution Time (in minutes) - from calls data
+            const avgResolutionTimeQuery = `
+                SELECT
+                    AVG(
+                        CASE
+                            WHEN c.resolvedOn IS NOT NULL AND c.startTime IS NOT NULL THEN
+                                TIMESTAMPDIFF(MINUTE, c.startTime, c.resolvedOn)
+                            WHEN c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
+                                TIMESTAMPDIFF(MINUTE, c.startTime, c.endTime)
+                            ELSE NULL
+                        END
+                    ) as avgResolutionTimeMinutes
+                FROM tickets t
+                LEFT JOIN calls c ON t.ticketId = c.ticketId AND c.callStatus = 'completed'
+                WHERE (t.status = 'Resolved' OR t.status = 'Closed')
+                  AND (c.resolvedOn IS NOT NULL OR c.endTime IS NOT NULL)
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+            `;
+
+            // 3. First-Call-Resolution Rate
+            const fcrQuery = `
+                SELECT
+                    COUNT(DISTINCT t.ticketId) as totalTickets,
+                    COUNT(DISTINCT CASE WHEN c.firstCall = 1 THEN t.ticketId END) as fcrTickets,
+                    (COUNT(DISTINCT CASE WHEN c.firstCall = 1 THEN t.ticketId END) / COUNT(DISTINCT t.ticketId)) * 100 as fcrRate
+                FROM tickets t
+                LEFT JOIN calls c ON t.ticketId = c.ticketId
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+            `;
+
+            // 4. Average Customer Satisfaction from feedbacks table
+            const avgCsatQuery = `
+                SELECT
+                    AVG(f.rating) as avgCsat,
+                    COUNT(f.rating) as totalRatings
+                FROM feedbacks f
+                LEFT JOIN tickets t ON f.ticketId = t.ticketId
+                WHERE f.rating IS NOT NULL
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+            `;
+
+            // 5. Callback Completion Rate from calls table
+            const callbackCompletionQuery = `
+                SELECT
+                    COUNT(*) as totalCalls,
+                    COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) as completedCalls,
+                    (COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) / COUNT(*)) * 100 as completionRate
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+            `;
+
+            // Execute all queries in parallel
+            const promises = [
+                new Promise((resolve, reject) => {
+                    connection.query(totalTicketsQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result[0]?.total || 0);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(avgResolutionTimeQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            minutes: Math.round(result[0]?.avgResolutionTimeMinutes || 0),
+                            hours: Math.round((result[0]?.avgResolutionTimeMinutes || 0) / 60 * 10) / 10
+                        });
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(fcrQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            rate: Math.round(result[0]?.fcrRate || 0 * 10) / 10,
+                            total: result[0]?.totalTickets || 0,
+                            fcr: result[0]?.fcrTickets || 0
+                        });
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(avgCsatQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            score: Math.round((result[0]?.avgCsat || 0) * 10) / 10,
+                            totalRatings: result[0]?.totalRatings || 0
+                        });
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(callbackCompletionQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            rate: Math.round(result[0]?.completionRate || 0 * 10) / 10,
+                            total: result[0]?.totalCalls || 0,
+                            completed: result[0]?.completedCalls || 0
+                        });
+                    });
+                })
+            ];
+
+            const results = await Promise.all(promises);
+
+            const analyticsData = {
+                totalTickets: results[0],
+                avgResolutionTime: results[1],
+                firstCallResolution: results[2],
+                avgCustomerSatisfaction: results[3],
+                callbackCompletionRate: results[4],
+                filters: {
+                    dateRange: dateRange || '30',
+                    agents: agents || [],
+                    products: products || [],
+                    status: status || []
+                }
+            };
+
+            return res.json({
+                message: "Analytics cards data fetched successfully",
+                data: analyticsData
+            });
+
+        } catch (error) {
+            console.error('Error in getAnalyticsCards:', error);
+            return res.status(500).json({
+                message: "Error fetching analytics cards data",
+                error: error.message
+            });
+        }
+    }
 }
