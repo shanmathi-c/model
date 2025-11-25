@@ -329,7 +329,7 @@ export class ticketController {
                             // Update existing assignment
                             await new Promise((resolve, reject) => {
                                 connection.query(
-                                    "UPDATE `assign-ticket` SET agentId = ?, status = 'assigned', importAction = 'call' WHERE ticketId = ?",
+                                    "UPDATE `assign-ticket` SET agentId = ?, status = 'assigned', importAction = 'call', ticketType = 'call' WHERE ticketId = ?",
                                     [agentId, ticketId],
                                     (updateErr, updateResult) => {
                                         if (updateErr) {
@@ -347,7 +347,8 @@ export class ticketController {
                                 ticketId: ticketId,
                                 agentId: agentId,
                                 status: 'assigned',
-                                importAction: 'call'
+                                importAction: 'call',
+                                ticketType: 'call'
                             };
 
                             await new Promise((resolve, reject) => {
@@ -813,8 +814,8 @@ export class ticketController {
             });
         }
 
-        // First, get the proper ticketId format from tickets table
-        const getTicketQuery = `SELECT id, ticketId FROM tickets WHERE id = ? OR ticketId = ?`;
+        // First, get the proper ticketId format and status from tickets table
+        const getTicketQuery = `SELECT id, ticketId, status FROM tickets WHERE id = ? OR ticketId = ?`;
 
         connection.query(getTicketQuery, [ticketId, ticketId], (getErr, ticketResult) => {
             if (getErr) {
@@ -833,6 +834,14 @@ export class ticketController {
             // Use the formatted ticketId (T001, T002, etc.) from the tickets table
             const formattedTicketId = ticketResult[0].ticketId || `T${String(ticketResult[0].id).padStart(3, '0')}`;
             const numericTicketId = ticketResult[0].id;
+            const originalTicketStatus = ticketResult[0].status;
+
+            console.log('Assigning ticket:', {
+                formattedTicketId,
+                numericTicketId,
+                originalTicketStatus,
+                agentId
+            });
 
         // Step 1: Check if ticket is already assigned
         const checkQuery = `SELECT * FROM \`assign-ticket\` WHERE ticketId = ?`;
@@ -850,15 +859,17 @@ export class ticketController {
             let isUpdate = false;
 
             if (checkResult.length > 0) {
-                // Ticket already assigned, update the existing record
-                assignmentQuery = `UPDATE \`assign-ticket\` SET agentId = ?, status = 'assigned', importAction = 'single' WHERE ticketId = ?`;
+                // Ticket already assigned, update the existing record with assigned status
+                assignmentQuery = `UPDATE \`assign-ticket\` SET agentId = ?, status = 'assigned', importAction = 'single', ticketType = 'freshdesk' WHERE ticketId = ?`;
                 queryParams = [agentId, formattedTicketId];
                 isUpdate = true;
+                console.log('Updating existing assignment with status: assigned');
             } else {
-                // First time assignment, insert new record with formatted ticketId
-                assignmentQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES (?, ?, 'assigned', 'single')`;
+                // First time assignment, insert new record with assigned status
+                assignmentQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction, ticketType) VALUES (?, ?, 'assigned', 'single', 'freshdesk')`;
                 queryParams = [formattedTicketId, agentId];
                 isUpdate = false;
+                console.log('Creating new assignment with status: assigned');
             }
 
             // Step 2: Execute insert or update query
@@ -929,9 +940,9 @@ export class ticketController {
             });
         }
 
-        // First, get all tickets with their proper formatted ticketId
+        // First, get all tickets with their proper formatted ticketId and status
         const placeholders = ticketIds.map(() => '?').join(',');
-        const getTicketsQuery = `SELECT id, ticketId FROM tickets WHERE id IN (${placeholders}) OR ticketId IN (${placeholders})`;
+        const getTicketsQuery = `SELECT id, ticketId, status FROM tickets WHERE id IN (${placeholders}) OR ticketId IN (${placeholders})`;
         const queryParams = [...ticketIds, ...ticketIds];
 
         connection.query(getTicketsQuery, queryParams, (getErr, ticketResults) => {
@@ -954,13 +965,13 @@ export class ticketController {
                 formattedId: ticket.ticketId || `T${String(ticket.id).padStart(3, '0')}`
             }));
 
-            // Build the values for bulk insert with formatted ticketIds
+            // Build the values for bulk insert with formatted ticketIds and assigned status
             const assignValuesWithStatus = ticketMappings.map(mapping =>
-                `('${mapping.formattedId}', ${agentId}, 'assigned', 'bulk')`
+                `('${mapping.formattedId}', ${agentId}, 'assigned', 'bulk', 'freshdesk')`
             ).join(',');
 
-            const insertQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction) VALUES ${assignValuesWithStatus}
-                                 ON DUPLICATE KEY UPDATE agentId = VALUES(agentId), status = 'assigned', importAction = 'bulk'`;
+            const insertQuery = `INSERT INTO \`assign-ticket\` (ticketId, agentId, status, importAction, ticketType) VALUES ${assignValuesWithStatus}
+                                 ON DUPLICATE KEY UPDATE agentId = VALUES(agentId), status = 'assigned', importAction = 'bulk', ticketType = 'freshdesk'`;
 
             connection.query(insertQuery, (insertErr, insertResult) => {
                 if (insertErr) {
