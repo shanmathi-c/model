@@ -2653,7 +2653,7 @@ export class ticketController {
     // Get analytics cards data with real backend calculations
     static async getAnalyticsCards(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -2689,6 +2689,13 @@ export class ticketController {
                 statusFilter = `AND t.status IN (${statusPlaceholders})`;
             }
 
+            let ticketTypeFilter = '';
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+            }
+
             // Get parameters for queries
             const queryParams = [];
             if (agents && agents.length > 0) {
@@ -2703,12 +2710,16 @@ export class ticketController {
                 const statusList = Array.isArray(status) ? status : [status];
                 queryParams.push(...statusList);
             }
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                queryParams.push(...ticketTypeList);
+            }
 
             // 1. Total Tickets Count
             const totalTicketsQuery = `
                 SELECT COUNT(*) as total
                 FROM tickets t
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 2. Average Resolution Time (in minutes) - from calls data
@@ -2727,7 +2738,7 @@ export class ticketController {
                 LEFT JOIN calls c ON t.ticketId = c.ticketId AND c.callStatus = 'completed'
                 WHERE (t.status = 'Resolved' OR t.status = 'Closed')
                   AND (c.resolvedOn IS NOT NULL OR c.endTime IS NOT NULL)
-                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 3. First-Call-Resolution Rate
@@ -2738,7 +2749,7 @@ export class ticketController {
                     (COUNT(DISTINCT CASE WHEN c.firstCall = 1 THEN t.ticketId END) / COUNT(DISTINCT t.ticketId)) * 100 as fcrRate
                 FROM tickets t
                 LEFT JOIN calls c ON t.ticketId = c.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 4. Average Customer Satisfaction from feedbacks table
@@ -2749,7 +2760,7 @@ export class ticketController {
                 FROM feedbacks f
                 LEFT JOIN tickets t ON f.ticketId = t.ticketId
                 WHERE f.rating IS NOT NULL
-                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 5. Callback Completion Rate from calls table
@@ -2760,7 +2771,7 @@ export class ticketController {
                     (COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) / COUNT(*)) * 100 as completionRate
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${ticketTypeFilter}
             `;
 
             // Execute all queries in parallel
@@ -2844,7 +2855,7 @@ export class ticketController {
     // Get ticket trends data for line chart (created vs resolved over time)
     static async getTicketTrends(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
@@ -2856,6 +2867,7 @@ export class ticketController {
             let agentFilter = '';
             let productFilter = '';
             let statusFilter = '';
+            let ticketTypeFilter = '';
             const queryParams = [days];
 
             if (agents && agents.length > 0) {
@@ -2884,6 +2896,13 @@ export class ticketController {
                 queryParams.push(...statusList);
             }
 
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+                queryParams.push(...ticketTypeList);
+            }
+
             // Query to get tickets created per day
             const createdQuery = `
                 SELECT
@@ -2894,6 +2913,7 @@ export class ticketController {
                 ${agentFilter}
                 ${productFilter}
                 ${statusFilter}
+                ${ticketTypeFilter}
                 GROUP BY DATE(t.createdAt)
                 ORDER BY date ASC
             `;
@@ -2910,6 +2930,7 @@ export class ticketController {
                 ${agentFilter}
                 ${productFilter}
                 ${statusFilter}
+                ${ticketTypeFilter}
                 GROUP BY DATE(c.resolvedOn)
                 ORDER BY date ASC
             `;
@@ -2981,7 +3002,7 @@ export class ticketController {
     // Get resolution time distribution data
     static async getResolutionTimeDistribution(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
@@ -2993,6 +3014,7 @@ export class ticketController {
             let agentFilter = '';
             let productFilter = '';
             let statusFilter = '';
+            let ticketTypeFilter = '';
             const queryParams = [days];
 
             if (agents && agents.length > 0) {
@@ -3019,6 +3041,13 @@ export class ticketController {
                 const statusPlaceholders = statusList.map(() => '?').join(',');
                 statusFilter = `AND t.status IN (${statusPlaceholders})`;
                 queryParams.push(...statusList);
+            }
+
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+                queryParams.push(...ticketTypeList);
             }
 
             // Query to get resolution time distribution
@@ -3058,6 +3087,7 @@ export class ticketController {
                 ${agentFilter}
                 ${productFilter}
                 ${statusFilter}
+                ${ticketTypeFilter}
                 GROUP BY timeRange
             `;
 
@@ -3103,7 +3133,7 @@ export class ticketController {
     // Get customer satisfaction distribution data from feedbacks table
     static async getCustomerSatisfactionDistribution(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
@@ -3115,6 +3145,7 @@ export class ticketController {
             let agentFilter = '';
             let productFilter = '';
             let statusFilter = '';
+            let ticketTypeFilter = '';
             const queryParams = [days];
 
             if (agents && agents.length > 0) {
@@ -3143,6 +3174,13 @@ export class ticketController {
                 queryParams.push(...statusList);
             }
 
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+                queryParams.push(...ticketTypeList);
+            }
+
             // Query to get customer satisfaction distribution from feedbacks table
             const query = `
                 SELECT
@@ -3156,6 +3194,7 @@ export class ticketController {
                 ${agentFilter}
                 ${productFilter}
                 ${statusFilter}
+                ${ticketTypeFilter}
                 GROUP BY f.rating
                 ORDER BY f.rating DESC
             `;
@@ -3203,7 +3242,7 @@ export class ticketController {
     // Get agent performance data
     static async getAgentPerformance(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
@@ -3240,6 +3279,14 @@ export class ticketController {
                 queryParams.push(...statusList);
             }
 
+            let ticketTypeFilter = '';
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+                queryParams.push(...ticketTypeList);
+            }
+
             // Query to get agent performance data
             const query = `
                 SELECT
@@ -3270,6 +3317,7 @@ export class ticketController {
                 ${dateFilter}
                 ${productFilter}
                 ${statusFilter}
+                ${ticketTypeFilter}
                 GROUP BY a.id, a.agentName
                 HAVING assigned > 0
                 ORDER BY resolved DESC, avgCsat DESC
@@ -3315,7 +3363,7 @@ export class ticketController {
     // Get call statistics data
     static async getCallStatistics(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -3348,6 +3396,13 @@ export class ticketController {
                 statusFilter = `AND t.status IN (${statusPlaceholders})`;
             }
 
+            let ticketTypeFilter = '';
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+            }
+
             // Get parameters for queries
             const queryParams = [];
             if (agents && agents.length > 0) {
@@ -3362,6 +3417,10 @@ export class ticketController {
                 const statusList = Array.isArray(status) ? status : [status];
                 queryParams.push(...statusList);
             }
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                queryParams.push(...ticketTypeList);
+            }
 
             // 1. Total calls by type (inbound/outbound)
             const totalCallsQuery = `
@@ -3371,7 +3430,7 @@ export class ticketController {
                     COUNT(CASE WHEN c.callType = 'outbound' THEN 1 END) as outboundCalls
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 2. Average call duration (in minutes)
@@ -3395,7 +3454,7 @@ export class ticketController {
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
                 WHERE c.startTime IS NOT NULL
                   AND c.endTime IS NOT NULL
-                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 3. Missed calls and callbacks count
@@ -3405,7 +3464,7 @@ export class ticketController {
                     COUNT(*) as totalCallsWithStatus
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // 4. Call completion rate
@@ -3416,7 +3475,7 @@ export class ticketController {
                     (COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) / COUNT(*)) * 100 as completionRate
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             // Execute all queries in parallel
@@ -3497,7 +3556,7 @@ export class ticketController {
     // Get product performance data
     static async getProductPerformance(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -3533,6 +3592,13 @@ export class ticketController {
                 statusFilter = `AND t.status IN (${statusPlaceholders})`;
             }
 
+            let ticketTypeFilter = '';
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+            }
+
             // Get parameters for queries
             const queryParams = [];
             if (agents && agents.length > 0) {
@@ -3546,6 +3612,10 @@ export class ticketController {
             if (status && status.length > 0) {
                 const statusList = Array.isArray(status) ? status : [status];
                 queryParams.push(...statusList);
+            }
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                queryParams.push(...ticketTypeList);
             }
 
             // Product performance query - aggregated metrics by product
@@ -3614,7 +3684,7 @@ export class ticketController {
                 FROM product p
                 LEFT JOIN tickets t ON p.productId = t.productId
                     AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${(parseInt(dateRange) || 30) * 2} DAY)
-                    ${agentFilter} ${statusFilter}
+                    ${agentFilter} ${statusFilter} ${ticketTypeFilter}
                 LEFT JOIN calls c ON t.ticketId = c.ticketId AND c.callStatus = 'completed'
                 LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
                 WHERE 1=1 ${productFilter}
@@ -3688,7 +3758,7 @@ export class ticketController {
     // Get callback status data
     static async getCallbackStatus(req, res) {
         try {
-            const { dateRange, agents, products, status } = req.query;
+            const { dateRange, agents, products, status, ticketTypes } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -3721,6 +3791,13 @@ export class ticketController {
                 statusFilter = `AND t.status IN (${statusPlaceholders})`;
             }
 
+            let ticketTypeFilter = '';
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+            }
+
             // Get parameters for queries
             const queryParams = [];
             if (agents && agents.length > 0) {
@@ -3735,6 +3812,10 @@ export class ticketController {
                 const statusList = Array.isArray(status) ? status : [status];
                 queryParams.push(...statusList);
             }
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                queryParams.push(...ticketTypeList);
+            }
 
             // Callback status query
             // Count all calls (both inbound and outbound)
@@ -3747,7 +3828,7 @@ export class ticketController {
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
                 WHERE 1=1
-                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter}
             `;
 
             connection.query(callbackStatusQuery, queryParams, (err, result) => {

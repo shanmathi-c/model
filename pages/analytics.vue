@@ -1356,6 +1356,13 @@ export default {
           });
         }
 
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/cards${queryString ? '?' + queryString : ''}`;
 
@@ -1449,6 +1456,13 @@ export default {
           });
         }
 
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/ticket-trends${queryString ? '?' + queryString : ''}`;
 
@@ -1508,6 +1522,13 @@ export default {
         if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
           this.analyticsFilters.status.forEach(status => {
             queryParams.append('status', status);
+          });
+        }
+
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
           });
         }
 
@@ -1590,6 +1611,13 @@ export default {
           });
         }
 
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/customer-satisfaction-distribution${queryString ? '?' + queryString : ''}`;
 
@@ -1656,6 +1684,13 @@ export default {
           });
         }
 
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/agent-performance${queryString ? '?' + queryString : ''}`;
 
@@ -1709,6 +1744,13 @@ export default {
         if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
           this.analyticsFilters.status.forEach(status => {
             queryParams.append('status', status);
+          });
+        }
+
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
           });
         }
 
@@ -1777,6 +1819,13 @@ export default {
           });
         }
 
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/product-performance${queryString ? '?' + queryString : ''}`;
 
@@ -1830,6 +1879,13 @@ export default {
         if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
           this.analyticsFilters.status.forEach(status => {
             queryParams.append('status', status);
+          });
+        }
+
+        // Add ticket type filters
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(ticketType => {
+            queryParams.append('ticketTypes', ticketType);
           });
         }
 
