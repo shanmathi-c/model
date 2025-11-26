@@ -45,7 +45,7 @@
             class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
             style="z-index: 50;"
           >
-            <div class="p-3">
+            <div class="p-3 max-h-96 overflow-y-auto">
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
                 <button
