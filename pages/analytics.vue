@@ -1705,6 +1705,13 @@ export default {
           });
         }
 
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/call-statistics${queryString ? '?' + queryString : ''}`;
 
@@ -1816,6 +1823,13 @@ export default {
         if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
           this.analyticsFilters.products.forEach(product => {
             queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
           });
         }
 

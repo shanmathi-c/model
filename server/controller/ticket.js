@@ -3315,7 +3315,7 @@ export class ticketController {
     // Get call statistics data
     static async getCallStatistics(req, res) {
         try {
-            const { dateRange, agents, products } = req.query;
+            const { dateRange, agents, products, status } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -3341,6 +3341,13 @@ export class ticketController {
                 productFilter = `AND t.productId IN (${productPlaceholders})`;
             }
 
+            let statusFilter = '';
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+            }
+
             // Get parameters for queries
             const queryParams = [];
             if (agents && agents.length > 0) {
@@ -3351,6 +3358,10 @@ export class ticketController {
                 const productList = Array.isArray(products) ? products : [products];
                 queryParams.push(...productList);
             }
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                queryParams.push(...statusList);
+            }
 
             // 1. Total calls by type (inbound/outbound)
             const totalCallsQuery = `
@@ -3360,7 +3371,7 @@ export class ticketController {
                     COUNT(CASE WHEN c.callType = 'outbound' THEN 1 END) as outboundCalls
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
             `;
 
             // 2. Average call duration (in minutes)
@@ -3384,7 +3395,7 @@ export class ticketController {
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
                 WHERE c.startTime IS NOT NULL
                   AND c.endTime IS NOT NULL
-                  ${dateFilter} ${agentFilter} ${productFilter}
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
             `;
 
             // 3. Missed calls and callbacks count
@@ -3394,7 +3405,7 @@ export class ticketController {
                     COUNT(*) as totalCallsWithStatus
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
             `;
 
             // 4. Call completion rate
@@ -3405,7 +3416,7 @@ export class ticketController {
                     (COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) / COUNT(*)) * 100 as completionRate
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
             `;
 
             // Execute all queries in parallel
@@ -3677,7 +3688,7 @@ export class ticketController {
     // Get callback status data
     static async getCallbackStatus(req, res) {
         try {
-            const { dateRange, agents, products } = req.query;
+            const { dateRange, agents, products, status } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -3703,6 +3714,13 @@ export class ticketController {
                 productFilter = `AND t.productId IN (${productPlaceholders})`;
             }
 
+            let statusFilter = '';
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+            }
+
             // Get parameters for queries
             const queryParams = [];
             if (agents && agents.length > 0) {
@@ -3712,6 +3730,10 @@ export class ticketController {
             if (products && products.length > 0) {
                 const productList = Array.isArray(products) ? products : [products];
                 queryParams.push(...productList);
+            }
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                queryParams.push(...statusList);
             }
 
             // Callback status query
@@ -3725,7 +3747,7 @@ export class ticketController {
                 FROM calls c
                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
                 WHERE 1=1
-                  ${dateFilter} ${agentFilter} ${productFilter}
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter}
             `;
 
             connection.query(callbackStatusQuery, queryParams, (err, result) => {
