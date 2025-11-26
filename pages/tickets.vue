@@ -1278,7 +1278,7 @@
                 <p class="text-xs text-gray-500 mt-2">Loading...</p>
               </div>
 
-              <!-- Activity Logs List -->
+              <!-- Activity Logs from Database -->
               <div v-else-if="activityLogs.length > 0" class="space-y-3 max-h-96 overflow-y-auto">
                 <div v-for="log in activityLogs" :key="log.id" class="flex gap-3">
                   <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
@@ -1300,9 +1300,68 @@
                 </div>
               </div>
 
-              <!-- No Activity Logs -->
-              <div v-else class="text-center py-6">
-                <p class="text-sm text-gray-500">No activity history available</p>
+              <!-- Fallback: Show from Tickets/Calls Table -->
+              <div v-else class="space-y-3">
+                <!-- Ticket Created -->
+                <div v-if="selectedTicketDetails?.createdDate" class="flex gap-3">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Ticket created</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(selectedTicketDetails?.createdDate) }}</p>
+                  </div>
+                </div>
+
+                <!-- Assigned to Agent -->
+                <div v-if="selectedTicketDetails?.agentName" class="flex gap-3">
+                  <div class="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Assigned to {{ selectedTicketDetails?.agentName }}</p>
+                    <p class="text-xs text-gray-500">{{ selectedTicketDetails?.assignedDate ? formatDate(selectedTicketDetails.assignedDate) : 'Assignment date not available' }}</p>
+                  </div>
+                </div>
+
+                <!-- Status Changed -->
+                <div v-if="selectedTicketDetails?.status" class="flex gap-3">
+                  <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Status changed to {{ selectedTicketDetails?.status }}</p>
+                    <p class="text-xs text-gray-500">{{ selectedTicketDetails?.statusUpdatedAt ? formatDate(selectedTicketDetails.statusUpdatedAt) : formatDate(selectedTicketDetails?.createdDate) }}</p>
+                  </div>
+                </div>
+
+                <!-- Call Started (from calls table) -->
+                <div v-if="relatedCalls && relatedCalls.length > 0 && relatedCalls[0].startTime" class="flex gap-3">
+                  <div class="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Call started</p>
+                    <p class="text-xs text-gray-600">Call ID: {{ relatedCalls[0].callId }}</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(relatedCalls[0].startTime) }}</p>
+                  </div>
+                </div>
+
+                <!-- Call Ended (from calls table) -->
+                <div v-if="relatedCalls && relatedCalls.length > 0 && relatedCalls[0].endTime" class="flex gap-3">
+                  <div class="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Call ended</p>
+                    <p class="text-xs text-gray-600">Call ID: {{ relatedCalls[0].callId }}</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(relatedCalls[0].endTime) }}</p>
+                  </div>
+                </div>
+
+                <!-- Ticket Resolved -->
+                <div v-if="selectedTicketDetails?.resolvedDate || selectedTicketDetails?.resolvedOn" class="flex gap-3">
+                  <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-gray-900">Ticket resolved</p>
+                    <p class="text-xs text-gray-500">{{ formatDate(selectedTicketDetails?.resolvedDate || selectedTicketDetails?.resolvedOn) }}</p>
+                  </div>
+                </div>
+
+                <!-- No Data Message -->
+                <div v-if="!selectedTicketDetails?.createdDate" class="text-center py-6">
+                  <p class="text-sm text-gray-500">No activity history available</p>
+                </div>
               </div>
             </div>
 
