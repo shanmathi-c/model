@@ -2653,11 +2653,13 @@ export class ticketController {
     // Get analytics cards data with real backend calculations
     static async getAnalyticsCards(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
-            if (dateRange && dateRange !== 'custom') {
+            if (dateRange === 'custom' && startDate && endDate) {
+                dateFilter = `AND t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 const days = parseInt(dateRange);
                 dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
             }
@@ -2871,11 +2873,14 @@ export class ticketController {
     // Get ticket trends data for line chart (created vs resolved over time)
     static async getTicketTrends(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
-            if (dateRange && dateRange !== 'custom') {
+            let customDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                customDateFilter = `AND t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 days = parseInt(dateRange);
             }
 
@@ -2884,7 +2889,7 @@ export class ticketController {
             let productFilter = '';
             let statusFilter = '';
             let ticketTypeFilter = '';
-            const queryParams = [days];
+            const queryParams = customDateFilter ? [] : [days];
 
             if (agents && agents.length > 0) {
                 const agentList = Array.isArray(agents) ? agents : [agents];
@@ -2933,7 +2938,21 @@ export class ticketController {
             }
 
             // Query to get tickets created per day
-            const createdQuery = `
+            const createdQuery = customDateFilter ? `
+                SELECT
+                    DATE(t.createdAt) as date,
+                    COUNT(*) as count
+                FROM tickets t
+                WHERE 1=1
+                ${customDateFilter}
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${ticketTypeFilter}
+                ${teamFilter}
+                GROUP BY DATE(t.createdAt)
+                ORDER BY date ASC
+            ` : `
                 SELECT
                     DATE(t.createdAt) as date,
                     COUNT(*) as count
@@ -2949,7 +2968,22 @@ export class ticketController {
             `;
 
             // Query to get tickets resolved per day (from calls table)
-            const resolvedQuery = `
+            const resolvedQuery = customDateFilter ? `
+                SELECT
+                    DATE(c.resolvedOn) as date,
+                    COUNT(DISTINCT t.ticketId) as count
+                FROM tickets t
+                LEFT JOIN calls c ON t.ticketId = c.ticketId
+                WHERE c.resolvedOn IS NOT NULL
+                ${customDateFilter.replace('t.createdAt', 'c.resolvedOn')}
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${ticketTypeFilter}
+                ${teamFilter}
+                GROUP BY DATE(c.resolvedOn)
+                ORDER BY date ASC
+            ` : `
                 SELECT
                     DATE(c.resolvedOn) as date,
                     COUNT(DISTINCT t.ticketId) as count
@@ -2982,7 +3016,7 @@ export class ticketController {
                 })
             ]);
 
-            // Generate date labels for the last N days
+            // Generate date labels
             const labels = [];
             const createdData = [];
             const resolvedData = [];
@@ -2992,24 +3026,50 @@ export class ticketController {
             const resolvedMap = new Map(resolvedResults.map(r => [r.date.toISOString().split('T')[0], r.count]));
 
             // Generate data for each day
-            for (let i = days - 1; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
+            if (customDateFilter && startDate && endDate) {
+                // For custom date range, iterate from startDate to endDate
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-                // Format label based on days
-                let label;
-                if (days <= 7) {
-                    // For 7 days, show day names
-                    label = date.toLocaleDateString('en-US', { weekday: 'short' });
-                } else {
-                    // For longer periods, show month/day
-                    label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                for (let i = 0; i < daysDiff; i++) {
+                    const date = new Date(start);
+                    date.setDate(start.getDate() + i);
+                    const dateStr = date.toISOString().split('T')[0];
+
+                    // Format label based on range
+                    let label;
+                    if (daysDiff <= 7) {
+                        label = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    } else {
+                        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+
+                    labels.push(label);
+                    createdData.push(createdMap.get(dateStr) || 0);
+                    resolvedData.push(resolvedMap.get(dateStr) || 0);
                 }
+            } else {
+                // For relative date range (last N days)
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
 
-                labels.push(label);
-                createdData.push(createdMap.get(dateStr) || 0);
-                resolvedData.push(resolvedMap.get(dateStr) || 0);
+                    // Format label based on days
+                    let label;
+                    if (days <= 7) {
+                        // For 7 days, show day names
+                        label = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    } else {
+                        // For longer periods, show month/day
+                        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+
+                    labels.push(label);
+                    createdData.push(createdMap.get(dateStr) || 0);
+                    resolvedData.push(resolvedMap.get(dateStr) || 0);
+                }
             }
 
             return res.json({
@@ -3033,11 +3093,14 @@ export class ticketController {
     // Get resolution time distribution data
     static async getResolutionTimeDistribution(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
-            if (dateRange && dateRange !== 'custom') {
+            let customDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                customDateFilter = `AND c1.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 days = parseInt(dateRange);
             }
 
@@ -3046,7 +3109,7 @@ export class ticketController {
             let productFilter = '';
             let statusFilter = '';
             let ticketTypeFilter = '';
-            const queryParams = [days];
+            const queryParams = customDateFilter ? [] : [days];
 
             if (agents && agents.length > 0) {
                 const agentList = Array.isArray(agents) ? agents : [agents];
@@ -3096,7 +3159,47 @@ export class ticketController {
 
             // Query to get resolution time distribution
             // Use subquery to get only the most recent call per ticket to avoid duplicate counting
-            const query = `
+            const ticketDateFilter = customDateFilter ? customDateFilter.replace('c1.createdAt', 't.createdAt') : '';
+
+            const query = customDateFilter ? `
+                SELECT
+                    CASE
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) < 60 THEN 'under_1_hour'
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) >= 60
+                            AND TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) < 240 THEN '1_to_4_hours'
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) >= 240
+                            AND TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) < 1440 THEN '4_to_24_hours'
+                        WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
+                            COALESCE(latest_call.resolvedOn, latest_call.endTime)) >= 1440 THEN 'over_24_hours'
+                        ELSE 'unknown'
+                    END as timeRange,
+                    COUNT(DISTINCT t.ticketId) as count
+                FROM tickets t
+                INNER JOIN (
+                    SELECT c1.ticketId, c1.startTime, c1.resolvedOn, c1.endTime, c1.createdAt
+                    FROM calls c1
+                    INNER JOIN (
+                        SELECT ticketId, MAX(id) as maxId
+                        FROM calls
+                        WHERE startTime IS NOT NULL
+                        AND (resolvedOn IS NOT NULL OR endTime IS NOT NULL)
+                        GROUP BY ticketId
+                    ) c2 ON c1.ticketId = c2.ticketId AND c1.id = c2.maxId
+                ) latest_call ON t.ticketId = latest_call.ticketId
+                WHERE 1=1
+                ${ticketDateFilter}
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${ticketTypeFilter}
+                ${teamFilter}
+                GROUP BY timeRange
+            ` : `
                 SELECT
                     CASE
                         WHEN TIMESTAMPDIFF(MINUTE, latest_call.startTime,
@@ -3178,11 +3281,14 @@ export class ticketController {
     // Get customer satisfaction distribution data from feedbacks table
     static async getCustomerSatisfactionDistribution(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
-            if (dateRange && dateRange !== 'custom') {
+            let customDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                customDateFilter = `AND f.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 days = parseInt(dateRange);
             }
 
@@ -3191,7 +3297,7 @@ export class ticketController {
             let productFilter = '';
             let statusFilter = '';
             let ticketTypeFilter = '';
-            const queryParams = [days];
+            const queryParams = customDateFilter ? [] : [days];
 
             if (agents && agents.length > 0) {
                 const agentList = Array.isArray(agents) ? agents : [agents];
@@ -3240,7 +3346,23 @@ export class ticketController {
             }
 
             // Query to get customer satisfaction distribution from feedbacks table
-            const query = `
+            const query = customDateFilter ? `
+                SELECT
+                    f.rating,
+                    COUNT(*) as count
+                FROM feedbacks f
+                LEFT JOIN tickets t ON f.ticketId = t.ticketId
+                WHERE f.rating IS NOT NULL
+                AND f.rating BETWEEN 1 AND 5
+                ${customDateFilter}
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${ticketTypeFilter}
+                ${teamFilter}
+                GROUP BY f.rating
+                ORDER BY f.rating DESC
+            ` : `
                 SELECT
                     f.rating,
                     COUNT(*) as count
@@ -3301,15 +3423,19 @@ export class ticketController {
     // Get agent performance data
     static async getAgentPerformance(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
-            if (dateRange && dateRange !== 'custom') {
+            let dateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                dateFilter = `AND t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 days = parseInt(dateRange);
+                dateFilter = `AND t.createdAt >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+            } else {
+                dateFilter = `AND t.createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`;
             }
-
-            let dateFilter = `AND t.createdAt >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
 
             // Build filter conditions
             let agentFilter = '';
@@ -3431,11 +3557,13 @@ export class ticketController {
     // Get call statistics data
     static async getCallStatistics(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
-            if (dateRange && dateRange !== 'custom') {
+            if (dateRange === 'custom' && startDate && endDate) {
+                dateFilter = `AND c.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 const days = parseInt(dateRange);
                 dateFilter = `AND c.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
             }
@@ -3640,13 +3768,44 @@ export class ticketController {
     // Get product performance data
     static async getProductPerformance(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
-            if (dateRange && dateRange !== 'custom') {
+            let currentPeriodCondition = '';
+            let previousPeriodCondition = '';
+            let joinDateCondition = '';
+
+            if (dateRange === 'custom' && startDate && endDate) {
+                // Calculate the date range span
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+                // Calculate previous period
+                const prevEnd = new Date(start);
+                prevEnd.setDate(prevEnd.getDate() - 1);
+                const prevStart = new Date(prevEnd);
+                prevStart.setDate(prevStart.getDate() - daysDiff);
+
+                const prevStartStr = prevStart.toISOString().split('T')[0];
+                const prevEndStr = prevEnd.toISOString().split('T')[0];
+
+                dateFilter = `AND t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+                currentPeriodCondition = `t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+                previousPeriodCondition = `t.createdAt BETWEEN '${prevStartStr}' AND '${prevEndStr} 23:59:59'`;
+                joinDateCondition = `t.createdAt >= '${prevStartStr}'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 const days = parseInt(dateRange);
                 dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+                currentPeriodCondition = `t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+                previousPeriodCondition = `t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days * 2} DAY) AND t.createdAt < DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+                joinDateCondition = `t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days * 2} DAY)`;
+            } else {
+                dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+                currentPeriodCondition = `t.createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+                previousPeriodCondition = `t.createdAt >= DATE_SUB(NOW(), INTERVAL 60 DAY) AND t.createdAt < DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+                joinDateCondition = `t.createdAt >= DATE_SUB(NOW(), INTERVAL 60 DAY)`;
             }
 
             // Build filter conditions
@@ -3723,15 +3882,18 @@ export class ticketController {
                 SELECT
                     p.productId as id,
                     p.productName as category,
-                    COUNT(DISTINCT t.ticketId) as volume,
+                    COUNT(DISTINCT CASE
+                        WHEN ${currentPeriodCondition}
+                        THEN t.ticketId
+                    END) as volume,
 
                     -- Current period resolution time
                     AVG(
                         CASE
-                            WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                            WHEN ${currentPeriodCondition}
                             AND c.resolvedOn IS NOT NULL AND c.startTime IS NOT NULL THEN
                                 TIMESTAMPDIFF(MINUTE, c.startTime, c.resolvedOn)
-                            WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                            WHEN ${currentPeriodCondition}
                             AND c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
                                 TIMESTAMPDIFF(MINUTE, c.startTime, c.endTime)
                             ELSE NULL
@@ -3741,12 +3903,10 @@ export class ticketController {
                     -- Previous period resolution time
                     AVG(
                         CASE
-                            WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${(parseInt(dateRange) || 30) * 2} DAY)
-                            AND t.createdAt < DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                            WHEN ${previousPeriodCondition}
                             AND c.resolvedOn IS NOT NULL AND c.startTime IS NOT NULL THEN
                                 TIMESTAMPDIFF(MINUTE, c.startTime, c.resolvedOn)
-                            WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${(parseInt(dateRange) || 30) * 2} DAY)
-                            AND t.createdAt < DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                            WHEN ${previousPeriodCondition}
                             AND c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
                                 TIMESTAMPDIFF(MINUTE, c.startTime, c.endTime)
                             ELSE NULL
@@ -3756,7 +3916,7 @@ export class ticketController {
                     -- Current period CSAT
                     AVG(
                         CASE
-                            WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                            WHEN ${currentPeriodCondition}
                             THEN f.rating
                             ELSE NULL
                         END
@@ -3765,25 +3925,23 @@ export class ticketController {
                     -- Previous period CSAT
                     AVG(
                         CASE
-                            WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${(parseInt(dateRange) || 30) * 2} DAY)
-                            AND t.createdAt < DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                            WHEN ${previousPeriodCondition}
                             THEN f.rating
                             ELSE NULL
                         END
                     ) as previousCsat,
 
                     COUNT(DISTINCT CASE
-                        WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                        WHEN ${currentPeriodCondition}
                         THEN t.ticketId
                     END) as currentPeriodVolume,
                     COUNT(DISTINCT CASE
-                        WHEN t.createdAt >= DATE_SUB(NOW(), INTERVAL ${(parseInt(dateRange) || 30) * 2} DAY)
-                        AND t.createdAt < DATE_SUB(NOW(), INTERVAL ${dateRange || 30} DAY)
+                        WHEN ${previousPeriodCondition}
                         THEN t.ticketId
                     END) as previousPeriodVolume
                 FROM product p
                 LEFT JOIN tickets t ON p.productId = t.productId
-                    AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${(parseInt(dateRange) || 30) * 2} DAY)
+                    AND ${joinDateCondition}
                     ${agentFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
                 LEFT JOIN calls c ON t.ticketId = c.ticketId AND c.callStatus = 'completed'
                 LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
@@ -3858,11 +4016,13 @@ export class ticketController {
     // Get callback status data
     static async getCallbackStatus(req, res) {
         try {
-            const { dateRange, agents, products, status, ticketTypes, teams } = req.query;
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
-            if (dateRange && dateRange !== 'custom') {
+            if (dateRange === 'custom' && startDate && endDate) {
+                dateFilter = `AND c.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
                 const days = parseInt(dateRange);
                 dateFilter = `AND c.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
             }

@@ -1330,8 +1330,16 @@ export default {
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
 
-        // Add date range if not custom
-        if (this.analyticsFilters.dateRange !== 'custom') {
+        // Add date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
           queryParams.append('dateRange', this.analyticsFilters.dateRange);
         }
 
@@ -1440,7 +1448,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
@@ -1516,7 +1536,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
@@ -1609,7 +1641,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
@@ -1689,7 +1733,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
@@ -1759,7 +1815,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
@@ -1838,7 +1906,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
@@ -1908,7 +1988,19 @@ export default {
 
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
-        queryParams.append('dateRange', dateRange);
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
 
         // Add agent filters
         if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
