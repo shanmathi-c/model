@@ -15,7 +15,7 @@
           <label class="text-sm font-medium text-gray-700">Date Range:</label>
           <select
             v-model="analyticsFilters.dateRange"
-            @change="applyFilters"
+            @change="handleDateRangeChange"
             class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="7">Last 7 days</option>
@@ -975,19 +975,32 @@ export default {
 
       // Date range chip
       if (this.analyticsFilters.dateRange !== '30') {
-        const dateRangeOption = [
-          { value: '7', label: 'Last 7 days' },
-          { value: '30', label: 'Last 30 days' },
-          { value: '90', label: 'Last 90 days' }
-        ]
-        const option = dateRangeOption.find(d => d.value === this.analyticsFilters.dateRange)
-        if (option) {
-          chips.push({
-            key: `dateRange-${this.analyticsFilters.dateRange}`,
-            label: `Date: ${option.label}`,
-            type: 'dateRange',
-            value: this.analyticsFilters.dateRange
-          })
+        if (this.analyticsFilters.dateRange === 'custom') {
+          // Custom date range chip
+          if (this.customDateRange.start && this.customDateRange.end) {
+            chips.push({
+              key: `dateRange-custom`,
+              label: `Date: ${this.customDateRange.start} to ${this.customDateRange.end}`,
+              type: 'dateRange',
+              value: 'custom'
+            })
+          }
+        } else {
+          // Predefined date range chip
+          const dateRangeOption = [
+            { value: '7', label: 'Last 7 days' },
+            { value: '30', label: 'Last 30 days' },
+            { value: '90', label: 'Last 90 days' }
+          ]
+          const option = dateRangeOption.find(d => d.value === this.analyticsFilters.dateRange)
+          if (option) {
+            chips.push({
+              key: `dateRange-${this.analyticsFilters.dateRange}`,
+              label: `Date: ${option.label}`,
+              type: 'dateRange',
+              value: this.analyticsFilters.dateRange
+            })
+          }
         }
       }
 
@@ -1215,6 +1228,9 @@ export default {
       this.analyticsFilters.ticketTypes = []
       this.analyticsFilters.teams = []
       this.analyticsFilters.dateRange = '30'
+      // Clear custom date range
+      this.customDateRange.start = ''
+      this.customDateRange.end = ''
       this.applyFilters()
     },
 
@@ -1227,6 +1243,11 @@ export default {
 
       if (type === 'dateRange') {
         this.analyticsFilters.dateRange = '30'
+        // Also clear custom date range
+        if (value === 'custom') {
+          this.customDateRange.start = ''
+          this.customDateRange.end = ''
+        }
       } else if (type === 'agent') {
         this.analyticsFilters.agents = this.analyticsFilters.agents.filter(a => a !== value)
       } else if (type === 'product') {
@@ -1240,6 +1261,18 @@ export default {
       }
 
       this.applyFilters()
+    },
+
+    // Handle date range dropdown change
+    handleDateRangeChange() {
+      // If custom is selected, clear previous custom date values
+      if (this.analyticsFilters.dateRange === 'custom') {
+        this.customDateRange.start = ''
+        this.customDateRange.end = ''
+      } else {
+        // For non-custom ranges, apply filters immediately
+        this.applyFilters()
+      }
     },
 
     // Apply custom date range
