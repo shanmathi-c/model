@@ -26,6 +26,7 @@ router.get("/calls/agent/:agentId", ticketController.getCallLogsByAgent);
 router.get("/products", ticketController.getProducts);
 router.get("/tickets", ticketController.getTickets);
 router.get("/tickets/:id/feedback", ticketController.getTicketFeedback);
+router.get("/tickets/:id/activity-logs", ticketController.getActivityLogs);
 router.get("/tickets/:id/assignment-history", ticketController.getAssignmentHistory);
 router.get("/unassigned-tickets", ticketController.getUnassignedTickets);
 router.get("/agents/product/:productId", ticketController.getAgentsByProduct);

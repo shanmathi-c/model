@@ -1,6 +1,47 @@
 import connection from "../config/index.js";
 
 export class ticketController {
+    // Helper function to log activity
+    static logActivity(ticketId, actionType, description, metadata = {}) {
+        return new Promise((resolve, reject) => {
+            const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            const activityData = {
+                ticketId: ticketId,
+                actionType: actionType,
+                description: description,
+                previousStatus: metadata.previousStatus || null,
+                currentStatus: metadata.currentStatus || null,
+                statusUpdatedAt: metadata.statusUpdatedAt || currentTimestamp,
+                productId: metadata.productId || null,
+                agentId: metadata.agentId || null,
+                agentName: metadata.agentName || null,
+                callId: metadata.callId || null,
+                callStatus: metadata.callStatus || null,
+                callType: metadata.callType || null,
+                ticketType: metadata.ticketType || null,
+                followUpDate: metadata.followUpDate || null,
+                followUpStatus: metadata.followUpStatus || null,
+                feedbackId: metadata.feedbackId || null,
+                additionalInfo: metadata.additionalInfo ? JSON.stringify(metadata.additionalInfo) : null,
+                createdAt: currentTimestamp
+            };
+
+            connection.query(
+                "INSERT INTO activity_log SET ?",
+                activityData,
+                (err, result) => {
+                    if (err) {
+                        console.error('Error logging activity:', err);
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                }
+            );
+        });
+    }
+
     // Generate ticket ID in format T001, T002, etc.
     static generateTicketId() {
         return new Promise((resolve, reject) => {
@@ -35,6 +76,58 @@ export class ticketController {
                     }
                 }
             );
+        });
+    }
+
+    // Get activity logs for a ticket
+    static getActivityLogs(req, res) {
+        const { id } = req.params;
+
+        // We try to match either by numeric id or formatted ticketId (T001)
+        // First get the ticketId for this id
+        const getTicketIdQuery = `SELECT ticketId FROM tickets WHERE id = ? OR ticketId = ? LIMIT 1`;
+
+        connection.query(getTicketIdQuery, [id, id], (err, ticketResult) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "Error finding ticket",
+                    error: err
+                });
+            }
+
+            if (!ticketResult || ticketResult.length === 0) {
+                return res.json({
+                    message: "Ticket not found",
+                    data: []
+                });
+            }
+
+            const ticketId = ticketResult[0].ticketId;
+
+            // Now get activity logs for this ticketId
+            const query = `
+                SELECT
+                    al.*,
+                    a.agentName as agentNameFromAgents
+                FROM activity_log al
+                LEFT JOIN agents a ON al.agentId = a.id
+                WHERE al.ticketId = ?
+                ORDER BY al.createdAt DESC
+            `;
+
+            connection.query(query, [ticketId], (err, result) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Error fetching activity logs",
+                        error: err
+                    });
+                }
+
+                return res.json({
+                    message: "Activity logs fetched successfully",
+                    data: result || []
+                });
+            });
         });
     }
 
@@ -224,13 +317,32 @@ export class ticketController {
                // Removed created_at - database will use default timestamp
            };
 
-           connection.query("INSERT INTO tickets SET ?", dbTicketData, (err, result) => {
+           connection.query("INSERT INTO tickets SET ?", dbTicketData, async (err, result) => {
            if (err) {
             return res.json({
                 message: "Error creating ticket",
                 error: err
             })
            } else {
+              // Log activity for ticket creation
+              try {
+                  await ticketController.logActivity(
+                      ticketId,
+                      'ticket_created',
+                      `Ticket ${ticketId} created by ${name}`,
+                      {
+                          currentStatus: 'created',
+                          ticketType: ticketType || 'freshdesk',
+                          productId: productId,
+                          additionalInfo: {
+                              subject: subject
+                          }
+                      }
+                  );
+              } catch (logErr) {
+                  console.error('Error logging ticket creation:', logErr);
+              }
+
               return res.json({
                 message: "Ticket created successfully",
                 data: {
@@ -477,6 +589,30 @@ export class ticketController {
                         });
                     }
 
+                    // Log activity for call ticket creation
+                    try {
+                        await ticketController.logActivity(
+                            ticketId,
+                            'ticket_created',
+                            `Call ticket ${ticketId} created and assigned to ${agentName || 'agent'}`,
+                            {
+                                currentStatus: 'assigned',
+                                productId: productId,
+                                agentId: agentId,
+                                agentName: agentName,
+                                callId: finalCallId,
+                                callStatus: 'pending',
+                                callType: callType || 'inbound',
+                                ticketType: 'call',
+                                additionalInfo: {
+                                    subject: subject
+                                }
+                            }
+                        );
+                    } catch (logErr) {
+                        console.error('Error logging call ticket creation:', logErr);
+                    }
+
                     return res.json({
                         message: "Call ticket created successfully",
                         data: {
@@ -522,10 +658,10 @@ export class ticketController {
             });
         }
 
-        // First, resolve ticket by numeric id or ticketId (e.g., T001)
-        const getTicketQuery = `SELECT id, ticketId FROM tickets WHERE id = ? OR ticketId = ?`;
+        // First, resolve ticket by numeric id or ticketId (e.g., T001) and get current status
+        const getTicketQuery = `SELECT id, ticketId, status FROM tickets WHERE id = ? OR ticketId = ?`;
 
-        connection.query(getTicketQuery, [id, id], (getErr, ticketResult) => {
+        connection.query(getTicketQuery, [id, id], async (getErr, ticketResult) => {
             if (getErr) {
                 return res.status(500).json({
                     message: "Error fetching ticket",
@@ -541,12 +677,13 @@ export class ticketController {
 
             const numericId = ticketResult[0].id;
             const formattedTicketId = ticketResult[0].ticketId || `T${String(ticketResult[0].id).padStart(3, '0')}`;
+            const previousStatus = ticketResult[0].status;
 
             // Step 1: update tickets table
             connection.query(
                 `UPDATE tickets SET status = ? WHERE id = ?`,
                 [status, numericId],
-                (updateErr, updateResult) => {
+                async (updateErr, updateResult) => {
                     if (updateErr) {
                         return res.status(500).json({
                             message: "Error updating ticket status",
@@ -558,6 +695,21 @@ export class ticketController {
                         return res.status(404).json({
                             message: "Ticket not found"
                         });
+                    }
+
+                    // Log activity for status update
+                    try {
+                        await ticketController.logActivity(
+                            formattedTicketId,
+                            'status_updated',
+                            `Ticket status changed from ${previousStatus} to ${status}`,
+                            {
+                                previousStatus: previousStatus,
+                                currentStatus: status
+                            }
+                        );
+                    } catch (logErr) {
+                        console.error('Error logging status update:', logErr);
                     }
 
                     // Step 2: update assign-ticket table (best effort)
@@ -909,19 +1061,41 @@ export class ticketController {
                     // Step 4: Update calls table agentId for this ticket (best effort)
                     const updateCallsQuery = `UPDATE calls SET agentId = ? WHERE ticketId = ? OR ticketId = ?`;
 
-                    connection.query(updateCallsQuery, [agentId, formattedTicketId, numericTicketId], (callsErr) => {
+                    connection.query(updateCallsQuery, [agentId, formattedTicketId, numericTicketId], async (callsErr) => {
                         if (callsErr) {
                             console.log('Warning: failed to update calls agentId for ticket', formattedTicketId, callsErr.sqlMessage || callsErr);
                         }
 
-                        return res.json({
-                            message: isUpdate ? "Ticket reassigned successfully" : "Ticket assigned successfully",
-                            data: {
-                                ticketId: formattedTicketId,
-                                agentId: agentId,
-                                action: isUpdate ? 'reassigned' : 'assigned',
-                                importAction: 'single'
+                        // Get agent name for logging
+                        connection.query('SELECT agentName FROM agents WHERE id = ?', [agentId], async (agentErr, agentResult) => {
+                            const agentName = (!agentErr && agentResult && agentResult.length > 0) ? agentResult[0].agentName : 'Unknown Agent';
+
+                            // Log activity for ticket assignment
+                            try {
+                                await ticketController.logActivity(
+                                    formattedTicketId,
+                                    isUpdate ? 'ticket_reassigned' : 'ticket_assigned',
+                                    `Ticket ${isUpdate ? 'reassigned' : 'assigned'} to ${agentName}`,
+                                    {
+                                        previousStatus: originalTicketStatus,
+                                        currentStatus: 'assigned',
+                                        agentId: agentId,
+                                        agentName: agentName
+                                    }
+                                );
+                            } catch (logErr) {
+                                console.error('Error logging ticket assignment:', logErr);
                             }
+
+                            return res.json({
+                                message: isUpdate ? "Ticket reassigned successfully" : "Ticket assigned successfully",
+                                data: {
+                                    ticketId: formattedTicketId,
+                                    agentId: agentId,
+                                    action: isUpdate ? 'reassigned' : 'assigned',
+                                    importAction: 'single'
+                                }
+                            });
                         });
                     });
                 });
@@ -1272,13 +1446,38 @@ export class ticketController {
                 callType: callType || 'inbound'
             };
 
-            connection.query("INSERT INTO callback SET ?", callbackData, (err, result) => {
+            connection.query("INSERT INTO callback SET ?", callbackData, async (err, result) => {
                 if (err) {
                     return res.status(500).json({
                         message: "Error creating callback request",
                         error: err
                     });
                 } else {
+                    // Log activity for callback/follow-up creation
+                    // Note: If there's an associated ticketId in the future, it should be logged with that ticket
+                    // For now, we'll log it with the callbackId as reference
+                    if (callbackData.ticketId) {
+                        try {
+                            await ticketController.logActivity(
+                                callbackData.ticketId,
+                                'follow_up_scheduled',
+                                `Follow-up callback ${callbackId} scheduled for ${name}`,
+                                {
+                                    productId: productId,
+                                    followUpDate: callbackData.followUpDate || null,
+                                    followUpStatus: status || 'inbound',
+                                    callType: callType || 'inbound',
+                                    additionalInfo: {
+                                        callbackId: callbackId,
+                                        subject: subject
+                                    }
+                                }
+                            );
+                        } catch (logErr) {
+                            console.error('Error logging callback creation:', logErr);
+                        }
+                    }
+
                     return res.json({
                         message: "Callback request created successfully",
                         data: {
@@ -1357,28 +1556,59 @@ export class ticketController {
             });
         }
 
+        // First get the callback data to check if there's a ticketId and get previous status
         connection.query(
-            "UPDATE callback SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE callbackId = ?",
-            [status, callbackId],
-            (err, result) => {
-                if (err) {
-                    return res.json({
-                        message: "Error updating callback status",
-                        error: err
-                    });
-                } else if (result.affectedRows === 0) {
-                    return res.status(404).json({
-                        message: "Callback not found"
-                    });
-                } else {
-                    return res.json({
-                        message: "Callback status updated successfully",
-                        data: {
-                            callbackId: callbackId,
-                            status: status
+            "SELECT ticketId, status FROM callback WHERE callbackId = ?",
+            [callbackId],
+            async (getErr, callbackData) => {
+                const ticketId = callbackData && callbackData.length > 0 ? callbackData[0].ticketId : null;
+                const previousStatus = callbackData && callbackData.length > 0 ? callbackData[0].status : null;
+
+                connection.query(
+                    "UPDATE callback SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE callbackId = ?",
+                    [status, callbackId],
+                    async (err, result) => {
+                        if (err) {
+                            return res.json({
+                                message: "Error updating callback status",
+                                error: err
+                            });
+                        } else if (result.affectedRows === 0) {
+                            return res.status(404).json({
+                                message: "Callback not found"
+                            });
+                        } else {
+                            // Log activity for callback/follow-up status change
+                            if (ticketId) {
+                                try {
+                                    await ticketController.logActivity(
+                                        ticketId,
+                                        'follow_up_status_changed',
+                                        `Follow-up callback ${callbackId} status changed from ${previousStatus || 'unknown'} to ${status}`,
+                                        {
+                                            followUpStatus: status,
+                                            additionalInfo: {
+                                                callbackId: callbackId,
+                                                previousFollowUpStatus: previousStatus,
+                                                newFollowUpStatus: status
+                                            }
+                                        }
+                                    );
+                                } catch (logErr) {
+                                    console.error('Error logging callback status change:', logErr);
+                                }
+                            }
+
+                            return res.json({
+                                message: "Callback status updated successfully",
+                                data: {
+                                    callbackId: callbackId,
+                                    status: status
+                                }
+                            });
                         }
-                    });
-                }
+                    }
+                );
             }
         );
     }
@@ -1619,32 +1849,65 @@ export class ticketController {
             // Get current timestamp
             const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            // Update call log with start time and set status to pending (in case it was missed)
+            // Get ticketId associated with the call first
             connection.query(
-                "UPDATE calls SET startTime = ?, callStatus = 'pending' WHERE callId = ?",
-                [startTime, callId],
-                (err, result) => {
-                    if (err) {
-                        return res.status(500).json({
-                            message: "Error updating call log",
-                            error: err
-                        });
+                "SELECT ticketId FROM calls WHERE callId = ?",
+                [callId],
+                async (getErr, callData) => {
+                    if (getErr || !callData || callData.length === 0) {
+                        console.error('Error fetching call data for logging:', getErr);
                     }
 
-                    if (result.affectedRows === 0) {
-                        return res.status(404).json({
-                            message: "Call log not found"
-                        });
-                    }
+                    const ticketId = callData && callData.length > 0 ? callData[0].ticketId : null;
 
-                    return res.json({
-                        message: "Call started successfully",
-                        data: {
-                            callId: callId,
-                            startTime: startTime,
-                            callStatus: 'pending'
+                    // Update call log with start time and set status to pending (in case it was missed)
+                    connection.query(
+                        "UPDATE calls SET startTime = ?, callStatus = 'pending' WHERE callId = ?",
+                        [startTime, callId],
+                        async (err, result) => {
+                            if (err) {
+                                return res.status(500).json({
+                                    message: "Error updating call log",
+                                    error: err
+                                });
+                            }
+
+                            if (result.affectedRows === 0) {
+                                return res.status(404).json({
+                                    message: "Call log not found"
+                                });
+                            }
+
+                            // Log activity for call start
+                            if (ticketId) {
+                                try {
+                                    await ticketController.logActivity(
+                                        ticketId,
+                                        'call_started',
+                                        `Call ${callId} started`,
+                                        {
+                                            callId: callId,
+                                            callStatus: 'pending',
+                                            additionalInfo: {
+                                                startTime: startTime
+                                            }
+                                        }
+                                    );
+                                } catch (logErr) {
+                                    console.error('Error logging call start:', logErr);
+                                }
+                            }
+
+                            return res.json({
+                                message: "Call started successfully",
+                                data: {
+                                    callId: callId,
+                                    startTime: startTime,
+                                    callStatus: 'pending'
+                                }
+                            });
                         }
-                    });
+                    );
                 }
             );
 
@@ -1694,13 +1957,34 @@ export class ticketController {
                     connection.query(
                         "UPDATE calls SET endTime = ?, callStatus = 'pending' WHERE callId = ?",
                         [formattedEndTime, callId],
-                        (err, updateResult) => {
+                        async (err, updateResult) => {
                             if (err) {
                                 return res.status(500).json({
                                     message: "Error updating call log",
                                     error: err
                                 });
                             } else {
+                                // Log activity for call end
+                                if (callLog.ticketId) {
+                                    try {
+                                        await ticketController.logActivity(
+                                            callLog.ticketId,
+                                            'call_ended',
+                                            `Call ${callId} ended (duration: ${duration}s)`,
+                                            {
+                                                callId: callId,
+                                                callStatus: 'pending',
+                                                additionalInfo: {
+                                                    endTime: formattedEndTime,
+                                                    duration: duration
+                                                }
+                                            }
+                                        );
+                                    } catch (logErr) {
+                                        console.error('Error logging call end:', logErr);
+                                    }
+                                }
+
                                 return res.json({
                                     message: "Call ended successfully",
                                     data: {
@@ -1734,26 +2018,63 @@ export class ticketController {
         console.log('Received missedCall request for callId:', callId);
 
         try {
-            // Update call log with missed status (null start and end times)
+            // First get the call data for logging
             connection.query(
-                "UPDATE calls SET startTime = NULL, endTime = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE callId = ?",
+                "SELECT ticketId, callStatus FROM calls WHERE callId = ?",
                 [callId],
-                (err, result) => {
-                    if (err) {
-                        return res.status(500).json({
-                            message: "Error updating call log",
-                            error: err
-                        });
-                    } else {
-                        return res.json({
-                            message: "Call marked as missed",
-                            data: {
-                                callId: callId,
-                                callStatus: 'missed',
-                                ticketStatus: 'cancelled'
-                            }
-                        });
+                async (getErr, callData) => {
+                    if (getErr) {
+                        console.error('Error fetching call data:', getErr);
                     }
+
+                    const ticketId = callData && callData.length > 0 ? callData[0].ticketId : null;
+                    const previousCallStatus = callData && callData.length > 0 ? callData[0].callStatus : null;
+
+                    // Update call log with missed status (null start and end times)
+                    connection.query(
+                        "UPDATE calls SET startTime = NULL, endTime = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE callId = ?",
+                        [callId],
+                        async (err, result) => {
+                            if (err) {
+                                return res.status(500).json({
+                                    message: "Error updating call log",
+                                    error: err
+                                });
+                            } else {
+                                // Log activity for missed call
+                                if (ticketId) {
+                                    try {
+                                        await ticketController.logActivity(
+                                            ticketId,
+                                            'call_status_changed',
+                                            `Call ${callId} status changed from ${previousCallStatus || 'none'} to missed`,
+                                            {
+                                                callId: callId,
+                                                callStatus: 'missed',
+                                                previousStatus: previousCallStatus,
+                                                currentStatus: 'missed',
+                                                additionalInfo: {
+                                                    reason: 'User disconnected',
+                                                    ticketStatus: 'cancelled'
+                                                }
+                                            }
+                                        );
+                                    } catch (logErr) {
+                                        console.error('Error logging missed call:', logErr);
+                                    }
+                                }
+
+                                return res.json({
+                                    message: "Call marked as missed",
+                                    data: {
+                                        callId: callId,
+                                        callStatus: 'missed',
+                                        ticketStatus: 'cancelled'
+                                    }
+                                });
+                            }
+                        }
+                    );
                 }
             );
 
@@ -1788,31 +2109,67 @@ export class ticketController {
         }
 
         try {
-            // Update the callStatus in calls table
+            // First get the call data for logging
             connection.query(
-                "UPDATE calls SET callStatus = ? WHERE callId = ?",
-                [callStatus, callId],
-                (err, result) => {
-                    if (err) {
-                        return res.status(500).json({
-                            message: "Error updating call status",
-                            error: err
-                        });
+                "SELECT ticketId, callStatus FROM calls WHERE callId = ?",
+                [callId],
+                async (getErr, callData) => {
+                    if (getErr) {
+                        console.error('Error fetching call data:', getErr);
                     }
 
-                    if (result.affectedRows === 0) {
-                        return res.status(404).json({
-                            message: "Call log not found"
-                        });
-                    }
+                    const ticketId = callData && callData.length > 0 ? callData[0].ticketId : null;
+                    const previousCallStatus = callData && callData.length > 0 ? callData[0].callStatus : null;
 
-                    return res.json({
-                        message: "Call status updated successfully",
-                        data: {
-                            callId: callId,
-                            callStatus: callStatus
+                    // Update the callStatus in calls table
+                    connection.query(
+                        "UPDATE calls SET callStatus = ? WHERE callId = ?",
+                        [callStatus, callId],
+                        async (err, result) => {
+                            if (err) {
+                                return res.status(500).json({
+                                    message: "Error updating call status",
+                                    error: err
+                                });
+                            }
+
+                            if (result.affectedRows === 0) {
+                                return res.status(404).json({
+                                    message: "Call log not found"
+                                });
+                            }
+
+                            // Log activity for call status change
+                            if (ticketId) {
+                                try {
+                                    await ticketController.logActivity(
+                                        ticketId,
+                                        'call_status_changed',
+                                        `Call ${callId} status changed from ${previousCallStatus || 'none'} to ${callStatus}`,
+                                        {
+                                            callId: callId,
+                                            callStatus: callStatus,
+                                            previousStatus: previousCallStatus,
+                                            currentStatus: callStatus,
+                                            additionalInfo: {
+                                                statusType: 'call_status'
+                                            }
+                                        }
+                                    );
+                                } catch (logErr) {
+                                    console.error('Error logging call status change:', logErr);
+                                }
+                            }
+
+                            return res.json({
+                                message: "Call status updated successfully",
+                                data: {
+                                    callId: callId,
+                                    callStatus: callStatus
+                                }
+                            });
                         }
-                    });
+                    );
                 }
             );
 
@@ -1839,11 +2196,11 @@ export class ticketController {
         }
 
         try {
-            // First, verify the call exists
+            // First, verify the call exists and get previous agent
             connection.query(
-                "SELECT * FROM calls WHERE callId = ?",
+                "SELECT ticketId, agentId FROM calls WHERE callId = ?",
                 [callId],
-                (err, callResult) => {
+                async (err, callResult) => {
                     if (err) {
                         return res.status(500).json({
                             message: "Error fetching call log",
@@ -1857,25 +2214,60 @@ export class ticketController {
                         });
                     }
 
-                    // Update the agentId in calls table
-                    connection.query(
-                        "UPDATE calls SET agentId = ? WHERE callId = ?",
-                        [agentId, callId],
-                        (updateErr, updateResult) => {
-                            if (updateErr) {
-                                return res.status(500).json({
-                                    message: "Error updating call agent",
-                                    error: updateErr
-                                });
-                            }
+                    const ticketId = callResult[0].ticketId;
+                    const previousAgentId = callResult[0].agentId;
 
-                            return res.json({
-                                message: "Call agent updated successfully",
-                                data: {
-                                    callId: callId,
-                                    agentId: agentId
+                    // Get new agent name
+                    connection.query(
+                        "SELECT agentName FROM agents WHERE id = ?",
+                        [agentId],
+                        async (agentErr, agentResult) => {
+                            const newAgentName = (!agentErr && agentResult && agentResult.length > 0)
+                                ? agentResult[0].agentName
+                                : 'Unknown Agent';
+
+                            // Update the agentId in calls table
+                            connection.query(
+                                "UPDATE calls SET agentId = ? WHERE callId = ?",
+                                [agentId, callId],
+                                async (updateErr, updateResult) => {
+                                    if (updateErr) {
+                                        return res.status(500).json({
+                                            message: "Error updating call agent",
+                                            error: updateErr
+                                        });
+                                    }
+
+                                    // Log activity for call agent change
+                                    if (ticketId) {
+                                        try {
+                                            await ticketController.logActivity(
+                                                ticketId,
+                                                'call_agent_changed',
+                                                `Call ${callId} agent changed to ${newAgentName}`,
+                                                {
+                                                    callId: callId,
+                                                    agentId: agentId,
+                                                    agentName: newAgentName,
+                                                    additionalInfo: {
+                                                        previousAgentId: previousAgentId
+                                                    }
+                                                }
+                                            );
+                                        } catch (logErr) {
+                                            console.error('Error logging call agent change:', logErr);
+                                        }
+                                    }
+
+                                    return res.json({
+                                        message: "Call agent updated successfully",
+                                        data: {
+                                            callId: callId,
+                                            agentId: agentId
+                                        }
+                                    });
                                 }
-                            });
+                            );
                         }
                     );
                 }
@@ -2106,55 +2498,80 @@ export class ticketController {
         }
 
         try {
-            // Update all three tables using ticketId
-            // Update tickets table - status column using ticketId
+            // First get the current status for logging
             connection.query(
-                "UPDATE tickets SET status = ? WHERE ticketId = ?",
-                [status, id],
-                (err, ticketsResult) => {
-                    if (err) {
-                        return res.status(500).json({
-                            message: "Error updating tickets table",
-                            error: err
-                        });
-                    }
+                "SELECT status FROM tickets WHERE ticketId = ?",
+                [id],
+                async (getErr, statusData) => {
+                    const previousStatus = statusData && statusData.length > 0 ? statusData[0].status : null;
 
-                    if (ticketsResult.affectedRows === 0) {
-                        return res.status(404).json({
-                            message: "Ticket not found"
-                        });
-                    }
-
-                    // Update assign-ticket table - status column using ticketId
+                    // Update all three tables using ticketId
+                    // Update tickets table - status column using ticketId
                     connection.query(
-                        "UPDATE `assign-ticket` SET status = ? WHERE ticketId = ?",
+                        "UPDATE tickets SET status = ? WHERE ticketId = ?",
                         [status, id],
-                        (err, assignResult) => {
+                        async (err, ticketsResult) => {
                             if (err) {
-                                console.error('Error updating assign-ticket table:', err);
+                                return res.status(500).json({
+                                    message: "Error updating tickets table",
+                                    error: err
+                                });
                             }
 
-                            // Update calls table - ticketStatus column using ticketId
+                            if (ticketsResult.affectedRows === 0) {
+                                return res.status(404).json({
+                                    message: "Ticket not found"
+                                });
+                            }
+
+                            // Log activity for status update across all tables
+                            try {
+                                const resolvedNote = status === 'resolved' ? ' (ticket resolved)' : '';
+                                await ticketController.logActivity(
+                                    id,
+                                    status === 'resolved' ? 'ticket_resolved' : 'status_updated',
+                                    `Ticket status changed from ${previousStatus || 'unknown'} to ${status}${resolvedNote}`,
+                                    {
+                                        previousStatus: previousStatus,
+                                        currentStatus: status
+                                    }
+                                );
+                            } catch (logErr) {
+                                console.error('Error logging status update:', logErr);
+                            }
+
+                            // Update assign-ticket table - status column using ticketId
                             connection.query(
-                                "UPDATE calls SET ticketStatus = ? WHERE ticketId = ?",
+                                "UPDATE `assign-ticket` SET status = ? WHERE ticketId = ?",
                                 [status, id],
-                                (err, callsResult) => {
+                                (err, assignResult) => {
                                     if (err) {
-                                        console.error('Error updating calls table:', err);
+                                        console.error('Error updating assign-ticket table:', err);
                                     }
 
-                                    return res.json({
-                                        message: "Status updated successfully in all tables",
-                                        data: {
-                                            ticketId: id,
-                                            status: status,
-                                            updatedTables: {
-                                                tickets: ticketsResult.affectedRows,
-                                                assignTicket: assignResult ? assignResult.affectedRows : 0,
-                                                calls: callsResult ? callsResult.affectedRows : 0
+                                    // Update calls table - ticketStatus column using ticketId
+                                    connection.query(
+                                        "UPDATE calls SET ticketStatus = ? WHERE ticketId = ?",
+                                        [status, id],
+                                        (err, callsResult) => {
+                                            if (err) {
+                                                console.error('Error updating calls table:', err);
                                             }
+
+                                            return res.json({
+                                                message: "Status updated successfully in all tables",
+                                                data: {
+                                                    ticketId: id,
+                                                    status: status,
+                                                    updatedTables: {
+                                                        tickets: ticketsResult.affectedRows,
+                                                        assignTicket: assignResult ? assignResult.affectedRows : 0,
+                                                        calls: callsResult ? callsResult.affectedRows : 0
+                                                    }
+                                                }
+                                            });
                                         }
-                                    });
+                                    );
                                 }
                             );
                         }
@@ -2355,12 +2772,30 @@ export class ticketController {
                     connection.query(
                         query,
                         [feedbackId, ticketId, currentTimestamp, currentTimestamp, currentTimestamp],
-                        (err, result) => {
+                        async (err, result) => {
                             if (err) {
                                 return res.status(500).json({
                                     message: "Error creating feedback request",
                                     error: err
                                 });
+                            }
+
+                            // Log activity for feedback request
+                            try {
+                                await ticketController.logActivity(
+                                    ticketId,
+                                    'feedback_requested',
+                                    `Feedback request ${feedbackId} sent to customer`,
+                                    {
+                                        feedbackId: feedbackId,
+                                        additionalInfo: {
+                                            customerEmail: customerEmail,
+                                            deliveryStatus: 'pending'
+                                        }
+                                    }
+                                );
+                            } catch (logErr) {
+                                console.error('Error logging feedback request:', logErr);
                             }
 
                             return res.json({
@@ -2401,33 +2836,68 @@ export class ticketController {
         try {
             const updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+            // First get the feedback data to get ticketId and feedbackId
             connection.query(
-                "UPDATE feedbacks SET rating = ?, feedbackComment = ?, deliveryStatus = 'received', updatedAt = ? WHERE id = ?",
-                [rating, comments || null, updatedAt, id],
-                (err, result) => {
-                    if (err) {
-                        return res.status(500).json({
-                            message: "Error updating feedback",
-                            error: err
-                        });
-                    }
-
-                    if (result.affectedRows === 0) {
+                "SELECT ticketId, feedbackId FROM feedbacks WHERE id = ?",
+                [id],
+                async (getErr, feedbackData) => {
+                    if (getErr || !feedbackData || feedbackData.length === 0) {
                         return res.status(404).json({
                             message: "Feedback request not found"
                         });
                     }
 
-                    return res.json({
-                        message: "Feedback response recorded successfully",
-                        data: {
-                            feedbackId: id,
-                            rating: rating,
-                            feedbackComment: comments,
-                            deliveryStatus: 'received',
-                            updatedAt: updatedAt
+                    const ticketId = feedbackData[0].ticketId;
+                    const feedbackId = feedbackData[0].feedbackId;
+
+                    connection.query(
+                        "UPDATE feedbacks SET rating = ?, feedbackComment = ?, deliveryStatus = 'received', updatedAt = ? WHERE id = ?",
+                        [rating, comments || null, updatedAt, id],
+                        async (err, result) => {
+                            if (err) {
+                                return res.status(500).json({
+                                    message: "Error updating feedback",
+                                    error: err
+                                });
+                            }
+
+                            if (result.affectedRows === 0) {
+                                return res.status(404).json({
+                                    message: "Feedback request not found"
+                                });
+                            }
+
+                            // Log activity for feedback received
+                            try {
+                                await ticketController.logActivity(
+                                    ticketId,
+                                    'feedback_received',
+                                    `Feedback ${feedbackId} received from customer (Rating: ${rating}/5)`,
+                                    {
+                                        feedbackId: feedbackId,
+                                        additionalInfo: {
+                                            rating: rating,
+                                            comments: comments,
+                                            deliveryStatus: 'received'
+                                        }
+                                    }
+                                );
+                            } catch (logErr) {
+                                console.error('Error logging feedback received:', logErr);
+                            }
+
+                            return res.json({
+                                message: "Feedback response recorded successfully",
+                                data: {
+                                    feedbackId: id,
+                                    rating: rating,
+                                    feedbackComment: comments,
+                                    deliveryStatus: 'received',
+                                    updatedAt: updatedAt
+                                }
+                            });
                         }
-                    });
+                    );
                 }
             );
         } catch (error) {
