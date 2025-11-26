@@ -48,6 +48,7 @@ router.get("/analytics/ticket-trends", ticketController.getTicketTrends);
 router.get("/analytics/resolution-time-distribution", ticketController.getResolutionTimeDistribution);
 router.get("/analytics/customer-satisfaction-distribution", ticketController.getCustomerSatisfactionDistribution);
 router.get("/analytics/agent-performance", ticketController.getAgentPerformance);
+router.get("/analytics/call-statistics", ticketController.getCallStatistics);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");

@@ -3302,4 +3302,175 @@ export class ticketController {
             });
         }
     }
+
+    // Get call statistics data
+    static async getCallStatistics(req, res) {
+        try {
+            const { dateRange, agents, products } = req.query;
+
+            // Calculate date range filter
+            let dateFilter = '';
+            if (dateRange && dateRange !== 'custom') {
+                const days = parseInt(dateRange);
+                dateFilter = `AND c.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND c.agentId IN (
+                    SELECT id FROM agents WHERE agentName IN (${agentPlaceholders})
+                )`;
+            }
+
+            let productFilter = '';
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+            }
+
+            // Get parameters for queries
+            const queryParams = [];
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                queryParams.push(...agentList);
+            }
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                queryParams.push(...productList);
+            }
+
+            // 1. Total calls by type (inbound/outbound)
+            const totalCallsQuery = `
+                SELECT
+                    COUNT(*) as totalCalls,
+                    COUNT(CASE WHEN c.callType = 'inbound' THEN 1 END) as inboundCalls,
+                    COUNT(CASE WHEN c.callType = 'outbound' THEN 1 END) as outboundCalls
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+            `;
+
+            // 2. Average call duration (in minutes)
+            const avgCallDurationQuery = `
+                SELECT
+                    AVG(
+                        CASE
+                            WHEN c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
+                                TIMESTAMPDIFF(MINUTE, c.startTime, c.endTime)
+                            ELSE NULL
+                        END
+                    ) as avgDurationMinutes,
+                    AVG(
+                        CASE
+                            WHEN c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
+                                TIMESTAMPDIFF(SECOND, c.startTime, c.endTime)
+                            ELSE NULL
+                        END
+                    ) as avgDurationSeconds
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE c.startTime IS NOT NULL
+                  AND c.endTime IS NOT NULL
+                  ${dateFilter} ${agentFilter} ${productFilter}
+            `;
+
+            // 3. Missed calls and callbacks count
+            const missedCallsQuery = `
+                SELECT
+                    COUNT(CASE WHEN c.callStatus = 'missed' THEN 1 END) as missedCalls,
+                    COUNT(*) as totalCallsWithStatus
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+            `;
+
+            // 4. Call completion rate
+            const callCompletionQuery = `
+                SELECT
+                    COUNT(*) as totalCalls,
+                    COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) as completedCalls,
+                    (COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) / COUNT(*)) * 100 as completionRate
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter}
+            `;
+
+            // Execute all queries in parallel
+            const promises = [
+                new Promise((resolve, reject) => {
+                    connection.query(totalCallsQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            total: result[0]?.totalCalls || 0,
+                            inbound: result[0]?.inboundCalls || 0,
+                            outbound: result[0]?.outboundCalls || 0
+                        });
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(avgCallDurationQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else {
+                            const minutes = result[0]?.avgDurationMinutes || 0;
+                            const seconds = result[0]?.avgDurationSeconds || 0;
+                            resolve({
+                                minutes: Math.round(minutes * 10) / 10,
+                                seconds: Math.round(seconds),
+                                formatted: `${Math.floor(minutes)}m ${Math.round(seconds % 60)}s`
+                            });
+                        }
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(missedCallsQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            missed: result[0]?.missedCalls || 0,
+                            total: result[0]?.totalCallsWithStatus || 0
+                        });
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(callCompletionQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            completionRate: Math.round((result[0]?.completionRate || 0) * 10) / 10,
+                            total: result[0]?.totalCalls || 0,
+                            completed: result[0]?.completedCalls || 0
+                        });
+                    });
+                })
+            ];
+
+            const results = await Promise.all(promises);
+
+            const callStatistics = {
+                totalCalls: results[0],
+                avgCallDuration: results[1],
+                missedCalls: results[2],
+                callCompletionRate: results[3],
+                filters: {
+                    dateRange: dateRange || '30',
+                    agents: agents || [],
+                    products: products || []
+                }
+            };
+
+            return res.json({
+                message: "Call statistics data fetched successfully",
+                data: callStatistics
+            });
+
+        } catch (error) {
+            console.error('Error in getCallStatistics:', error);
+            return res.status(500).json({
+                message: "Error fetching call statistics data",
+                error: error.message
+            });
+        }
+    }
 }

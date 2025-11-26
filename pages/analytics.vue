@@ -457,12 +457,12 @@ export default {
       agentPerformanceData: [],
       callStatisticsPeriod: '30',
       callStatisticsData: {
-        inbound: 2847,      // Total inbound calls
-        outbound: 1653,     // Total outbound calls
-        completed: 4186,    // Total completed calls
-        missed: 314,        // Total missed calls
-        callbacks: 186,     // Total callbacks made
-        avgDuration: 12.5   // Average call duration in minutes
+        inbound: 0,      // Total inbound calls
+        outbound: 0,     // Total outbound calls
+        completed: 0,    // Total completed calls
+        missed: 0,        // Total missed calls
+        callbacks: 0,     // Total callbacks made
+        avgDuration: 0   // Average call duration in minutes
       },
       productPerformancePeriod: '30',
       productPerformanceData: [
@@ -700,24 +700,8 @@ export default {
 
   updateCallStatisticsPeriod(period) {
       this.callStatisticsPeriod = period;
-
-      // Generate new call statistics data based on period
-      const multiplier = parseInt(period) / 30; // Base on 30 days
-      const baseInbound = 2847;
-      const baseOutbound = 1653;
-      const baseCompleted = 4186;
-      const baseMissed = 314;
-      const baseCallbacks = 186;
-      const baseAvgDuration = 12.5;
-
-      this.callStatisticsData = {
-        inbound: Math.round(baseInbound * multiplier),
-        outbound: Math.round(baseOutbound * multiplier),
-        completed: Math.round(baseCompleted * multiplier),
-        missed: Math.round(baseMissed * multiplier),
-        callbacks: Math.round(baseCallbacks * multiplier),
-        avgDuration: baseAvgDuration + Math.random() * 5 - 2.5 // Add variation
-      };
+      // Fetch real data from backend
+      this.fetchCallStatistics(period);
     },
 
     updateProductPerformancePeriod(period) {
@@ -938,6 +922,13 @@ export default {
         this.updateAgentPerformancePeriod(this.analyticsFilters.dateRange)
       } else {
         this.fetchAgentPerformance()
+      }
+
+      // Update call statistics
+      if (this.analyticsFilters.dateRange !== this.callStatisticsPeriod) {
+        this.updateCallStatisticsPeriod(this.analyticsFilters.dateRange)
+      } else {
+        this.fetchCallStatistics()
       }
 
       // Fetch updated analytics data with filters
@@ -1301,6 +1292,64 @@ export default {
         console.error('Error fetching agent performance data:', error);
         // Keep existing data if API fails
       }
+    },
+
+    // Fetch call statistics data
+    async fetchCallStatistics(period = null) {
+      try {
+        console.log('Fetching call statistics data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.callStatisticsPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+        queryParams.append('dateRange', dateRange);
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/call-statistics${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update call statistics data with real data
+          const data = response.data;
+
+          this.callStatisticsData = {
+            inbound: data.totalCalls?.inbound || 0,
+            outbound: data.totalCalls?.outbound || 0,
+            completed: data.callCompletionRate?.completed || 0,
+            missed: data.missedCalls?.missed || 0,
+            callbacks: data.missedCalls?.missed || 0, // Using missed calls as callbacks for now
+            avgDuration: data.avgCallDuration?.minutes || 0
+          };
+
+          console.log('Call statistics data updated:', this.callStatisticsData);
+        }
+
+      } catch (error) {
+        console.error('Error fetching call statistics data:', error);
+        // Keep existing data if API fails
+      }
     }
   },
 
@@ -1324,6 +1373,7 @@ export default {
     this.fetchResolutionTimeDistribution();
     this.fetchCustomerSatisfactionDistribution();
     this.fetchAgentPerformance();
+    this.fetchCallStatistics();
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)
