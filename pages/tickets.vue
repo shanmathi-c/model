@@ -1705,9 +1705,24 @@ export default {
     await this.fetchAgents()
   },
 
-  mounted() {
+  async mounted() {
     // Add click event listener
     document.addEventListener('click', this.handleClickOutside);
+
+    // Check if ticketId is in query params (from call page navigation)
+    const ticketIdFromQuery = this.$route.query.ticketId;
+    if (ticketIdFromQuery) {
+      // Fetch tickets first
+      await this.fetchTickets();
+
+      // Find the ticket with matching ticketId
+      const ticket = this.tickets.find(t => t.ticketId === ticketIdFromQuery || t.id === parseInt(ticketIdFromQuery));
+
+      // Open ticket details if found
+      if (ticket) {
+        this.openTicketDetails(ticket);
+      }
+    }
   },
 
   beforeDestroy() {

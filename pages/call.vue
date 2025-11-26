@@ -1161,21 +1161,15 @@
 
             <!-- Related Ticket Information -->
             <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                  <div class="bg-gradient-to-r from-orange-100 to-amber-100 rounded-lg p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                    </svg>
-                  </div>
-                  <h3 class="text-base font-bold text-gray-900">Related Ticket</h3>
+              <div class="flex items-center gap-2 mb-4">
+                <div class="bg-gradient-to-r from-orange-100 to-amber-100 rounded-lg p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  </svg>
                 </div>
-                <button v-if="!selectedCallDetails?.ticketId" @click="createTicketFromCall"
-                        class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
-                  Create Ticket
-                </button>
+                <h3 class="text-base font-bold text-gray-900">Related Ticket</h3>
               </div>
-              <div v-if="selectedCallDetails?.ticketId">
+              <div v-if="selectedCallDetails?.ticketId && selectedCallDetails.ticketId !== '' && selectedCallDetails.ticketId !== null && selectedCallDetails.ticketId !== 0 && selectedCallDetails.ticketId !== '0'">
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <div class="flex items-center justify-between">
                     <div>
@@ -2580,10 +2574,13 @@ export default {
     },
 
     viewRelatedTicket() {
-      // TODO: Navigate to ticket details or open ticket modal
-      console.log('View ticket:', this.selectedCallDetails?.ticketId)
-      // You can redirect to tickets page or open a modal
-      // this.$router.push(`/tickets/${this.selectedCallDetails.ticketId}`)
+      if (this.selectedCallDetails?.ticketId) {
+        // Navigate to tickets page with ticket ID as query parameter
+        this.$router.push({
+          path: '/tickets',
+          query: { ticketId: this.selectedCallDetails.ticketId }
+        })
+      }
     },
 
     // Update call status from side panel
