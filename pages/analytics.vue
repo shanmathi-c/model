@@ -1363,6 +1363,13 @@ export default {
           });
         }
 
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/cards${queryString ? '?' + queryString : ''}`;
 
@@ -1463,6 +1470,13 @@ export default {
           });
         }
 
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/ticket-trends${queryString ? '?' + queryString : ''}`;
 
@@ -1529,6 +1543,13 @@ export default {
         if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
           this.analyticsFilters.ticketTypes.forEach(ticketType => {
             queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
           });
         }
 
@@ -1618,6 +1639,13 @@ export default {
           });
         }
 
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/customer-satisfaction-distribution${queryString ? '?' + queryString : ''}`;
 
@@ -1691,6 +1719,13 @@ export default {
           });
         }
 
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/agent-performance${queryString ? '?' + queryString : ''}`;
 
@@ -1751,6 +1786,13 @@ export default {
         if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
           this.analyticsFilters.ticketTypes.forEach(ticketType => {
             queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
           });
         }
 
@@ -1826,6 +1868,13 @@ export default {
           });
         }
 
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
         const queryString = queryParams.toString();
         const url = `http://localhost:5001/analytics/product-performance${queryString ? '?' + queryString : ''}`;
 
@@ -1886,6 +1935,13 @@ export default {
         if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
           this.analyticsFilters.ticketTypes.forEach(ticketType => {
             queryParams.append('ticketTypes', ticketType);
+          });
+        }
+
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
           });
         }
 
