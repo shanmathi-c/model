@@ -443,7 +443,7 @@
                           v-if="call.phone && call.phone !== 'N/A'"
                           src="/phone-call.svg"
                           alt="Call"
-                          class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors"
+                          class="w-5 h-5 cursor-pointer hover:text-green-600 transition-colors phone-bounce"
                           @click.stop="openCallModal(call)"
                         />
                         <div class="flex flex-col">
@@ -2739,5 +2739,23 @@ export default {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Phone icon bounce effect */
+.phone-bounce:hover {
+  animation: phoneBounce 0.6s ease-in-out;
+  transform-origin: center bottom;
+}
+
+@keyframes phoneBounce {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.3) translateY(-2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
 }
 </style>
