@@ -908,24 +908,34 @@
       <div class="absolute inset-0 bg-black bg-opacity-50" @click="closeCallDetails"></div>
 
       <!-- Side panel -->
-      <div class="absolute right-0 top-0 h-full w-full max-w-3xl bg-white shadow-2xl transform transition-transform duration-300"
+      <div class="absolute right-0 top-0 h-full w-full max-w-3xl bg-gradient-to-br from-gray-50 to-white shadow-2xl transform transition-transform duration-300"
            :class="showCallDetailsPanel ? 'translate-x-0' : 'translate-x-full'">
 
         <!-- Panel Header -->
-        <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-5 shadow-sm">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <h2 class="text-xl font-bold text-gray-900">Call #{{ selectedCallDetails?.callId }}</h2>
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
-                    :class="getCallStatusClass(selectedCallDetails?.callStatus)">
-                {{ selectedCallDetails?.callStatus }}
-              </span>
+              <div class="bg-indigo-100 rounded-lg p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-900">Call #{{ selectedCallDetails?.callId }}</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Call Details</p>
+              </div>
             </div>
-            <button @click="closeCallDetails" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm"
+                    :class="getCallStatusClass(selectedCallDetails?.status || selectedCallDetails?.callStatus)">
+                {{ selectedCallDetails?.status || selectedCallDetails?.callStatus || 'pending' }}
+              </span>
+              <button @click="closeCallDetails" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -934,8 +944,15 @@
           <div class="p-6 space-y-6">
 
             <!-- Call Metadata -->
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Information</h3>
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900">Call Information</h3>
+              </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <p class="text-xs text-gray-500">Call Type</p>
@@ -979,29 +996,43 @@
 
             <!-- Customer & Agent Information -->
             <div class="grid grid-cols-2 gap-4">
-              <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h3 class="text-sm font-semibold text-blue-900 mb-3">Customer</h3>
+              <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-bold text-gray-900">Customer</h3>
+                </div>
                 <div class="space-y-2">
                   <div>
-                    <p class="text-xs text-blue-700">Name</p>
-                    <p class="text-sm font-medium text-blue-900">{{ selectedCallDetails?.customerName || 'Unknown' }}</p>
+                    <p class="text-xs text-gray-500">Name</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedCallDetails?.customerName || 'Unknown' }}</p>
                   </div>
                   <div>
-                    <p class="text-xs text-blue-700">Phone</p>
-                    <p class="text-sm font-medium text-blue-900">{{ selectedCallDetails?.phone || 'N/A' }}</p>
+                    <p class="text-xs text-gray-500">Phone</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedCallDetails?.phone || 'N/A' }}</p>
                   </div>
                 </div>
               </div>
-              <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                <h3 class="text-sm font-semibold text-green-900 mb-3">Agent</h3>
+              <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-bold text-gray-900">Agent</h3>
+                </div>
                 <div class="space-y-3">
                   <div>
-                    <p class="text-xs text-green-700">Currently Assigned</p>
-                    <p class="text-sm font-medium text-green-900">{{ selectedCallDetails?.agentName || 'Not Assigned' }}</p>
+                    <p class="text-xs text-gray-500">Currently Assigned</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedCallDetails?.agentName || 'Not Assigned' }}</p>
                   </div>
                   <div>
-                    <p class="text-xs text-green-700">Phone</p>
-                    <p class="text-sm font-medium text-green-900">{{ selectedCallDetails?.agentPhone || 'N/A' }}</p>
+                    <p class="text-xs text-gray-500">Phone</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedCallDetails?.agentPhone || 'N/A' }}</p>
                   </div>
                   <div class="flex items-center gap-2">
                     <select
@@ -1030,8 +1061,15 @@
             </div>
 
             <!-- Update Call Status -->
-            <div class="bg-blue-50 rounded-lg p-4 border-2 border-blue-300">
-              <h3 class="text-sm font-semibold text-blue-900 mb-3">📝 Update Call Status</h3>
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="bg-gradient-to-r from-violet-100 to-purple-100 rounded-lg p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900">Update Call Status</h3>
+              </div>
               <div class="space-y-3">
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-2">Current Status</label>
@@ -1061,8 +1099,15 @@
             </div>
 
             <!-- Call Recording Player -->
-            <div class="bg-white rounded-lg p-4 border border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Recording</h3>
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="bg-gradient-to-r from-red-100 to-rose-100 rounded-lg p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900">Call Recording</h3>
+              </div>
               <div v-if="selectedCallDetails?.recordingUrl" class="space-y-3">
                 <audio controls class="w-full">
                   <source :src="selectedCallDetails.recordingUrl" type="audio/mpeg">
@@ -1084,9 +1129,16 @@
             </div>
 
             <!-- Call Transcript -->
-            <div class="bg-white rounded-lg p-4 border border-gray-200">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-gray-900">Call Transcript</h3>
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <div class="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-bold text-gray-900">Call Transcript</h3>
+                </div>
                 <button v-if="callTranscript" class="text-xs text-blue-600 hover:text-blue-700">Download Transcript</button>
               </div>
               <div v-if="callTranscript" class="max-h-60 overflow-y-auto space-y-3">
@@ -1108,9 +1160,16 @@
             </div>
 
             <!-- Related Ticket Information -->
-            <div class="bg-white rounded-lg p-4 border border-gray-200">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-gray-900">Related Ticket</h3>
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <div class="bg-gradient-to-r from-orange-100 to-amber-100 rounded-lg p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-bold text-gray-900">Related Ticket</h3>
+                </div>
                 <button v-if="!selectedCallDetails?.ticketId" @click="createTicketFromCall"
                         class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
                   Create Ticket
@@ -1145,9 +1204,16 @@
             </div>
 
             <!-- Call Notes -->
-            <div class="bg-white rounded-lg p-4 border border-gray-200">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-gray-900">Call Notes</h3>
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <div class="bg-gradient-to-r from-teal-100 to-cyan-100 rounded-lg p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-base font-bold text-gray-900">Call Notes</h3>
+                </div>
                 <button @click="showAddCallNote = true" class="text-xs text-blue-600 hover:text-blue-700">+ Add Note</button>
               </div>
               <div v-if="showAddCallNote" class="mb-3">
@@ -1174,33 +1240,52 @@
             </div>
 
             <!-- Activity Log -->
-            <div class="bg-white rounded-lg p-4 border border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-900 mb-3">Call Activity</h3>
-              <div class="space-y-3">
-                <div class="flex gap-3">
-                  <div class="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
-                  <div class="flex-1">
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="bg-gradient-to-r from-slate-100 to-gray-100 rounded-lg p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-base font-bold text-gray-900">Call Activity</h3>
+              </div>
+              <div class="space-y-4">
+                <div class="flex gap-3 relative">
+                  <div class="flex flex-col items-center flex-shrink-0">
+                    <div class="w-3 h-3 bg-green-500 rounded-full shadow-sm ring-4 ring-green-100"></div>
+                    <div class="w-0.5 h-full bg-gray-200 mt-1"></div>
+                  </div>
+                  <div class="flex-1 pb-4">
                     <p class="text-sm text-gray-900">Call initiated</p>
                     <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.startTime) }}</p>
                   </div>
                 </div>
-                <div v-if="selectedCallDetails?.agentName" class="flex gap-3">
-                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
-                  <div class="flex-1">
+                <div v-if="selectedCallDetails?.agentName" class="flex gap-3 relative">
+                  <div class="flex flex-col items-center flex-shrink-0">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full shadow-sm ring-4 ring-blue-100"></div>
+                    <div class="w-0.5 h-full bg-gray-200 mt-1"></div>
+                  </div>
+                  <div class="flex-1 pb-4">
                     <p class="text-sm text-gray-900">Connected to {{ selectedCallDetails.agentName }}</p>
                     <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.startTime) }}</p>
                   </div>
                 </div>
-                <div v-if="selectedCallDetails?.endTime" class="flex gap-3">
-                  <div class="w-2 h-2 bg-gray-500 rounded-full mt-1.5"></div>
-                  <div class="flex-1">
+                <div v-if="selectedCallDetails?.endTime" class="flex gap-3 relative">
+                  <div class="flex flex-col items-center flex-shrink-0">
+                    <div class="w-3 h-3 bg-gray-500 rounded-full shadow-sm ring-4 ring-gray-100"></div>
+                    <div class="w-0.5 h-full bg-gray-200 mt-1"></div>
+                  </div>
+                  <div class="flex-1 pb-4">
                     <p class="text-sm text-gray-900">Call ended</p>
                     <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.endTime) }}</p>
                   </div>
                 </div>
-                <div v-if="selectedCallDetails?.ticketId" class="flex gap-3">
-                  <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5"></div>
-                  <div class="flex-1">
+                <div v-if="selectedCallDetails?.ticketId" class="flex gap-3 relative">
+                  <div class="flex flex-col items-center flex-shrink-0">
+                    <div class="w-3 h-3 bg-yellow-500 rounded-full shadow-sm ring-4 ring-yellow-100"></div>
+                    <div class="w-0.5 h-full bg-gray-200 mt-1"></div>
+                  </div>
+                  <div class="flex-1 pb-4">
                     <p class="text-sm text-gray-900">Ticket #{{ selectedCallDetails.ticketId }} created</p>
                     <p class="text-xs text-gray-500">{{ formatDateTime(selectedCallDetails?.createdAt) }}</p>
                   </div>
