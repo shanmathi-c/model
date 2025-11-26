@@ -45,7 +45,7 @@
             class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
             style="z-index: 50;"
           >
-            <div class="p-3 max-h-96 overflow-y-auto">
+            <div class="p-3 max-h-96 overflow-y-auto custom-scrollbar">
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
                 <button
@@ -3267,5 +3267,24 @@ export default {
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px !important;
   height: 4px !important;
+}
+
+/* Custom scrollbar for filter dropdown */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 </style>
