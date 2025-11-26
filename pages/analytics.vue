@@ -149,6 +149,69 @@
             </div>
           </div>
         </div>
+
+        <!-- Export Button -->
+        <div ref="exportDropdownRef" class="relative ml-auto">
+          <button
+            @click="toggleExportDropdown"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export
+            <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Export Dropdown -->
+          <div
+            v-if="showExportDropdown"
+            class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200"
+            style="z-index: 50;"
+          >
+            <div class="py-1">
+              <button
+                @click="exportToPDF"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Download as PDF
+              </button>
+              <button
+                @click="exportToExcel"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <svg class="h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download as Excel
+              </button>
+              <div class="border-t border-gray-200 my-1"></div>
+              <button
+                @click="shareSnapshot"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share Snapshot
+              </button>
+              <button
+                @click="scheduleReport"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <svg class="h-4 w-4 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Schedule Report
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Active Filter Chips (Below search bar) -->
@@ -170,7 +233,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 overflow-auto p-6">
+    <div class="flex-1 overflow-auto p-6 analytics-content">
       <!-- Summary Cards -->
       <div class="grid grid-cols-5 gap-1 mb-6">
         <!-- Total Tickets -->
@@ -362,6 +425,7 @@ export default {
     return {
           // Filter dropdown state
       showFilterDropdown: false,
+      showExportDropdown: false,
 
       // Analytics filters
       analyticsFilters: {
@@ -679,6 +743,12 @@ export default {
     // Toggle filter dropdown
     toggleFilterDropdown() {
       this.showFilterDropdown = !this.showFilterDropdown
+      this.showExportDropdown = false // Close export dropdown when opening filter
+    },
+
+    toggleExportDropdown() {
+      this.showExportDropdown = !this.showExportDropdown
+      this.showFilterDropdown = false // Close filter dropdown when opening export
     },
 
     // Select all filters
@@ -783,8 +853,14 @@ export default {
     // Close dropdown when clicking outside
     handleClickOutside(event) {
       const filterDropdown = this.$refs.filterDropdownRef
+      const exportDropdown = this.$refs.exportDropdownRef
+
       if (filterDropdown && !filterDropdown.contains(event.target)) {
         this.showFilterDropdown = false
+      }
+
+      if (exportDropdown && !exportDropdown.contains(event.target)) {
+        this.showExportDropdown = false
       }
     },
 
@@ -1299,6 +1375,125 @@ export default {
         console.error('Error fetching callback status data:', error);
         // Keep existing data if API fails
       }
+    },
+
+    // Export to PDF
+    async exportToPDF() {
+      try {
+        this.showExportDropdown = false;
+
+        // Show loading message
+        console.log('Generating PDF...');
+
+        // Use html2pdf library to convert the dashboard to PDF
+        const element = document.querySelector('.analytics-content');
+
+        if (window.html2pdf) {
+          const opt = {
+            margin: 10,
+            filename: `Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+
+          await window.html2pdf().set(opt).from(element).save();
+          console.log('PDF generated successfully!');
+        } else {
+          alert('PDF export library not loaded. Please install html2pdf.js');
+        }
+      } catch (error) {
+        console.error('Error exporting to PDF:', error);
+        alert('Error exporting to PDF. Please try again.');
+      }
+    },
+
+    // Export to Excel
+    exportToExcel() {
+      try {
+        this.showExportDropdown = false;
+
+        // Prepare data for Excel export
+        const exportData = {
+          'Analytics Cards': [
+            { Metric: 'Total Tickets', Value: this.metrics.totalTickets },
+            { Metric: 'Avg Resolution Time', Value: `${this.metrics.avgResolutionTime} hours` },
+            { Metric: 'First Call Resolution', Value: `${this.metrics.firstCallResolution}%` },
+            { Metric: 'Avg Customer Satisfaction', Value: this.metrics.avgCustomerSatisfaction }
+          ],
+          'Agent Performance': this.agentPerformanceData.map(agent => ({
+            Rank: agent.rank,
+            Name: agent.name,
+            Assigned: agent.assigned,
+            Resolved: agent.resolved,
+            'Resolution Time': `${agent.resolutionTime} min`,
+            'FCR Rate': `${agent.fcrRate}%`,
+            'CSAT Rating': agent.csatRating
+          })),
+          'Product Performance': this.productPerformanceData.map(product => ({
+            Category: product.category,
+            Volume: product.volume,
+            'Resolution Time': `${product.resolutionTime} min`,
+            'CSAT': product.csat,
+            'Volume Trend': `${product.volumeTrend}%`
+          }))
+        };
+
+        // Convert to CSV format (simple implementation)
+        let csv = '';
+        Object.keys(exportData).forEach(sheet => {
+          csv += `\n${sheet}\n`;
+          const data = exportData[sheet];
+          if (data.length > 0) {
+            const headers = Object.keys(data[0]);
+            csv += headers.join(',') + '\n';
+            data.forEach(row => {
+              csv += headers.map(h => row[h]).join(',') + '\n';
+            });
+          }
+        });
+
+        // Download CSV file
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Analytics_Report_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        console.log('Excel/CSV exported successfully!');
+      } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        alert('Error exporting to Excel. Please try again.');
+      }
+    },
+
+    // Share snapshot
+    shareSnapshot() {
+      this.showExportDropdown = false;
+
+      // Generate a shareable link (mock implementation)
+      const shareUrl = window.location.href;
+
+      // Copy to clipboard
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('Dashboard link copied to clipboard! You can share it with others.');
+        }).catch(() => {
+          alert(`Share this link: ${shareUrl}`);
+        });
+      } else {
+        alert(`Share this link: ${shareUrl}`);
+      }
+    },
+
+    // Schedule report
+    scheduleReport() {
+      this.showExportDropdown = false;
+
+      // Mock implementation - would integrate with backend scheduling system
+      alert('Report scheduling feature coming soon! This will allow you to:\n\n• Schedule daily/weekly/monthly reports\n• Choose recipients\n• Select report format (PDF/Excel)\n• Customize report content');
     }
   },
 
