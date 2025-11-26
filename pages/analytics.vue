@@ -522,15 +522,18 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="!agentPerformanceData || agentPerformanceData.length === 0">
+              <td colspan="8" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No agent performance data available</td>
+            </tr>
             <tr v-for="(agent, index) in agentPerformanceData" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
-              <td class="border border-gray-300 px-3 py-2 text-center">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-3 py-2">{{ agent.agentName }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-center">{{ agent.rank || (index + 1) }}</td>
+              <td class="border border-gray-300 px-3 py-2">{{ agent.name }}</td>
               <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.assigned }}</td>
               <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.resolved }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.resolutionRate }}%</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.avgResolutionTime }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ getAgentResolutionRate(agent) }}%</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ formatResolutionTime(agent.resolutionTime) }}</td>
               <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.fcrRate }}%</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.avgCsat }}/5</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.csatRating }}/5</td>
             </tr>
           </tbody>
         </table>
@@ -587,20 +590,21 @@
             <tr class="bg-gray-100">
               <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Product</th>
               <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Total Tickets</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Resolved</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Resolution Rate</th>
               <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Avg Resolution Time</th>
               <th class="border border-gray-300 px-3 py-2 text-right font-semibold">CSAT</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Volume Trend</th>
             </tr>
           </thead>
           <tbody>
+            <tr v-if="!productPerformanceData || productPerformanceData.length === 0">
+              <td colspan="5" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No product performance data available</td>
+            </tr>
             <tr v-for="(product, index) in productPerformanceData" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
-              <td class="border border-gray-300 px-3 py-2">{{ product.productName }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.totalTickets }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.resolvedTickets }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.resolutionRate }}%</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.avgResolutionTime }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.avgCsat }}/5</td>
+              <td class="border border-gray-300 px-3 py-2">{{ product.category }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.volume }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ formatResolutionTime(product.resolutionTime) }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.csat }}/5</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.volumeTrend > 0 ? '+' : '' }}{{ product.volumeTrend }}%</td>
             </tr>
           </tbody>
         </table>
@@ -2043,6 +2047,11 @@ export default {
     getCallbackPercentage(value) {
       const total = this.callbackStatusData.total;
       return total > 0 ? Math.round((value / total) * 100) : 0;
+    },
+
+    getAgentResolutionRate(agent) {
+      if (!agent || !agent.assigned || agent.assigned === 0) return 0;
+      return Math.round((agent.resolved / agent.assigned) * 100);
     }
   },
 
