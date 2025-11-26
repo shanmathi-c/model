@@ -1220,7 +1220,10 @@ export default {
 
     // Remove individual filter
     removeFilter(key) {
-      const [type, value] = key.split('-')
+      // Split only on the first dash to handle values with dashes (like "agent-1")
+      const firstDashIndex = key.indexOf('-')
+      const type = key.substring(0, firstDashIndex)
+      const value = key.substring(firstDashIndex + 1)
 
       if (type === 'dateRange') {
         this.analyticsFilters.dateRange = '30'
@@ -1631,6 +1634,13 @@ export default {
         // Build query parameters from current filters
         const queryParams = new URLSearchParams();
         queryParams.append('dateRange', dateRange);
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
 
         // Add product filters
         if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {

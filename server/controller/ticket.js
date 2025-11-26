@@ -3203,7 +3203,7 @@ export class ticketController {
     // Get agent performance data
     static async getAgentPerformance(req, res) {
         try {
-            const { dateRange, products, status } = req.query;
+            const { dateRange, agents, products, status } = req.query;
 
             // Calculate date range filter
             let days = 30; // default
@@ -3214,9 +3214,17 @@ export class ticketController {
             let dateFilter = `AND t.createdAt >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
 
             // Build filter conditions
-            let productFilter = '';
+            let agentFilter = '';
             const queryParams = [];
 
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND a.agentName IN (${agentPlaceholders})`;
+                queryParams.push(...agentList);
+            }
+
+            let productFilter = '';
             if (products && products.length > 0) {
                 const productList = Array.isArray(products) ? products : [products];
                 const productPlaceholders = productList.map(() => '?').join(',');
@@ -3258,6 +3266,7 @@ export class ticketController {
                 LEFT JOIN calls c ON t.ticketId = c.ticketId AND (c.resolvedOn IS NOT NULL OR c.endTime IS NOT NULL)
                 LEFT JOIN feedbacks f ON t.ticketId = f.ticketId AND f.rating IS NOT NULL
                 WHERE 1=1
+                ${agentFilter}
                 ${dateFilter}
                 ${productFilter}
                 ${statusFilter}
