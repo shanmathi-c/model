@@ -25,35 +25,24 @@
         <!-- Bar Container -->
         <div class="flex-1 relative">
           <div class="h-8 bg-gray-100 rounded-md relative overflow-hidden">
-            <!-- Total Bar -->
-            <div
-              class="absolute left-0 top-0 h-full bg-gray-300 rounded-md"
-              :style="{ width: `${getPercentage(timeSlot.total)}%` }"
-            ></div>
-
             <!-- Agent Bars -->
-            <div class="absolute left-0 top-0 h-full flex">
+            <div
+              class="absolute left-0 top-0 h-full rounded-md group"
+              :style="{
+                width: `${getPercentage(timeSlot.total)}%`,
+                backgroundColor: getAgentColor(timeSlot.agents[0]?.name || 'Tickets'),
+              }"
+              @mouseover="timeSlot.agents.length > 0 ? $emit('tooltip-show', { timeSlot: timeSlot.timeRange, agent: timeSlot.agents[0].name, count: timeSlot.agents[0].count, percentage: ((timeSlot.agents[0].count / timeSlot.total) * 100).toFixed(1), x: $event, y: $event }) : null"
+              @mouseout="$emit('tooltip-hide')"
+            >
+              <!-- Tooltip on hover -->
               <div
-                v-for="(agent, agentIndex) in timeSlot.agents"
-                :key="agentIndex"
-                class="h-full relative group"
-                :style="{
-                  width: `${getPercentage(timeSlot.total) * (agent.count / timeSlot.total)}%`,
-                  backgroundColor: getAgentColor(agent.name),
-                  borderRight: agentIndex < timeSlot.agents.length - 1 ? '1px solid rgba(255,255,255,0.3)' : 'none'
-                }"
-                @mouseover="$emit('tooltip-show', { timeSlot: timeSlot.timeRange, agent: agent.name, count: agent.count, percentage: ((agent.count / timeSlot.total) * 100).toFixed(1), x: $event, y: $event })"
-                @mouseout="$emit('tooltip-hide')"
+                v-if="showTooltips && timeSlot.agents.length > 0 && timeSlot.agents[0].count > 0"
+                class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10"
               >
-                <!-- Tooltip on hover -->
-                <div
-                  v-if="showTooltips && agent.count > 0"
-                  class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10"
-                >
-                  {{ agent.name }}: {{ agent.count }} ({{ ((agent.count / timeSlot.total) * 100).toFixed(1) }}%)
-                  <!-- Tooltip arrow -->
-                  <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                </div>
+                {{ timeSlot.agents[0].name }}: {{ timeSlot.agents[0].count }} ({{ ((timeSlot.agents[0].count / timeSlot.total) * 100).toFixed(1) }}%)
+                <!-- Tooltip arrow -->
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
               </div>
             </div>
 
@@ -134,6 +123,7 @@ export default {
     return {
       selectedPeriod: this.period,
       agentColors: {
+        'Tickets': '#3b82f6',        // blue-500 (light blue)
         'John Doe': '#3b82f6',      // blue-500
         'Jane Smith': '#10b981',     // emerald-500
         'Mike Wilson': '#f59e0b',     // amber-500
