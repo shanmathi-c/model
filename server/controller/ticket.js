@@ -3652,4 +3652,97 @@ export class ticketController {
             });
         }
     }
+
+    // Get callback status data
+    static async getCallbackStatus(req, res) {
+        try {
+            const { dateRange, agents, products } = req.query;
+
+            // Calculate date range filter
+            let dateFilter = '';
+            if (dateRange && dateRange !== 'custom') {
+                const days = parseInt(dateRange);
+                dateFilter = `AND c.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND c.agentId IN (
+                    SELECT id FROM agents WHERE agentName IN (${agentPlaceholders})
+                )`;
+            }
+
+            let productFilter = '';
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+            }
+
+            // Get parameters for queries
+            const queryParams = [];
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                queryParams.push(...agentList);
+            }
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                queryParams.push(...productList);
+            }
+
+            // Callback status query
+            // Count all calls (both inbound and outbound)
+            const callbackStatusQuery = `
+                SELECT
+                    COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) as successful,
+                    COUNT(CASE WHEN c.callStatus = 'pending' OR c.callStatus = 'ongoing' THEN 1 END) as pending,
+                    COUNT(CASE WHEN c.callStatus = 'missed' THEN 1 END) as missed,
+                    COUNT(*) as total
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE 1=1
+                  ${dateFilter} ${agentFilter} ${productFilter}
+            `;
+
+            connection.query(callbackStatusQuery, queryParams, (err, result) => {
+                if (err) {
+                    console.error('Error in getCallbackStatus query:', err);
+                    return res.status(500).json({
+                        message: "Error fetching callback status data",
+                        error: err.message
+                    });
+                }
+
+                const callbackStatus = {
+                    successful: result[0]?.successful || 0,
+                    pending: result[0]?.pending || 0,
+                    missed: result[0]?.missed || 0,
+                    total: result[0]?.total || 0,
+                    successRate: result[0]?.total > 0
+                        ? Math.round((result[0].successful / result[0].total) * 100 * 10) / 10
+                        : 0,
+                    filters: {
+                        dateRange: dateRange || '30',
+                        agents: agents || [],
+                        products: products || []
+                    }
+                };
+
+                return res.json({
+                    message: "Callback status data fetched successfully",
+                    data: callbackStatus
+                });
+            });
+
+        } catch (error) {
+            console.error('Error in getCallbackStatus:', error);
+            return res.status(500).json({
+                message: "Error fetching callback status data",
+                error: error.message
+            });
+        }
+    }
 }

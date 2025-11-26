@@ -50,6 +50,7 @@ router.get("/analytics/customer-satisfaction-distribution", ticketController.get
 router.get("/analytics/agent-performance", ticketController.getAgentPerformance);
 router.get("/analytics/call-statistics", ticketController.getCallStatistics);
 router.get("/analytics/product-performance", ticketController.getProductPerformance);
+router.get("/analytics/callback-status", ticketController.getCallbackStatus);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");

@@ -468,14 +468,14 @@ export default {
       productPerformanceData: [],
       callbackStatusPeriod: '30',
       callbackStatusData: {
-        pending: 89,         // Pending callbacks
-        missed: 24,          // Missed callbacks
-        successful: 324,     // Successful callbacks
-        total: 437,          // Total callbacks
-        priorityCallbacks: 12, // High priority pending
-        successRate: 74.1,   // Success rate percentage
-        completionRate: 89.5, // Completion rate percentage
-        escalationRate: 5.2,  // Escalation rate percentage
+        pending: 0,         // Pending callbacks
+        missed: 0,          // Missed callbacks
+        successful: 0,     // Successful callbacks
+        total: 0,          // Total callbacks
+        priorityCallbacks: 0, // High priority pending
+        successRate: 0,   // Success rate percentage
+        completionRate: 0, // Completion rate percentage
+        escalationRate: 0,  // Escalation rate percentage
         avgResponseTime: 18.5 // Average response time in minutes
       }
     };
@@ -639,32 +639,8 @@ export default {
 
     updateCallbackStatusPeriod(period) {
       this.callbackStatusPeriod = period;
-
-      // Generate new callback status data based on period
-      const multiplier = parseInt(period) / 30; // Base on 30 days
-
-      const baseCallbacks = {
-        pending: 89,
-        missed: 24,
-        successful: 324,
-        priorityCallbacks: 12,
-        successRate: 74.1,
-        completionRate: 89.5,
-        escalationRate: 5.2,
-        avgResponseTime: 18.5
-      };
-
-      this.callbackStatusData = {
-        pending: Math.round(baseCallbacks.pending * multiplier),
-        missed: Math.round(baseCallbacks.missed * multiplier),
-        successful: Math.round(baseCallbacks.successful * multiplier),
-        total: Math.round((baseCallbacks.pending + baseCallbacks.missed + baseCallbacks.successful) * multiplier),
-        priorityCallbacks: Math.round(baseCallbacks.priorityCallbacks * multiplier),
-        successRate: baseCallbacks.successRate + (Math.random() * 10 - 5), // Add variation
-        completionRate: baseCallbacks.completionRate + (Math.random() * 8 - 4),
-        escalationRate: Math.max(0, baseCallbacks.escalationRate + (Math.random() * 6 - 3)),
-        avgResponseTime: baseCallbacks.avgResponseTime + (Math.random() * 10 - 5)
-      };
+      // Fetch real data from backend
+      this.fetchCallbackStatus(period);
     },
 
     calculateAverageRating() {
@@ -791,6 +767,13 @@ export default {
         this.updateProductPerformancePeriod(this.analyticsFilters.dateRange)
       } else {
         this.fetchProductPerformance()
+      }
+
+      // Update callback status
+      if (this.analyticsFilters.dateRange !== this.callbackStatusPeriod) {
+        this.updateCallbackStatusPeriod(this.analyticsFilters.dateRange)
+      } else {
+        this.fetchCallbackStatus()
       }
 
       // Fetch updated analytics data with filters
@@ -1261,6 +1244,61 @@ export default {
         console.error('Error fetching product performance data:', error);
         // Keep existing data if API fails
       }
+    },
+
+    // Fetch callback status data
+    async fetchCallbackStatus(period = null) {
+      try {
+        console.log('Fetching callback status data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.callbackStatusPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+        queryParams.append('dateRange', dateRange);
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/callback-status${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update callback status data with real data
+          this.callbackStatusData = {
+            pending: response.data.pending || 0,
+            missed: response.data.missed || 0,
+            successful: response.data.successful || 0,
+            total: response.data.total || 0,
+            successRate: response.data.successRate || 0
+          };
+
+          console.log('Callback status data updated:', this.callbackStatusData);
+        }
+
+      } catch (error) {
+        console.error('Error fetching callback status data:', error);
+        // Keep existing data if API fails
+      }
     }
   },
 
@@ -1286,6 +1324,7 @@ export default {
     this.fetchAgentPerformance();
     this.fetchCallStatistics();
     this.fetchProductPerformance();
+    this.fetchCallbackStatus();
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)
