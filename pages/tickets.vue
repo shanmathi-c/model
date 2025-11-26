@@ -368,9 +368,9 @@
       </div>
 
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-scroll  flex flex-col pt-5" style="min-height: calc(100vh - 250px); ">
+    <div class="flex-1 overflow-x-auto  flex flex-col pt-5" style="min-height: calc(100vh - 250px); ">
         <!-- Table View -->
-        <div class="" style="min-height: calc(40vh - 300px);">
+        <div class="overflow-x-auto" style="min-height: calc(40vh - 300px);">
           <table class="w-full" style="min-width: 1200px;">
               <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
@@ -3237,19 +3237,29 @@ export default {
   background: #9ca3af !important;
 }
 
-/* Make horizontal scrollbar invisible */
-.overflow-x-auto::-webkit-scrollbar {
+/* Make horizontal scrollbar invisible - Higher specificity */
+div.overflow-x-auto::-webkit-scrollbar {
   height: 0px;
+  display: none;
 }
 
-.overflow-x-auto::-webkit-scrollbar:horizontal {
+div.overflow-x-auto::-webkit-scrollbar:horizontal {
   height: 0px;
+  display: none;
 }
 
-/* For Firefox */
-.overflow-x-auto {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+div.overflow-x-auto::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+div.overflow-x-auto::-webkit-scrollbar-track {
+  display: none;
+}
+
+/* For Firefox - Higher specificity */
+div.overflow-x-auto {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
 }
 
 * {
