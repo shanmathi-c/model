@@ -1271,28 +1271,38 @@
             <!-- Activity Log -->
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">Activity History</h3>
-              <div class="space-y-3">
-                <div class="flex gap-3">
-                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+
+              <!-- Loading State -->
+              <div v-if="loadingActivityLogs" class="text-center py-6">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="text-xs text-gray-500 mt-2">Loading...</p>
+              </div>
+
+              <!-- Activity Logs List -->
+              <div v-else-if="activityLogs.length > 0" class="space-y-3 max-h-96 overflow-y-auto">
+                <div v-for="log in activityLogs" :key="log.id" class="flex gap-3">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
                   <div class="flex-1">
-                    <p class="text-sm text-gray-900">Ticket created</p>
-                    <p class="text-xs text-gray-500">{{ formatDate(selectedTicketDetails?.createdDate) }}</p>
+                    <p class="text-sm text-gray-900">{{ log.description }}</p>
+                    <!-- Additional Details -->
+                    <div v-if="log.agentName || log.previousStatus || log.callId" class="mt-1 space-y-0.5">
+                      <p v-if="log.agentName" class="text-xs text-gray-600">Agent: {{ log.agentName }}</p>
+                      <p v-if="log.previousStatus && log.currentStatus" class="text-xs text-gray-600">
+                        Status: {{ log.previousStatus }} → {{ log.currentStatus }}
+                      </p>
+                      <p v-if="log.callId" class="text-xs text-gray-600">Call ID: {{ log.callId }}</p>
+                      <p v-if="log.callStatus" class="text-xs text-gray-600">Call Status: {{ log.callStatus }}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ formatDate(log.statusUpdatedAt || log.createdAt) }}
+                    </p>
                   </div>
                 </div>
-                <div class="flex gap-3">
-                  <div class="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
-                  <div class="flex-1">
-                    <p class="text-sm text-gray-900">Assigned to {{ selectedTicketDetails?.agentName }}</p>
-                    <p class="text-xs text-gray-500">{{ selectedTicketDetails?.assignedDate ? formatDate(selectedTicketDetails.assignedDate) : 'Assignment date not available' }}</p>
-                  </div>
-                </div>
-                <div class="flex gap-3">
-                  <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5"></div>
-                  <div class="flex-1">
-                    <p class="text-sm text-gray-900">Status changed to {{ selectedTicketDetails?.status || 'In Progress' }}</p>
-                    <p class="text-xs text-gray-500">{{ selectedTicketDetails?.statusUpdatedAt ? formatDate(selectedTicketDetails.statusUpdatedAt) : 'Status update time not available' }}</p>
-                  </div>
-                </div>
+              </div>
+
+              <!-- No Activity Logs -->
+              <div v-else class="text-center py-6">
+                <p class="text-sm text-gray-500">No activity history available</p>
               </div>
             </div>
 
@@ -1509,7 +1519,11 @@ export default {
       feedbackDetailsError: null,
 
       // Sidebar status update
-      sidebarSelectedStatus: ''
+      sidebarSelectedStatus: '',
+
+      // Activity History
+      activityLogs: [],
+      loadingActivityLogs: false
     }
   },
 
@@ -2167,6 +2181,18 @@ export default {
           ...this.selectedTicketDetails,
           feedback: []
         }
+      }
+
+      // Fetch activity logs for this ticket
+      this.loadingActivityLogs = true
+      try {
+        const activityResponse = await $fetch(`http://localhost:5001/tickets/${ticketId}/activity-logs`)
+        this.activityLogs = activityResponse && activityResponse.data || []
+      } catch (error) {
+        console.error('Error loading activity logs', error)
+        this.activityLogs = []
+      } finally {
+        this.loadingActivityLogs = false
       }
 
       // Fetch related calls for this ticket - try both IDs
