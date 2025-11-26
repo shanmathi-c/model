@@ -51,6 +51,7 @@ router.get("/analytics/agent-performance", ticketController.getAgentPerformance)
 router.get("/analytics/call-statistics", ticketController.getCallStatistics);
 router.get("/analytics/product-performance", ticketController.getProductPerformance);
 router.get("/analytics/callback-status", ticketController.getCallbackStatus);
+router.get("/analytics/filter-options", ticketController.getFilterOptions);
 
 router.get("/", (req, res) => {
     res.send("get tickets!");
@@ -60,3 +61,4 @@ router.post("/fix-assign-ticket-ids", ticketController.fixAssignTicketIds);
 router.post("/cleanup-resolved-dates", ticketController.cleanupResolvedOnDates);
 
 export default router;
+

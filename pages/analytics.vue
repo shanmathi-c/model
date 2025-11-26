@@ -57,37 +57,56 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
             Filter
+            <svg
+              class="ml-2 h-4 w-4 transition-transform duration-200"
+              :class="{ 'rotate-180': showFilterDropdown }"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           <!-- Filter Dropdown -->
           <div
             v-if="showFilterDropdown"
-            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200"
+            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
             style="z-index: 50;"
           >
             <div class="p-3">
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
-                <div class="flex gap-1">
-                  <button
-                    @click="selectAllFilters"
-                    class="text-xs text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded hover:bg-blue-50"
-                  >
-                    All
-                  </button>
-                  <button
-                    @click="clearAllFilters"
-                    class="text-xs text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded hover:bg-blue-50"
-                  >
-                    None
-                  </button>
-                </div>
+                <button
+                  v-if="hasActiveFilters"
+                  @click="clearAllFilters"
+                  onclick="event.stopPropagation()"
+                  class="text-xs text-blue-600 hover:text-blue-700"
+                >
+                  Clear
+                </button>
               </div>
 
               <!-- Agents -->
-              <div class="mb-3">
-                <label class="text-xs font-semibold text-gray-700 block mb-1">Agents</label>
-                <div class="space-y-1 max-h-24 overflow-y-auto">
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('agents')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Agents</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.agents }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.agents" class="mt-1 space-y-1 pl-2 max-h-32 overflow-y-auto">
                   <label
                     v-for="agent in agentOptions"
                     :key="agent.value"
@@ -106,9 +125,24 @@
               </div>
 
               <!-- Products -->
-              <div class="mb-3">
-                <label class="text-xs font-semibold text-gray-700 block mb-1">Products</label>
-                <div class="space-y-1 max-h-24 overflow-y-auto">
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('products')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Products</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.products }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.products" class="mt-1 space-y-1 pl-2 max-h-32 overflow-y-auto">
                   <label
                     v-for="product in productOptions"
                     :key="product.value"
@@ -127,9 +161,24 @@
               </div>
 
               <!-- Status -->
-              <div>
-                <label class="text-xs font-semibold text-gray-700 block mb-1">Status</label>
-                <div class="space-y-1 max-h-24 overflow-y-auto">
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('status')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Status</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.status }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.status" class="mt-1 space-y-1 pl-2 max-h-32 overflow-y-auto">
                   <label
                     v-for="status in statusOptions"
                     :key="status.value"
@@ -143,6 +192,78 @@
                       class="w-3 h-3 text-blue-600 rounded border-gray-300"
                     />
                     <span>{{ status.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Ticket Type -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('ticketTypes')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Ticket Type</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.ticketTypes }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.ticketTypes" class="mt-1 space-y-1 pl-2 max-h-32 overflow-y-auto">
+                  <label
+                    v-for="type in ticketTypeOptions"
+                    :key="type.value"
+                    class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="type.value"
+                      v-model="analyticsFilters.ticketTypes"
+                      @change="applyFilters"
+                      class="w-3 h-3 text-blue-600 rounded border-gray-300"
+                    />
+                    <span>{{ type.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Agent Team/Group -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('teams')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Agent Team/Group</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.teams }"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div v-if="expandedSections.teams" class="mt-1 space-y-1 pl-2 max-h-32 overflow-y-auto">
+                  <label
+                    v-for="team in teamOptions"
+                    :key="team.teamName"
+                    class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="team.teamName"
+                      v-model="analyticsFilters.teams"
+                      @change="applyFilters"
+                      class="w-3 h-3 text-blue-600 rounded border-gray-300"
+                    />
+                    <span>{{ team.teamName }}</span>
                   </label>
                 </div>
               </div>
@@ -427,12 +548,23 @@ export default {
       showFilterDropdown: false,
       showExportDropdown: false,
 
+      // Expanded sections in filter dropdown
+      expandedSections: {
+        agents: false,
+        products: false,
+        status: false,
+        ticketTypes: false,
+        teams: false
+      },
+
       // Analytics filters
       analyticsFilters: {
         dateRange: '30',
         agents: [],
         products: [],
-        status: []
+        status: [],
+        ticketTypes: [],
+        teams: []
       },
 
       // Custom date range
@@ -441,27 +573,12 @@ export default {
         end: this.getDateDaysAgo(0)
       },
 
-      // Filter options
-      agentOptions: [
-        { value: 'john_doe', label: 'John Doe' },
-        { value: 'jane_smith', label: 'Jane Smith' },
-        { value: 'mike_wilson', label: 'Mike Wilson' },
-        { value: 'sarah_jones', label: 'Sarah Jones' },
-        { value: 'alex_brown', label: 'Alex Brown' }
-      ],
-      productOptions: [
-        { value: 'software', label: 'Software' },
-        { value: 'hardware', label: 'Hardware' },
-        { value: 'services', label: 'Services' },
-        { value: 'subscription', label: 'Subscription' }
-      ],
-      statusOptions: [
-        { value: 'open', label: 'Open' },
-        { value: 'in_progress', label: 'In Progress' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'resolved', label: 'Resolved' },
-        { value: 'closed', label: 'Closed' }
-      ],
+      // Filter options (loaded from backend)
+      agentOptions: [],
+      productOptions: [],
+      statusOptions: [],
+      ticketTypeOptions: [],
+      teamOptions: [],
       metrics: {
         totalTickets: 0,
         ticketsChange: 0,
@@ -551,6 +668,8 @@ export default {
       return this.analyticsFilters.agents.length > 0 ||
              this.analyticsFilters.products.length > 0 ||
              this.analyticsFilters.status.length > 0 ||
+             this.analyticsFilters.ticketTypes.length > 0 ||
+             this.analyticsFilters.teams.length > 0 ||
              this.analyticsFilters.dateRange !== '30'
     },
 
@@ -611,6 +730,32 @@ export default {
             label: statusOption.label,
             type: 'status',
             value: status
+          })
+        }
+      })
+
+      // Ticket type chips
+      this.analyticsFilters.ticketTypes.forEach(ticketType => {
+        const typeOption = this.ticketTypeOptions.find(t => t.value === ticketType)
+        if (typeOption) {
+          chips.push({
+            key: `ticketType-${ticketType}`,
+            label: `Type: ${typeOption.label}`,
+            type: 'ticketType',
+            value: ticketType
+          })
+        }
+      })
+
+      // Team chips
+      this.analyticsFilters.teams.forEach(team => {
+        const teamOption = this.teamOptions.find(t => t.teamName === team)
+        if (teamOption) {
+          chips.push({
+            key: `team-${team}`,
+            label: `Team: ${teamOption.teamName}`,
+            type: 'team',
+            value: team
           })
         }
       })
@@ -751,11 +896,18 @@ export default {
       this.showFilterDropdown = false // Close filter dropdown when opening export
     },
 
+    // Toggle filter section (collapsible sections inside filter dropdown)
+    toggleFilterSection(section) {
+      this.expandedSections[section] = !this.expandedSections[section]
+    },
+
     // Select all filters
     selectAllFilters() {
       this.analyticsFilters.agents = this.agentOptions.map(a => a.value)
       this.analyticsFilters.products = this.productOptions.map(p => p.value)
       this.analyticsFilters.status = this.statusOptions.map(s => s.value)
+      this.analyticsFilters.ticketTypes = this.ticketTypeOptions.map(t => t.value)
+      this.analyticsFilters.teams = this.teamOptions.map(t => t.teamName)
       this.applyFilters()
     },
 
@@ -764,6 +916,8 @@ export default {
       this.analyticsFilters.agents = []
       this.analyticsFilters.products = []
       this.analyticsFilters.status = []
+      this.analyticsFilters.ticketTypes = []
+      this.analyticsFilters.teams = []
       this.analyticsFilters.dateRange = '30'
       this.applyFilters()
     },
@@ -780,6 +934,10 @@ export default {
         this.analyticsFilters.products = this.analyticsFilters.products.filter(p => p !== value)
       } else if (type === 'status') {
         this.analyticsFilters.status = this.analyticsFilters.status.filter(s => s !== value)
+      } else if (type === 'ticketType') {
+        this.analyticsFilters.ticketTypes = this.analyticsFilters.ticketTypes.filter(t => t !== value)
+      } else if (type === 'team') {
+        this.analyticsFilters.teams = this.analyticsFilters.teams.filter(t => t !== value)
       }
 
       this.applyFilters()
@@ -1377,6 +1535,43 @@ export default {
       }
     },
 
+    // Fetch filter options from backend
+    async fetchFilterOptions() {
+      try {
+        console.log('Fetching filter options...');
+
+        const response = await $fetch('http://localhost:5001/analytics/filter-options', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          const data = response.data;
+
+          // Update filter options with real data
+          this.agentOptions = data.agents || [];
+          this.productOptions = data.products || [];
+          this.statusOptions = data.statuses || [];
+          this.ticketTypeOptions = data.ticketTypes || [];
+          this.teamOptions = data.teams || [];
+
+          console.log('Filter options loaded:', {
+            agents: this.agentOptions.length,
+            products: this.productOptions.length,
+            statuses: this.statusOptions.length,
+            ticketTypes: this.ticketTypeOptions.length,
+            teams: this.teamOptions.length
+          });
+        }
+
+      } catch (error) {
+        console.error('Error fetching filter options:', error);
+        // Keep empty arrays if API fails
+      }
+    },
+
     // Export to PDF
     async exportToPDF() {
       try {
@@ -1510,7 +1705,10 @@ export default {
     }
   },
 
-  mounted() {
+  async mounted() {
+    // Fetch filter options first
+    await this.fetchFilterOptions();
+
     // Fetch initial data from backend
     this.fetchAnalyticsData();
     this.fetchTicketTrends();
@@ -1533,5 +1731,21 @@ export default {
 </script>
 
 <style scoped>
-/* Add any custom styles here */
+/* Arrow rotation animation */
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.duration-200 {
+  transition-duration: 200ms;
+}
 </style>

@@ -3745,4 +3745,109 @@ export class ticketController {
             });
         }
     }
+
+    // Get filter options for analytics
+    static async getFilterOptions(req, res) {
+        try {
+            // Get all agents
+            const agentsQuery = `
+                SELECT DISTINCT
+                    a.id,
+                    a.agentName,
+                    a.productId,
+                    p.productName as productName
+                FROM agents a
+                LEFT JOIN product p ON a.productId = p.id
+                ORDER BY a.agentName
+            `;
+
+            // Get all products
+            const productsQuery = `SELECT id, productName FROM product ORDER BY productName`;
+
+            // Get all ticket types
+            const ticketTypesQuery = `SELECT DISTINCT ticketType FROM tickets WHERE ticketType IS NOT NULL ORDER BY ticketType`;
+
+            // Get all ticket statuses
+            const statusQuery = `SELECT DISTINCT status FROM tickets WHERE status IS NOT NULL ORDER BY status`;
+
+            // Execute all queries in parallel
+            const [agents, products, ticketTypes, statuses] = await Promise.all([
+                new Promise((resolve, reject) => {
+                    connection.query(agentsQuery, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(productsQuery, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(ticketTypesQuery, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(statusQuery, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                })
+            ]);
+
+            // Group agents by product to create teams
+            const agentTeams = {};
+            agents.forEach(agent => {
+                const teamName = agent.productName || 'Unassigned';
+                if (!agentTeams[teamName]) {
+                    agentTeams[teamName] = {
+                        teamName,
+                        productId: agent.productId,
+                        agents: []
+                    };
+                }
+                agentTeams[teamName].agents.push({
+                    id: agent.id,
+                    name: agent.agentName
+                });
+            });
+
+            res.status(200).json({
+                message: "Filter options retrieved successfully",
+                data: {
+                    agents: agents.map(agent => ({
+                        value: agent.agentName,
+                        label: agent.agentName,
+                        id: agent.id,
+                        productId: agent.productId,
+                        team: agent.productName || 'Unassigned'
+                    })),
+                    products: products.map(product => ({
+                        value: product.id.toString(),
+                        label: product.productName,
+                        id: product.id
+                    })),
+                    ticketTypes: ticketTypes.map(type => ({
+                        value: type.ticketType,
+                        label: type.ticketType.charAt(0).toUpperCase() + type.ticketType.slice(1)
+                    })),
+                    statuses: statuses.map(status => ({
+                        value: status.status,
+                        label: status.status.charAt(0).toUpperCase() + status.status.slice(1).replace('_', ' ')
+                    })),
+                    teams: Object.values(agentTeams)
+                }
+            });
+
+        } catch (error) {
+            console.error('Error fetching filter options:', error);
+            res.status(500).json({
+                message: "Error fetching filter options",
+                error: error.message
+            });
+        }
+    }
 }
