@@ -3486,7 +3486,7 @@ export class ticketController {
     // Get product performance data
     static async getProductPerformance(req, res) {
         try {
-            const { dateRange, agents, status } = req.query;
+            const { dateRange, agents, products, status } = req.query;
 
             // Calculate date range filter
             let dateFilter = '';
@@ -3508,6 +3508,13 @@ export class ticketController {
                 )`;
             }
 
+            let productFilter = '';
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND p.productId IN (${productPlaceholders})`;
+            }
+
             let statusFilter = '';
             if (status && status.length > 0) {
                 const statusList = Array.isArray(status) ? status : [status];
@@ -3520,6 +3527,10 @@ export class ticketController {
             if (agents && agents.length > 0) {
                 const agentList = Array.isArray(agents) ? agents : [agents];
                 queryParams.push(...agentList);
+            }
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                queryParams.push(...productList);
             }
             if (status && status.length > 0) {
                 const statusList = Array.isArray(status) ? status : [status];
@@ -3595,6 +3606,7 @@ export class ticketController {
                     ${agentFilter} ${statusFilter}
                 LEFT JOIN calls c ON t.ticketId = c.ticketId AND c.callStatus = 'completed'
                 LEFT JOIN feedbacks f ON t.ticketId = f.ticketId
+                WHERE 1=1 ${productFilter}
                 GROUP BY p.productId, category
                 HAVING volume > 0
                 ORDER BY volume DESC

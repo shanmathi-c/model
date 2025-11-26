@@ -1756,6 +1756,13 @@ export default {
           });
         }
 
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
         // Add status filters
         if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
           this.analyticsFilters.status.forEach(status => {
