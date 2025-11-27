@@ -27,23 +27,15 @@
 
         <!-- Custom Date Range Picker (shown when 'custom' is selected) -->
         <div v-if="analyticsFilters.dateRange === 'custom'" class="flex items-center gap-2">
-          <input
-            type="date"
-            v-model="customDateRange.start"
-            class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-          <span class="text-gray-500">to</span>
-          <input
-            type="date"
-            v-model="customDateRange.end"
-            class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-          <button
-            @click="applyCustomDateRange"
-            class="ml-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Apply
-          </button>
+          <DateRangePicker
+            :startDate.sync="customDateRange.start"
+            :endDate.sync="customDateRange.end"
+            placeholder="Select custom date range"
+            :autoApply="true"
+            @update:startDate="customDateRange.start = $event; applyCustomDateRange()"
+            @update:endDate="customDateRange.end = $event; applyCustomDateRange()"
+            @apply="applyCustomDateRange"
+          />
         </div>
 
         <!-- Filter Button -->
@@ -1198,6 +1190,11 @@ export default {
     toggleFilterDropdown() {
       this.showFilterDropdown = !this.showFilterDropdown
       this.showExportDropdown = false // Close export dropdown when opening filter
+    },
+
+    // Close filter dropdown
+    closeFilterDropdown() {
+      this.showFilterDropdown = false
     },
 
     toggleExportDropdown() {
