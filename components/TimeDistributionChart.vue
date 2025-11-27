@@ -2,18 +2,6 @@
   <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
-      <div v-if="showPeriodSelector" class="flex items-center gap-2">
-        <label class="text-sm font-medium text-gray-700">Period:</label>
-        <select
-          v-model="selectedPeriod"
-          @change="$emit('period-change', selectedPeriod)"
-          class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-        </select>
-      </div>
     </div>
     <div class="space-y-3">
       <div v-for="(timeSlot, index) in timeData" :key="index" class="flex items-center gap-3">
@@ -102,10 +90,6 @@ export default {
       type: Array,
       required: true
     },
-    showPeriodSelector: {
-      type: Boolean,
-      default: true
-    },
     showSummary: {
       type: Boolean,
       default: true
@@ -113,15 +97,10 @@ export default {
     showTooltips: {
       type: Boolean,
       default: true
-    },
-    period: {
-      type: String,
-      default: '30'
     }
   },
   data() {
     return {
-      selectedPeriod: this.period,
       agentColors: {
         'Tickets': '#3b82f6',        // blue-500 (light blue)
         'John Doe': '#3b82f6',      // blue-500
@@ -189,11 +168,6 @@ export default {
       const total = this.getTotalTickets()
       const slots = this.timeData.length
       return slots > 0 ? Math.round(total / slots) : 0
-    }
-  },
-  watch: {
-    period(newVal) {
-      this.selectedPeriod = newVal
     }
   }
 }

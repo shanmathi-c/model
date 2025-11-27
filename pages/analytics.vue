@@ -728,8 +728,6 @@
           :created-data="ticketTrends.created"
           :resolved-data="ticketTrends.resolved"
           :x-labels="ticketTrends.labels"
-          :period="ticketTrendsPeriod"
-          @period-change="updateTicketTrendsPeriod"
         />
       </div>
 
@@ -739,9 +737,7 @@
         <TimeDistributionChart
           title="Resolution Time Distribution"
           :time-data="timeDistributionData"
-          :period="timeDistributionPeriod"
           :show-summary="false"
-          @period-change="updateTimeDistributionPeriod"
           @tooltip-show="onTooltipShow"
           @tooltip-hide="onTooltipHide"
         />
@@ -754,9 +750,7 @@
           :key="customerSatisfactionDataKey"
           title="Customer Satisfaction Distribution"
           :csat-data="customerSatisfactionData"
-          :period="customerSatisfactionPeriod"
           :show-summary="false"
-          @period-change="updateCustomerSatisfactionPeriod"
         />
       </div>
 
@@ -766,8 +760,6 @@
         <AgentPerformanceTable
           title="Agent Performance Leaderboard"
           :agent-data="agentPerformanceData"
-          :period="agentPerformancePeriod"
-          @period-change="updateAgentPerformancePeriod"
         />
       </div>
 
@@ -777,8 +769,6 @@
         <CallStatisticsChart
           title="Call Statistics"
           :call-data="callStatisticsData"
-          :period="callStatisticsPeriod"
-          @period-change="updateCallStatisticsPeriod"
         />
       </div>
 
@@ -788,8 +778,6 @@
         <ProductPerformanceTable
           title="Product Performance Breakdown"
           :product-data="productPerformanceData"
-          :period="productPerformancePeriod"
-          @period-change="updateProductPerformancePeriod"
         />
       </div>
 
@@ -799,8 +787,6 @@
         <CallbackStatusChart
           title="Callback Status"
           :callback-data="callbackStatusData"
-          :period="callbackStatusPeriod"
-          @period-change="updateCallbackStatusPeriod"
         />
       </div>
     </div>

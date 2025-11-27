@@ -2,18 +2,6 @@
   <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
-      <div v-if="showPeriodSelector" class="flex items-center gap-2">
-        <label class="text-sm font-medium text-gray-700">Period:</label>
-        <select
-          v-model="selectedPeriod"
-          @change="$emit('period-change', selectedPeriod)"
-          class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-        </select>
-      </div>
     </div>
 
     <!-- Chart Container with Pie and Legend Side by Side -->
@@ -135,22 +123,13 @@ export default {
       type: Object,
       required: true
     },
-    showPeriodSelector: {
-      type: Boolean,
-      default: true
-    },
     showSummary: {
       type: Boolean,
       default: true
-    },
-    period: {
-      type: String,
-      default: '30'
     }
   },
   data() {
     return {
-      selectedPeriod: this.period,
       svgSize: 300,
       innerRadius: 80,
       outerRadius: 130,
@@ -303,11 +282,6 @@ export default {
     getNegativePercentage() {
       const negative = (this.csatData[1] || 0) + (this.csatData[2] || 0)
       return this.total > 0 ? ((negative / this.total) * 100).toFixed(0) : 0
-    }
-  },
-  watch: {
-    period(newVal) {
-      this.selectedPeriod = newVal
     }
   }
 }

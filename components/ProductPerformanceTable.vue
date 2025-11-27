@@ -2,18 +2,6 @@
   <div class="bg-white rounded-lg shadow border border-gray-200">
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
       <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
-      <div v-if="showPeriodSelector" class="flex items-center gap-2">
-        <label class="text-sm font-medium text-gray-700">Period:</label>
-        <select
-          v-model="selectedPeriod"
-          @change="$emit('period-change', selectedPeriod)"
-          class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-        </select>
-      </div>
     </div>
 
     <div class="overflow-x-auto">
@@ -169,7 +157,7 @@
     </div>
 
     <!-- Summary Stats -->
-    <div v-if="showSummary" class="p-6 border-t border-gray-200 bg-gray-50">
+    <!-- <div v-if="showSummary" class="p-6 border-t border-gray-200 bg-gray-50">
       <div class="grid grid-cols-4 gap-4 text-center">
         <div>
           <div class="text-2xl font-bold text-gray-900">{{ getSummaryStats().totalVolume.toLocaleString() }}</div>
@@ -188,7 +176,7 @@
           <div class="text-xs text-gray-500">Top Category</div>
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -204,22 +192,13 @@ export default {
       type: Array,
       required: true
     },
-    showPeriodSelector: {
-      type: Boolean,
-      default: true
-    },
     showSummary: {
       type: Boolean,
       default: true
-    },
-    period: {
-      type: String,
-      default: '30'
     }
   },
   data() {
     return {
-      selectedPeriod: this.period,
       sortColumn: 'volume', // Default sort by volume
       sortOrder: 'desc'
     }
@@ -374,11 +353,6 @@ export default {
         avgCsat,
         topCategory: topProduct.category
       }
-    }
-  },
-  watch: {
-    period(newVal) {
-      this.selectedPeriod = newVal
     }
   }
 }
