@@ -642,7 +642,7 @@
     <!-- Main Content Area -->
     <div class="flex-1 overflow-auto p-6 analytics-content">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-5 gap-1 mb-6">
+      <div class="grid grid-cols-9 gap-1 mb-6">
         <!-- Total Tickets -->
         <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
@@ -655,6 +655,66 @@
               {{ metrics.isLoading ? '...' : formatNumber(metrics.totalTickets) }}
             </p>
             <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Total Tickets</p>
+          </div>
+        </div>
+
+        <!-- Assigned -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-indigo-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatNumber(metrics.assignedCount) }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Assigned</p>
+          </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatNumber(metrics.pendingCount) }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Pending</p>
+          </div>
+        </div>
+
+        <!-- Resolved -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-green-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatNumber(metrics.resolvedCount) }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Resolved</p>
+          </div>
+        </div>
+
+        <!-- Closed -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-gray-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatNumber(metrics.closedCount) }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Closed</p>
           </div>
         </div>
 
@@ -676,15 +736,15 @@
         <!-- First Call Resolution Rate -->
         <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-green-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-0.5 bg-teal-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <p class="text-sm font-semibold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : `${metrics.fcrRate}%(${formatNumber(metrics.fcrCount)})` }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">First-Call-Resolution Rate (%)</p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">FCR Rate (%)</p>
           </div>
         </div>
 
@@ -855,6 +915,10 @@ export default {
       teamOptions: [],
       metrics: {
         totalTickets: 0,
+        assignedCount: 0,
+        pendingCount: 0,
+        resolvedCount: 0,
+        closedCount: 0,
         ticketsChange: 0,
         avgResolutionTimeMinutes: 0,
         fcrRate: 0,
@@ -1409,6 +1473,10 @@ export default {
           const data = response.data;
 
           this.metrics.totalTickets = data.totalTickets || 0;
+          this.metrics.assignedCount = data.assignedCount || 0;
+          this.metrics.pendingCount = data.pendingCount || 0;
+          this.metrics.resolvedCount = data.resolvedCount || 0;
+          this.metrics.closedCount = data.closedCount || 0;
           this.metrics.avgResolutionTimeMinutes = data.avgResolutionTime?.minutes || 0;
           this.metrics.fcrRate = data.firstCallResolution?.rate || 0;
           this.metrics.fcrCount = data.firstCallResolution?.fcr || 0;
@@ -1426,6 +1494,10 @@ export default {
 
           console.log('Analytics cards data updated:', {
             totalTickets: this.metrics.totalTickets,
+            assignedCount: this.metrics.assignedCount,
+            pendingCount: this.metrics.pendingCount,
+            resolvedCount: this.metrics.resolvedCount,
+            closedCount: this.metrics.closedCount,
             avgResolutionTime: this.metrics.avgResolutionTimeMinutes,
             fcrRate: this.metrics.fcrRate,
             fcrCount: this.metrics.fcrCount,
@@ -1444,6 +1516,10 @@ export default {
 
         // Set fallback values if API fails
         this.metrics.totalTickets = 0;
+        this.metrics.assignedCount = 0;
+        this.metrics.pendingCount = 0;
+        this.metrics.resolvedCount = 0;
+        this.metrics.closedCount = 0;
         this.metrics.avgResolutionTimeMinutes = 0;
         this.metrics.fcrRate = 0;
         this.metrics.fcrCount = 0;

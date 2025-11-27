@@ -3240,7 +3240,36 @@ export class ticketController {
                 WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
             `;
 
-            // 4. Average Customer Satisfaction from feedbacks table
+            // 4. Status Counts
+            const assignedCountQuery = `
+                SELECT COUNT(*) as count
+                FROM tickets t
+                WHERE t.status = 'Assigned'
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+            `;
+
+            const pendingCountQuery = `
+                SELECT COUNT(*) as count
+                FROM tickets t
+                WHERE t.status = 'Pending'
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+            `;
+
+            const resolvedCountQuery = `
+                SELECT COUNT(*) as count
+                FROM tickets t
+                WHERE t.status = 'Resolved'
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+            `;
+
+            const closedCountQuery = `
+                SELECT COUNT(*) as count
+                FROM tickets t
+                WHERE t.status = 'Closed'
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+            `;
+
+            // 5. Average Customer Satisfaction from feedbacks table
             const avgCsatQuery = `
                 SELECT
                     AVG(f.rating) as avgCsat,
@@ -3251,7 +3280,7 @@ export class ticketController {
                   ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
             `;
 
-            // 5. Callback Completion Rate from calls table
+            // 6. Callback Completion Rate from calls table
             const callbackCompletionQuery = `
                 SELECT
                     COUNT(*) as totalCalls,
@@ -3307,6 +3336,31 @@ export class ticketController {
                             completed: result[0]?.completedCalls || 0
                         });
                     });
+                }),
+                // Status count queries
+                new Promise((resolve, reject) => {
+                    connection.query(assignedCountQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result[0]?.count || 0);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(pendingCountQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result[0]?.count || 0);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(resolvedCountQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result[0]?.count || 0);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(closedCountQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result[0]?.count || 0);
+                    });
                 })
             ];
 
@@ -3318,6 +3372,10 @@ export class ticketController {
                 firstCallResolution: results[2],
                 avgCustomerSatisfaction: results[3],
                 callbackCompletionRate: results[4],
+                assignedCount: results[5],
+                pendingCount: results[6],
+                resolvedCount: results[7],
+                closedCount: results[8],
                 filters: {
                     dateRange: dateRange || '30',
                     agents: agents || [],
