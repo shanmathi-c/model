@@ -602,41 +602,6 @@
         </table>
       </div>
 
-      <!-- Callback Status Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Callback Status</h2>
-        <table class="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Status</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Count</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="border border-gray-300 px-4 py-2">Successful Callbacks</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callbackStatusData.successful) }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCallbackPercentage(callbackStatusData.successful) }}%</td>
-            </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">Pending Callbacks</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callbackStatusData.pending) }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCallbackPercentage(callbackStatusData.pending) }}%</td>
-            </tr>
-            <tr>
-              <td class="border border-gray-300 px-4 py-2">Missed Callbacks</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callbackStatusData.missed) }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCallbackPercentage(callbackStatusData.missed) }}%</td>
-            </tr>
-            <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-4 py-2">Total Callbacks</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ formatNumber(callbackStatusData.total) }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">100%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </div>
 
     <!-- Main Content Area -->
@@ -829,6 +794,7 @@
         <CallStatisticsChart
           title="Call Statistics"
           :call-data="callStatisticsData"
+          :callback-data="callbackStatusData"
         />
       </div>
 
@@ -838,15 +804,6 @@
         <ProductPerformanceTable
           title="Product Performance Breakdown"
           :product-data="productPerformanceData"
-        />
-      </div>
-
-      <!-- Callback Status Chart Section -->
-      <div class="mb-6">
-        <!-- Callback Status -->
-        <CallbackStatusChart
-          title="Callback Status"
-          :callback-data="callbackStatusData"
         />
       </div>
     </div>
@@ -860,7 +817,6 @@ import CustomerSatisfactionChart from '~/components/CustomerSatisfactionChart.vu
 import AgentPerformanceTable from '~/components/AgentPerformanceTable.vue'
 import CallStatisticsChart from '~/components/CallStatisticsChart.vue'
 import ProductPerformanceTable from '~/components/ProductPerformanceTable.vue'
-import CallbackStatusChart from '~/components/CallbackStatusChart.vue'
 import html2pdf from 'html2pdf.js'
 
 export default {
@@ -871,8 +827,7 @@ export default {
     CustomerSatisfactionChart,
     AgentPerformanceTable,
     CallStatisticsChart,
-    ProductPerformanceTable,
-    CallbackStatusChart
+    ProductPerformanceTable
   },
 
   data() {

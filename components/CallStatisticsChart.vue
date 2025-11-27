@@ -5,7 +5,7 @@
     </div>
 
     <!-- Summary Cards -->
-    <div v-if="showSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div v-if="showSummary" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
       <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div class="flex items-center justify-between">
           <div>
@@ -40,23 +40,6 @@
         </div>
       </div>
 
-      <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-yellow-600">Missed Calls</p>
-            <p class="text-2xl font-bold text-yellow-900">{{ formatNumber(summaryStats.missedCalls) }}</p>
-            <p class="text-xs text-yellow-700 mt-1">
-              {{ summaryStats.callbacks }} callbacks
-            </p>
-          </div>
-          <div class="p-2 bg-yellow-100 rounded-lg">
-            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
       <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
         <div class="flex items-center justify-between">
           <div>
@@ -75,76 +58,94 @@
       </div>
     </div>
 
-    <!-- Bar Charts -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Inbound vs Outbound Calls -->
-      <div>
-        <h4 class="text-sm font-medium text-gray-700 mb-3">Call Volume by Type</h4>
-        <div class="space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-sm text-gray-600">Inbound Calls</span>
-              <span class="text-sm font-medium text-gray-900">{{ formatNumber(callData.inbound) }}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
-              <div
-                class="bg-gradient-to-r from-blue-500 to-blue-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-300"
-                :style="{ width: getPercentage(callData.inbound, callData.inbound + callData.outbound) + '%' }"
-              >
-                <span class="text-xs text-white font-medium">{{ getPercentage(callData.inbound, callData.inbound + callData.outbound) }}%</span>
-              </div>
-            </div>
+    <!-- Call Volume Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <!-- Inbound Card -->
+      <div class="bg-blue-50 rounded-lg p-3 border border-blue-200 min-h-[90px]">
+        <div class="flex items-center justify-between h-full">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-blue-600 mb-1">Inbound</p>
+            <p class="text-xl font-bold text-blue-900 truncate">{{ formatNumber(callData.inbound) }}</p>
+            <p class="text-xs text-blue-700">
+              {{ getPercentage(callData.inbound, callData.inbound + callData.outbound) }}%
+            </p>
           </div>
-
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-sm text-gray-600">Outbound Calls</span>
-              <span class="text-sm font-medium text-gray-900">{{ formatNumber(callData.outbound) }}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
-              <div
-                class="bg-gradient-to-r from-green-500 to-green-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-300"
-                :style="{ width: getPercentage(callData.outbound, callData.inbound + callData.outbound) + '%' }"
-              >
-                <span class="text-xs text-white font-medium">{{ getPercentage(callData.outbound, callData.inbound + callData.outbound) }}%</span>
-              </div>
-            </div>
+          <div class="p-1.5 bg-blue-100 rounded-lg flex-shrink-0 ml-2">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
           </div>
         </div>
       </div>
 
-      <!-- Call Outcome Distribution -->
-      <div>
-        <h4 class="text-sm font-medium text-gray-700 mb-3">Call Outcomes</h4>
-        <div class="space-y-3">
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-sm text-gray-600">Completed</span>
-              <span class="text-sm font-medium text-gray-900">{{ formatNumber(callData.completed) }}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
-              <div
-                class="bg-gradient-to-r from-green-500 to-green-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-300"
-                :style="{ width: getPercentage(callData.completed, callData.completed + callData.missed) + '%' }"
-              >
-                <span class="text-xs text-white font-medium">{{ getPercentage(callData.completed, callData.completed + callData.missed) }}%</span>
-              </div>
-            </div>
+      <!-- Outbound Card -->
+      <div class="bg-green-50 rounded-lg p-3 border border-green-200 min-h-[90px]">
+        <div class="flex items-center justify-between h-full">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-green-600 mb-1">Outbound</p>
+            <p class="text-xl font-bold text-green-900 truncate">{{ formatNumber(callData.outbound) }}</p>
+            <p class="text-xs text-green-700">
+              {{ getPercentage(callData.outbound, callData.inbound + callData.outbound) }}%
+            </p>
           </div>
+          <div class="p-1.5 bg-green-100 rounded-lg flex-shrink-0 ml-2">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-sm text-gray-600">Missed</span>
-              <span class="text-sm font-medium text-gray-900">{{ formatNumber(callData.missed) }}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
-              <div
-                class="bg-gradient-to-r from-red-500 to-red-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-300"
-                :style="{ width: getPercentage(callData.missed, callData.completed + callData.missed) + '%' }"
-              >
-                <span class="text-xs text-white font-medium">{{ getPercentage(callData.missed, callData.completed + callData.missed) }}%</span>
-              </div>
-            </div>
+      <!-- Missed Card -->
+      <div class="bg-red-50 rounded-lg p-3 border border-red-200 min-h-[90px]">
+        <div class="flex items-center justify-between h-full">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-red-600 mb-1">Missed</p>
+            <p class="text-xl font-bold text-red-900 truncate">{{ formatNumber(callbackData.missed) }}</p>
+            <p class="text-xs text-red-700">
+              {{ getCallbackPercentage(callbackData.missed) }}%
+            </p>
+          </div>
+          <div class="p-1.5 bg-red-100 rounded-lg flex-shrink-0 ml-2">
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Card -->
+      <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200 min-h-[90px]">
+        <div class="flex items-center justify-between h-full">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-emerald-600 mb-1">Completed</p>
+            <p class="text-xl font-bold text-emerald-900 truncate">{{ formatNumber(callbackData.successful) }}</p>
+            <p class="text-xs text-emerald-700">
+              {{ getCallbackPercentage(callbackData.successful) }}%
+            </p>
+          </div>
+          <div class="p-1.5 bg-emerald-100 rounded-lg flex-shrink-0 ml-2">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Card -->
+      <div class="bg-yellow-50 rounded-lg p-3 border border-yellow-200 min-h-[90px]">
+        <div class="flex items-center justify-between h-full">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-yellow-600 mb-1">Pending</p>
+            <p class="text-xl font-bold text-yellow-900 truncate">{{ formatNumber(callbackData.pending) }}</p>
+            <p class="text-xs text-yellow-700">
+              {{ getCallbackPercentage(callbackData.pending) }}%
+            </p>
+          </div>
+          <div class="p-1.5 bg-yellow-100 rounded-lg flex-shrink-0 ml-2">
+            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
         </div>
       </div>
@@ -162,6 +163,10 @@ export default {
       default: 'Call Statistics'
     },
     callData: {
+      type: Object,
+      required: true
+    },
+    callbackData: {
       type: Object,
       required: true
     },
@@ -214,6 +219,11 @@ export default {
       if (rate >= 70) return 'Good'
       if (rate >= 50) return 'Average'
       return 'Needs Improvement'
+    },
+
+    getCallbackPercentage(value) {
+      const total = this.callbackData.total || 0
+      return total > 0 ? Math.round((value / total) * 100) : 0
     }
   }
 }
