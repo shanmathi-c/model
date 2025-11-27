@@ -191,8 +191,8 @@
                   <div>
                     <label class="text-xs font-medium text-gray-600 mb-1 block">Created Date</label>
                     <DateRangePicker
-                      :startDate.sync="activeFilters.dateRange.createdFrom"
-                      :endDate.sync="activeFilters.dateRange.createdTo"
+                      :startDate="activeFilters.dateRange.createdFrom"
+                      :endDate="activeFilters.dateRange.createdTo"
                       placeholder="Select created date range"
                       @update:startDate="activeFilters.dateRange.createdFrom = $event"
                       @update:endDate="activeFilters.dateRange.createdTo = $event"
@@ -203,8 +203,8 @@
                   <div>
                     <label class="text-xs font-medium text-gray-600 mb-1 block">Resolved Date</label>
                     <DateRangePicker
-                      :startDate.sync="activeFilters.dateRange.resolvedFrom"
-                      :endDate.sync="activeFilters.dateRange.resolvedTo"
+                      :startDate="activeFilters.dateRange.resolvedFrom"
+                      :endDate="activeFilters.dateRange.resolvedTo"
                       placeholder="Select resolved date range"
                       @update:startDate="activeFilters.dateRange.resolvedFrom = $event"
                       @update:endDate="activeFilters.dateRange.resolvedTo = $event"
@@ -363,38 +363,38 @@
     <div class="flex-1 overflow-x-auto  flex flex-col pt-5" style="min-height: calc(100vh - 250px); ">
         <!-- Table View -->
         <div class="overflow-x-auto" style="min-height: calc(40vh - 300px);">
-          <table class="w-full" style="min-width: 1200px;">
-              <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+          <table class="w-full border-collapse" style="min-width: 1200px;">
+              <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
                 <tr>
-                  <th v-if="visibleColumns.ticketId" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Ticket ID</th>
-                  <th v-if="visibleColumns.customer" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 200px; min-width: 200px;">Customer</th>
-                  <th v-if="visibleColumns.phone" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 130px; min-width: 130px;">Phone</th>
-                  <th v-if="visibleColumns.agent" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 150px; min-width: 150px;">Agent</th>
-                  <th v-if="visibleColumns.product" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Product</th>
-                  <th v-if="visibleColumns.type" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">Type</th>
-                  <th v-if="visibleColumns.status" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Status</th>
-                  <th v-if="visibleColumns.created" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Created</th>
-                  <th v-if="visibleColumns.resolved" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 120px; min-width: 120px;">Resolved</th>
-                  <th v-if="visibleColumns.csat" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 100px; min-width: 100px;">CSAT</th>
-                  <th v-if="visibleColumns.fcr" class="px-4 py-3.5 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 80px; min-width: 80px;">FCR</th>
-                  <th v-if="visibleColumns.notes" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 200px; min-width: 200px;">Notes</th>
-                  <th v-if="visibleColumns.feedback" class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider" style="width: 140px; min-width: 140px;">Feedback</th>
+                  <th v-if="visibleColumns.ticketId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Ticket ID</th>
+                  <th v-if="visibleColumns.customer" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 200px; min-width: 200px;">Customer</th>
+                  <th v-if="visibleColumns.phone" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 140px; min-width: 140px;">Phone</th>
+                  <th v-if="visibleColumns.agent" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 160px; min-width: 160px;">Agent</th>
+                  <th v-if="visibleColumns.product" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Product</th>
+                  <th v-if="visibleColumns.type" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Type</th>
+                  <th v-if="visibleColumns.status" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Status</th>
+                  <th v-if="visibleColumns.created" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Created</th>
+                  <th v-if="visibleColumns.resolved" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Resolved</th>
+                  <th v-if="visibleColumns.csat" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">CSAT</th>
+                  <th v-if="visibleColumns.fcr" class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 90px; min-width: 90px;">FCR</th>
+                  <th v-if="visibleColumns.notes" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 200px; min-width: 200px;">Notes</th>
+                  <th v-if="visibleColumns.feedback" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 150px; min-width: 150px;">Feedback</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody class="bg-white divide-y divide-gray-200">
                 <tr
                   v-for="ticket in paginatedTickets"
                   :key="ticket.id"
-                  class="hover:bg-gray-50 transition-colors cursor-pointer"
+                  class="border-b border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
                   @click="openTicketDetails(ticket)"
                 >
                   <!-- Ticket ID -->
-                  <td v-if="visibleColumns.ticketId" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.ticketId" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span class="text-sm font-medium text-blue-600">{{ ticket.ticketId || '#' + ticket.id }}</span>
                   </td>
 
                   <!-- Customer -->
-                  <td v-if="visibleColumns.customer" class="px-4 py-3.5 align-middle">
+                  <td v-if="visibleColumns.customer" class="px-6 py-4 align-middle">
                     <div class="text-sm leading-tight">
                       <div class="font-medium text-gray-900">{{ ticket.customerName }}</div>
                       <div class="flex items-center gap-1 text-gray-500 mt-0.5">
@@ -411,7 +411,7 @@
                   </td>
 
                   <!-- Phone -->
-                  <td v-if="visibleColumns.phone" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.phone" class="px-6 py-4 whitespace-nowrap align-middle">
                     <div class="flex items-center gap-2">
                       <img
                         v-if="isPhoneNumber(ticket.phone)"
@@ -425,7 +425,7 @@
                   </td>
 
                   <!-- Agent -->
-                  <td v-if="visibleColumns.agent" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.agent" class="px-6 py-4 whitespace-nowrap align-middle">
                     <div class="flex items-center gap-2">
                       <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="text-xs font-medium text-gray-600">{{ getInitials(ticket.agentName) }}</span>
@@ -435,17 +435,17 @@
                   </td>
 
                   <!-- Product -->
-                  <td v-if="visibleColumns.product" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.product" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span class="text-sm text-gray-900">{{ ticket.productCategory }}</span>
                   </td>
 
                   <!-- Type -->
-                  <td v-if="visibleColumns.type" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.type" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span class="text-sm text-gray-700 capitalize">{{ ticket.type }}</span>
                   </td>
 
                   <!-- Status -->
-                  <td v-if="visibleColumns.status" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.status" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                       :class="getStatusClass(ticket.status)"
@@ -455,17 +455,17 @@
                   </td>
 
                   <!-- Created Date -->
-                  <td v-if="visibleColumns.created" class="px-4 py-3.5 whitespace-nowrap align-middle text-sm text-gray-500">
+                  <td v-if="visibleColumns.created" class="px-6 py-4 whitespace-nowrap align-middle text-sm text-gray-600">
                     {{ formatDate(ticket.createdDate) }}
                   </td>
 
                   <!-- Resolved Date -->
-                  <td v-if="visibleColumns.resolved" class="px-4 py-3.5 whitespace-nowrap align-middle text-sm text-gray-500">
+                  <td v-if="visibleColumns.resolved" class="px-6 py-4 whitespace-nowrap align-middle text-sm text-gray-600">
                     {{ ticket.resolvedDate ? formatDate(ticket.resolvedDate) : '-' }}
                   </td>
 
                   <!-- CSAT Rating -->
-                  <td v-if="visibleColumns.csat" class="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <td v-if="visibleColumns.csat" class="px-6 py-4 whitespace-nowrap align-middle">
                     <div v-if="ticket.feedbackRating" class="flex items-center gap-0.5">
                       <span
                         v-for="n in 5"
@@ -485,7 +485,7 @@
                   </td>
 
                   <!-- FCR Indicator -->
-                  <td v-if="visibleColumns.fcr" class="px-4 py-3.5 whitespace-nowrap align-middle text-center">
+                  <td v-if="visibleColumns.fcr" class="px-6 py-4 whitespace-nowrap align-middle text-center">
                     <span
                       v-if="ticket.firstCallResolution"
                       class="inline-flex items-center justify-center w-6 h-6 bg-green-100 rounded-full"
@@ -499,46 +499,44 @@
                   </td>
 
                   <!-- Notes Preview -->
-                  <td v-if="visibleColumns.notes" class="px-4 py-3.5 align-middle">
+                  <td v-if="visibleColumns.notes" class="px-6 py-4 align-middle">
                     <div class="text-sm text-gray-600 truncate" style="max-width: 200px;">
                       {{ getLatestNotePreview(ticket.notes) }}
                     </div>
                   </td>
 
                   <!-- Feedback -->
-                  <td v-if="visibleColumns.feedback" class="px-4 py-3.5 align-middle">
+                  <td v-if="visibleColumns.feedback" class="px-6 py-4 align-middle">
                     <!-- Show "Feedback Received" if status is received -->
-                    <div v-if="ticket.feedbackStatus === 'received'" class="text-sm">
+                    <div v-if="ticket.feedbackStatus === 'received'" class="flex items-center gap-2">
                       <button
                         @click.stop="openFeedbackDetailsModal(ticket)"
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer whitespace-nowrap"
                         title="Click to view feedback details"
                       >
                         Feedback Received
                       </button>
-                      <div v-if="ticket.feedbackRating" class="mt-0.5 text-xs text-gray-600">
-                        Rating: {{ ticket.feedbackRating }}/5
-                      </div>
+                      <span v-if="ticket.feedbackRating" class="text-xs text-gray-600 whitespace-nowrap">
+                        ({{ ticket.feedbackRating }}/5)
+                      </span>
                     </div>
                     <!-- Show Open/Copy buttons if status is pending -->
-                    <div v-else-if="ticket.feedbackStatus === 'pending' && ticket.feedbackLink" class="space-y-1">
-                      <div class="flex items-center gap-2">
-                        <button
-                          @click.stop="openFeedbackLinkInNewTab(ticket.feedbackLink)"
-                          class="px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                          title="Open feedback form"
-                        >
-                          Open
-                        </button>
-                        <button
-                          @click.stop="copyFeedbackLinkFromTable(ticket.feedbackLink)"
-                          class="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                          title="Copy feedback link"
-                        >
-                          {{ ticket.feedbackLinkCopied ? 'Copied!' : 'Copy' }}
-                        </button>
-                      </div>
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <div v-else-if="ticket.feedbackStatus === 'pending' && ticket.feedbackLink" class="flex items-center gap-2">
+                      <button
+                        @click.stop="openFeedbackLinkInNewTab(ticket.feedbackLink)"
+                        class="px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors whitespace-nowrap"
+                        title="Open feedback form"
+                      >
+                        Open
+                      </button>
+                      <button
+                        @click.stop="copyFeedbackLinkFromTable(ticket.feedbackLink)"
+                        class="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors whitespace-nowrap"
+                        title="Copy feedback link"
+                      >
+                        {{ ticket.feedbackLinkCopied ? 'Copied!' : 'Copy' }}
+                      </button>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 whitespace-nowrap">
                         Pending
                       </span>
                     </div>
@@ -1025,25 +1023,27 @@
                 <h3 class="text-base font-bold text-gray-900">Related Calls & Recordings</h3>
               </div>
               <div class="space-y-2">
-                <div v-if="relatedCalls && relatedCalls.length > 0" v-for="call in relatedCalls" :key="call.id" class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                  <div class="flex items-center gap-3">
-                    <svg class="w-4 h-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <div>
-                      <p class="text-sm font-medium">Call #{{ call.callId || call.id }}</p>
-                      <p class="text-xs text-gray-500">
-                        {{ formatCallDuration(call.startTime, call.endTime) }} | {{ formatCallTime(call.startTime) }}
-                      </p>
+                <template v-if="relatedCalls && relatedCalls.length > 0">
+                  <div v-for="call in relatedCalls" :key="call.id" class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                      <svg class="w-4 h-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <div>
+                        <p class="text-sm font-medium">Call #{{ call.callId || call.id }}</p>
+                        <p class="text-xs text-gray-500">
+                          {{ formatCallDuration(call.startTime, call.endTime) }} | {{ formatCallTime(call.startTime) }}
+                        </p>
+                      </div>
                     </div>
+                    <button v-if="call.recordingUrl" @click="playRecording(call.recordingUrl)" class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                      Play Recording
+                    </button>
+                    <span v-else class="px-2 py-1 text-xs text-gray-400">
+                      No Recording
+                    </span>
                   </div>
-                  <button v-if="call.recordingUrl" @click="playRecording(call.recordingUrl)" class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                    Play Recording
-                  </button>
-                  <span v-else class="px-2 py-1 text-xs text-gray-400">
-                    No Recording
-                  </span>
-                </div>
+                </template>
                 <div v-if="!relatedCalls || relatedCalls.length === 0" class="text-center py-4 text-gray-500">
                   <p class="text-sm">No calls connected</p>
                 </div>

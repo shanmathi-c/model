@@ -28,8 +28,8 @@
         <!-- Custom Date Range Picker (shown when 'custom' is selected) -->
         <div v-if="analyticsFilters.dateRange === 'custom'" class="flex items-center gap-2">
           <DateRangePicker
-            :startDate.sync="customDateRange.start"
-            :endDate.sync="customDateRange.end"
+            :startDate="customDateRange.start"
+            :endDate="customDateRange.end"
             placeholder="Select custom date range"
             :autoApply="true"
             @update:startDate="customDateRange.start = $event; applyCustomDateRange()"

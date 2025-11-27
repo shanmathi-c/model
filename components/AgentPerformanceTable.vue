@@ -17,12 +17,12 @@
     </div>
 
     <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="bg-gray-50 border-b border-gray-200">
+      <table class="w-full border-collapse">
+        <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
           <tr>
-            <th class="px-6 py-3 text-left">
+            <th class="px-6 py-4 text-left">
               <div
-                class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900"
+                class="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900"
                 @click="sortBy('name')"
               >
                 Agent Name
@@ -37,9 +37,9 @@
                 </svg>
               </div>
             </th>
-            <th class="px-6 py-3 text-left">
+            <th class="px-6 py-4 text-left">
               <div
-                class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900"
+                class="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900"
                 @click="sortBy('assigned')"
               >
                 Assigned
@@ -54,9 +54,9 @@
                 </svg>
               </div>
             </th>
-            <th class="px-6 py-3 text-left">
+            <th class="px-6 py-4 text-left">
               <div
-                class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900"
+                class="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900"
                 @click="sortBy('resolved')"
               >
                 Resolved
@@ -71,9 +71,9 @@
                 </svg>
               </div>
             </th>
-            <th class="px-6 py-3 text-left">
+            <th class="px-6 py-4 text-left">
               <div
-                class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900"
+                class="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900"
                 @click="sortBy('resolutionTime')"
               >
                 Avg Resolution Time
@@ -88,9 +88,9 @@
                 </svg>
               </div>
             </th>
-            <th class="px-6 py-3 text-left">
+            <th class="px-6 py-4 text-left">
               <div
-                class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900"
+                class="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900"
                 @click="sortBy('fcrRate')"
               >
                 FCR Rate
@@ -105,9 +105,9 @@
                 </svg>
               </div>
             </th>
-            <th class="px-6 py-3 text-left">
+            <th class="px-6 py-4 text-left">
               <div
-                class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900"
+                class="flex items-center gap-1 text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:text-gray-900"
                 @click="sortBy('csatRating')"
               >
                 Avg CSAT
@@ -124,9 +124,9 @@
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
-          <tr v-for="(agent, index) in sortedAgents" :key="agent.id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap">
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="(agent, index) in sortedAgents" :key="agent.id" class="border-b border-gray-200 hover:bg-gray-100 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap align-middle">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-8 w-8">
                   <div class="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
@@ -144,24 +144,24 @@
                 </div>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-middle">
               {{ agent.assigned.toLocaleString() }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-4 whitespace-nowrap align-middle">
               <div class="flex flex-col">
                 <span class="text-sm text-gray-900 font-medium">{{ agent.resolved.toLocaleString() }}</span>
                 <span class="text-xs text-gray-500">({{ getResolutionRate(agent) }}%)</span>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-middle">
               {{ formatResolutionTime(agent.resolutionTime) }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-4 whitespace-nowrap align-middle">
               <span :class="getFcrRateClass(agent.fcrRate)" class="text-sm font-medium">
                 {{ agent.fcrRate.toFixed(1) }}%
               </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-4 whitespace-nowrap align-middle">
               <div class="flex items-center gap-1">
                 <span :class="getCsatClass(agent.csatRating)" class="text-sm font-medium">
                   {{ agent.csatRating.toFixed(1) }}

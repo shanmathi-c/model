@@ -187,8 +187,8 @@
                   <div>
                     <label class="text-xs font-medium text-gray-600 mb-1 block">Call Date</label>
                     <DateRangePicker
-                      :startDate.sync="activeFilters.dateRange.callDateFrom"
-                      :endDate.sync="activeFilters.dateRange.callDateTo"
+                      :startDate="activeFilters.dateRange.callDateFrom"
+                      :endDate="activeFilters.dateRange.callDateTo"
                       placeholder="Select call date range"
                       @update:startDate="activeFilters.dateRange.callDateFrom = $event"
                       @update:endDate="activeFilters.dateRange.callDateTo = $event"
@@ -387,38 +387,38 @@
         <div v-else class="overflow-x-auto" style="min-height: calc(100vh - 300px);">
           <div class="inline-block min-w-full align-middle h-full">
             <div class="overflow-hidden h-full">
-              <table class="min-w-full divide-y divide-gray-300">
+              <table class="min-w-full border-collapse">
                 <!-- Table Header -->
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
                   <tr>
-                    <th v-if="visibleColumns.callLogId" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.callLogId" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 120px; min-width: 120px;">
                       Call Log ID
                     </th>
-                    <th v-if="visibleColumns.customerPhone" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.customerPhone" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 180px; min-width: 180px;">
                       Customer
                     </th>
-                    <th v-if="visibleColumns.agentName" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.agentName" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 160px; min-width: 160px;">
                       Agent Name
                     </th>
-                    <th v-if="visibleColumns.callType" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.callType" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 120px; min-width: 120px;">
                       Call Type
                     </th>
-                    <th v-if="visibleColumns.duration" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.duration" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">
                       Duration
                     </th>
-                    <th v-if="visibleColumns.status" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.status" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 120px; min-width: 120px;">
                       Status
                     </th>
-                    <th v-if="visibleColumns.callDateTime" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.callDateTime" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 160px; min-width: 160px;">
                       Call Date & Time
                     </th>
-                    <th v-if="visibleColumns.recording" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.recording" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">
                       Recording
                     </th>
-                    <th v-if="visibleColumns.relatedTicketId" scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th v-if="visibleColumns.relatedTicketId" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 140px; min-width: 140px;">
                       Related Ticket ID
                     </th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 100px; min-width: 100px;">
                       Actions
                     </th>
                   </tr>
@@ -426,14 +426,14 @@
 
                 <!-- Table Body - Fixed Height -->
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="call in paginatedCalls" :key="call.id" class="hover:bg-gray-50 transition-colors cursor-pointer" @click="openCallDetails(call)">
+                  <tr v-for="call in paginatedCalls" :key="call.id" class="border-b border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer" @click="openCallDetails(call)">
                     <!-- Call Log ID -->
-                    <td v-if="visibleColumns.callLogId" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td v-if="visibleColumns.callLogId" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 align-middle">
                       {{ call.callId || call.callLogId || 'N/A' }}
                     </td>
 
                     <!-- Customer -->
-                    <td v-if="visibleColumns.customerPhone" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td v-if="visibleColumns.customerPhone" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-middle">
                       <div class="flex items-center gap-2">
                         <img
                           v-if="call.phone && call.phone !== 'N/A'"
@@ -450,7 +450,7 @@
                     </td>
 
                     <!-- Agent Name -->
-                    <td v-if="visibleColumns.agentName" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td v-if="visibleColumns.agentName" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-middle">
                       <div class="space-y-1">
                         <div class="font-medium text-gray-900">{{ call.agentName || 'Not Assigned' }}</div>
                         <div class="text-xs text-gray-500">{{ call.agentPhone || 'N/A' }}</div>
@@ -458,31 +458,31 @@
                     </td>
 
                     <!-- Call Type -->
-                    <td v-if="visibleColumns.callType" class="px-6 py-4 whitespace-nowrap">
+                    <td v-if="visibleColumns.callType" class="px-6 py-4 whitespace-nowrap align-middle">
                       <span :class="getCallTypeClass(call.callType)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
                         {{ call.callType ? call.callType.charAt(0).toUpperCase() + call.callType.slice(1) : 'N/A' }}
                       </span>
                     </td>
 
                     <!-- Duration -->
-                    <td v-if="visibleColumns.duration" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td v-if="visibleColumns.duration" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-middle">
                       {{ formatDuration(call.duration) }}
                     </td>
 
                     <!-- Status -->
-                    <td v-if="visibleColumns.status" class="px-6 py-4 whitespace-nowrap">
+                    <td v-if="visibleColumns.status" class="px-6 py-4 whitespace-nowrap align-middle">
                       <span :class="getStatusClass(call.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
                         {{ formatStatus(call.status) }}
                       </span>
                     </td>
 
                     <!-- Call Date & Time -->
-                    <td v-if="visibleColumns.callDateTime" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td v-if="visibleColumns.callDateTime" class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 align-middle">
                       {{ formatDateTime(call.callDateTime || call.createdAt || call.created_at) }}
                     </td>
 
                     <!-- Recording -->
-                    <td v-if="visibleColumns.recording" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td v-if="visibleColumns.recording" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-middle">
                       <button
                         v-if="call.recordingUrl"
                         @click.stop="openRecordingModal(call.recordingUrl)"
@@ -498,7 +498,7 @@
                     </td>
 
                     <!-- Related Ticket ID -->
-                    <td v-if="visibleColumns.relatedTicketId" class="px-6 py-4 whitespace-nowrap text-sm">
+                    <td v-if="visibleColumns.relatedTicketId" class="px-6 py-4 whitespace-nowrap text-sm align-middle">
                       <span v-if="call.ticketId && call.ticketId !== 0 && call.ticketId !== '0' && call.ticketId !== null" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <svg class="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -509,7 +509,7 @@
                     </td>
 
                     <!-- Actions -->
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium align-middle">
                       <button @click.stop="viewCallDetails(call)" class="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50 transition-colors" title="Create Ticket">
                         <!-- Plus Circle Icon -->
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
