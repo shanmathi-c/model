@@ -4293,6 +4293,178 @@ export class ticketController {
         }
     }
 
+    // Get call trends data for line chart (inbound, outbound, missed, completed, pending over time)
+    static async getCallTrends(req, res) {
+        try {
+            const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
+
+            // Calculate date range filter
+            let days = 30; // default
+            let customDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                customDateFilter = `AND c.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
+                days = parseInt(dateRange);
+            }
+
+            // Build filter conditions
+            let agentFilter = '';
+            let productFilter = '';
+            let statusFilter = '';
+            let ticketTypeFilter = '';
+            let teamFilter = '';
+            const queryParams = customDateFilter ? [] : [days];
+
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND c.agentId IN (
+                    SELECT id FROM agents WHERE agentName IN (${agentPlaceholders})
+                )`;
+                queryParams.push(...agentList);
+            }
+
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+                queryParams.push(...productList);
+            }
+
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+                queryParams.push(...statusList);
+            }
+
+            if (ticketTypes && ticketTypes.length > 0) {
+                const ticketTypeList = Array.isArray(ticketTypes) ? ticketTypes : [ticketTypes];
+                const ticketTypePlaceholders = ticketTypeList.map(() => '?').join(',');
+                ticketTypeFilter = `AND t.ticketType IN (${ticketTypePlaceholders})`;
+                queryParams.push(...ticketTypeList);
+            }
+
+            if (teams && teams.length > 0) {
+                const teamList = Array.isArray(teams) ? teams : [teams];
+                const teamPlaceholders = teamList.map(() => '?').join(',');
+                teamFilter = `AND EXISTS (
+                    SELECT 1 FROM agents a
+                    WHERE a.id = c.agentId
+                    AND a.team IN (${teamPlaceholders})
+                )`;
+                queryParams.push(...teamList);
+            }
+
+            // Query to get call statistics per day
+            const callTrendsQuery = customDateFilter ? `
+                SELECT
+                    DATE(c.createdAt) as date,
+                    COUNT(*) as totalCalls,
+                    COUNT(CASE WHEN c.callType = 'inbound' THEN 1 END) as inboundCalls,
+                    COUNT(CASE WHEN c.callType = 'outbound' THEN 1 END) as outboundCalls,
+                    COUNT(CASE WHEN c.callStatus = 'missed' THEN 1 END) as missedCalls,
+                    COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) as completedCalls,
+                    COUNT(CASE WHEN c.callStatus = 'pending' THEN 1 END) as pendingCalls
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE 1=1
+                ${customDateFilter}
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${ticketTypeFilter}
+                ${teamFilter}
+                GROUP BY DATE(c.createdAt)
+                ORDER BY date ASC
+            ` : `
+                SELECT
+                    DATE(c.createdAt) as date,
+                    COUNT(*) as totalCalls,
+                    COUNT(CASE WHEN c.callType = 'inbound' THEN 1 END) as inboundCalls,
+                    COUNT(CASE WHEN c.callType = 'outbound' THEN 1 END) as outboundCalls,
+                    COUNT(CASE WHEN c.callStatus = 'missed' THEN 1 END) as missedCalls,
+                    COUNT(CASE WHEN c.callStatus = 'completed' THEN 1 END) as completedCalls,
+                    COUNT(CASE WHEN c.callStatus = 'pending' THEN 1 END) as pendingCalls
+                FROM calls c
+                LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                WHERE c.createdAt >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${ticketTypeFilter}
+                ${teamFilter}
+                GROUP BY DATE(c.createdAt)
+                ORDER BY date ASC
+            `;
+
+            // Execute query
+            const results = await new Promise((resolve, reject) => {
+                connection.query(callTrendsQuery, queryParams, (err, result) => {
+                    if (err) reject(err);
+                    else resolve(result);
+                });
+            });
+
+            // Generate date labels and data arrays
+            const labels = [];
+            const inboundData = [];
+            const outboundData = [];
+            const missedData = [];
+            const completedData = [];
+            const pendingData = [];
+
+            // Create a map for quick lookup
+            const dataMap = new Map();
+            results.forEach(row => {
+                const dateStr = new Date(row.date).toISOString().split('T')[0];
+                dataMap.set(dateStr, {
+                    inbound: parseInt(row.inboundCalls) || 0,
+                    outbound: parseInt(row.outboundCalls) || 0,
+                    missed: parseInt(row.missedCalls) || 0,
+                    completed: parseInt(row.completedCalls) || 0,
+                    pending: parseInt(row.pendingCalls) || 0
+                });
+            });
+
+            // Generate all dates in the range
+            const startDateObj = customDateFilter && startDate ? new Date(startDate) : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+            const endDateObj = customDateFilter && endDate ? new Date(endDate) : new Date();
+
+            for (let d = new Date(startDateObj); d <= endDateObj; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                const formattedLabel = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                labels.push(formattedLabel);
+
+                const data = dataMap.get(dateStr) || { inbound: 0, outbound: 0, missed: 0, completed: 0, pending: 0 };
+                inboundData.push(data.inbound);
+                outboundData.push(data.outbound);
+                missedData.push(data.missed);
+                completedData.push(data.completed);
+                pendingData.push(data.pending);
+            }
+
+            return res.json({
+                message: "Call trends data fetched successfully",
+                data: {
+                    labels,
+                    inbound: inboundData,
+                    outbound: outboundData,
+                    missed: missedData,
+                    completed: completedData,
+                    pending: pendingData
+                }
+            });
+
+        } catch (error) {
+            console.error('Error in getCallTrends:', error);
+            return res.status(500).json({
+                message: "Error fetching call trends data",
+                error: error.message
+            });
+        }
+    }
+
     // Get product performance data
     static async getProductPerformance(req, res) {
         try {

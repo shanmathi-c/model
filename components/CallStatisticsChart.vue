@@ -151,6 +151,205 @@
       </div>
     </div>
 
+    <!-- Line Chart Section -->
+    <div v-if="trendsData && trendsData.labels && trendsData.labels.length > 0" class="mt-6 pt-6 border-t border-gray-200">
+      <h4 class="text-sm font-semibold text-gray-700 mb-4">Call Trends Over Time</h4>
+      <div class="h-80 relative">
+        <svg :width="chartWidth" :height="chartHeight" class="w-full h-full">
+          <!-- Grid Lines -->
+          <g v-for="tick in yTicks" :key="tick">
+            <line
+              :x1="padding.left"
+              :y1="getYPosition(tick)"
+              :x2="chartWidth - padding.right"
+              :y2="getYPosition(tick)"
+              stroke="#e5e7eb"
+              stroke-width="1"
+            />
+            <text
+              :x="padding.left - 10"
+              :y="getYPosition(tick) + 5"
+              text-anchor="end"
+              class="text-xs fill-gray-500"
+            >
+              {{ formatYTick(tick) }}
+            </text>
+          </g>
+
+          <!-- X-axis labels -->
+          <g v-for="(label, index) in visibleXLabels" :key="index">
+            <text
+              :x="getXPosition(label.originalIndex)"
+              :y="chartHeight - padding.bottom + (shouldRotateLabels ? 35 : 20)"
+              :text-anchor="shouldRotateLabels ? 'start' : 'middle'"
+              :transform="shouldRotateLabels ? `rotate(-45, ${getXPosition(label.originalIndex)}, ${chartHeight - padding.bottom + 35})` : ''"
+              class="text-xs fill-gray-500"
+            >
+              {{ label.text }}
+            </text>
+          </g>
+
+          <!-- Line for each metric -->
+          <polyline
+            v-if="showInbound"
+            :points="getLinePoints(trendsData.inbound)"
+            fill="none"
+            :stroke="colors.inbound"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+          <polyline
+            v-if="showOutbound"
+            :points="getLinePoints(trendsData.outbound)"
+            fill="none"
+            :stroke="colors.outbound"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+          <polyline
+            v-if="showMissed"
+            :points="getLinePoints(trendsData.missed)"
+            fill="none"
+            :stroke="colors.missed"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+          <polyline
+            v-if="showCompleted"
+            :points="getLinePoints(trendsData.completed)"
+            fill="none"
+            :stroke="colors.completed"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+          <polyline
+            v-if="showPending"
+            :points="getLinePoints(trendsData.pending)"
+            fill="none"
+            :stroke="colors.pending"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+
+          <!-- Data Points -->
+          <g v-if="showInbound" v-for="(point, index) in trendsData.inbound" :key="`inbound-${index}`">
+            <circle
+              :cx="getXPosition(index)"
+              :cy="getYPosition(point)"
+              r="3"
+              :fill="colors.inbound"
+              class="cursor-pointer"
+              @mouseover="showTooltip($event, 'Inbound', index, point)"
+              @mouseout="hideTooltip"
+            />
+          </g>
+          <g v-if="showOutbound" v-for="(point, index) in trendsData.outbound" :key="`outbound-${index}`">
+            <circle
+              :cx="getXPosition(index)"
+              :cy="getYPosition(point)"
+              r="3"
+              :fill="colors.outbound"
+              class="cursor-pointer"
+              @mouseover="showTooltip($event, 'Outbound', index, point)"
+              @mouseout="hideTooltip"
+            />
+          </g>
+          <g v-if="showMissed" v-for="(point, index) in trendsData.missed" :key="`missed-${index}`">
+            <circle
+              :cx="getXPosition(index)"
+              :cy="getYPosition(point)"
+              r="3"
+              :fill="colors.missed"
+              class="cursor-pointer"
+              @mouseover="showTooltip($event, 'Missed', index, point)"
+              @mouseout="hideTooltip"
+            />
+          </g>
+          <g v-if="showCompleted" v-for="(point, index) in trendsData.completed" :key="`completed-${index}`">
+            <circle
+              :cx="getXPosition(index)"
+              :cy="getYPosition(point)"
+              r="3"
+              :fill="colors.completed"
+              class="cursor-pointer"
+              @mouseover="showTooltip($event, 'Completed', index, point)"
+              @mouseout="hideTooltip"
+            />
+          </g>
+          <g v-if="showPending" v-for="(point, index) in trendsData.pending" :key="`pending-${index}`">
+            <circle
+              :cx="getXPosition(index)"
+              :cy="getYPosition(point)"
+              r="3"
+              :fill="colors.pending"
+              class="cursor-pointer"
+              @mouseover="showTooltip($event, 'Pending', index, point)"
+              @mouseout="hideTooltip"
+            />
+          </g>
+
+          <!-- Legend with toggle functionality -->
+          <g>
+            <!-- Inbound Legend -->
+            <g @click="toggleLine('inbound')" class="cursor-pointer">
+              <rect :x="chartWidth - 160" :y="12" width="12" height="12" :fill="showInbound ? colors.inbound : '#e5e7eb'" :stroke="colors.inbound" stroke-width="2" rx="2" />
+              <text :x="chartWidth - 140" :y="22" :class="['text-xs', showInbound ? 'fill-gray-700' : 'fill-gray-400']">Inbound</text>
+            </g>
+            <!-- Outbound Legend -->
+            <g @click="toggleLine('outbound')" class="cursor-pointer">
+              <rect :x="chartWidth - 160" :y="32" width="12" height="12" :fill="showOutbound ? colors.outbound : '#e5e7eb'" :stroke="colors.outbound" stroke-width="2" rx="2" />
+              <text :x="chartWidth - 140" :y="42" :class="['text-xs', showOutbound ? 'fill-gray-700' : 'fill-gray-400']">Outbound</text>
+            </g>
+            <!-- Missed Legend -->
+            <g @click="toggleLine('missed')" class="cursor-pointer">
+              <rect :x="chartWidth - 160" :y="52" width="12" height="12" :fill="showMissed ? colors.missed : '#e5e7eb'" :stroke="colors.missed" stroke-width="2" rx="2" />
+              <text :x="chartWidth - 140" :y="62" :class="['text-xs', showMissed ? 'fill-gray-700' : 'fill-gray-400']">Missed</text>
+            </g>
+            <!-- Completed Legend -->
+            <g @click="toggleLine('completed')" class="cursor-pointer">
+              <rect :x="chartWidth - 160" :y="72" width="12" height="12" :fill="showCompleted ? colors.completed : '#e5e7eb'" :stroke="colors.completed" stroke-width="2" rx="2" />
+              <text :x="chartWidth - 140" :y="82" :class="['text-xs', showCompleted ? 'fill-gray-700' : 'fill-gray-400']">Completed</text>
+            </g>
+            <!-- Pending Legend -->
+            <g @click="toggleLine('pending')" class="cursor-pointer">
+              <rect :x="chartWidth - 160" :y="92" width="12" height="12" :fill="showPending ? colors.pending : '#e5e7eb'" :stroke="colors.pending" stroke-width="2" rx="2" />
+              <text :x="chartWidth - 140" :y="102" :class="['text-xs', showPending ? 'fill-gray-700' : 'fill-gray-400']">Pending</text>
+            </g>
+          </g>
+        </svg>
+
+        <!-- Tooltip -->
+        <div
+          v-show="tooltip.visible"
+          :class="[
+            'absolute bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg border border-gray-700 pointer-events-none z-50',
+            'transition-all duration-200 ease-in-out',
+            tooltip.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          ]"
+          :style="{
+            left: tooltip.x + 'px',
+            top: tooltip.y + 'px',
+            transform: `translate(-50%, -100%)`,
+            maxWidth: '200px'
+          }"
+        >
+          <div class="text-sm font-semibold mb-1">{{ tooltip.date }}</div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: tooltip.color }"></div>
+            <span class="text-xs">{{ tooltip.label }}: <strong>{{ tooltip.value }}</strong></span>
+          </div>
+          <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+            <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -170,13 +369,48 @@ export default {
       type: Object,
       required: true
     },
+    trendsData: {
+      type: Object,
+      default: null
+    },
     showSummary: {
       type: Boolean,
       default: true
     }
   },
   data() {
-    return {}
+    return {
+      chartWidth: 800,
+      chartHeight: 320,
+      padding: {
+        top: 20,
+        right: 180,
+        bottom: 60,
+        left: 60
+      },
+      colors: {
+        inbound: '#3b82f6',
+        outbound: '#10b981',
+        missed: '#ef4444',
+        completed: '#10b981',
+        pending: '#f59e0b'
+      },
+      showInbound: true,
+      showOutbound: true,
+      showMissed: true,
+      showCompleted: true,
+      showPending: true,
+      tooltip: {
+        visible: false,
+        x: 0,
+        y: 0,
+        date: '',
+        label: '',
+        value: null,
+        color: ''
+      },
+      tooltipTimeout: null
+    }
   },
   computed: {
     summaryStats() {
@@ -193,6 +427,75 @@ export default {
         callbacks: this.callData.callbacks,
         completionRate
       }
+    },
+
+    maxValue() {
+      if (!this.trendsData) return 10
+      const allValues = [
+        ...(this.showInbound ? this.trendsData.inbound || [] : []),
+        ...(this.showOutbound ? this.trendsData.outbound || [] : []),
+        ...(this.showMissed ? this.trendsData.missed || [] : []),
+        ...(this.showCompleted ? this.trendsData.completed || [] : []),
+        ...(this.showPending ? this.trendsData.pending || [] : [])
+      ]
+      return Math.max(...allValues.filter(v => v !== null && v !== undefined), 10)
+    },
+
+    yTicks() {
+      const max = this.maxValue
+      const tickCount = 5
+      const step = Math.ceil(max / tickCount / 10) * 10 || 10
+
+      const ticks = []
+      for (let i = 0; i <= tickCount; i++) {
+        ticks.push(i * step)
+      }
+      return ticks
+    },
+
+    chartAreaWidth() {
+      return this.chartWidth - this.padding.left - this.padding.right
+    },
+
+    chartAreaHeight() {
+      return this.chartHeight - this.padding.top - this.padding.bottom
+    },
+
+    shouldRotateLabels() {
+      if (!this.trendsData || !this.trendsData.labels) return false
+      return this.trendsData.labels.length > 10
+    },
+
+    visibleXLabels() {
+      if (!this.trendsData || !this.trendsData.labels) return []
+      const labels = this.trendsData.labels
+      const maxLabels = this.shouldRotateLabels ? 15 : 8
+
+      if (labels.length <= maxLabels) {
+        return labels.map((label, index) => ({
+          text: label,
+          originalIndex: index
+        }))
+      }
+
+      const result = []
+      const step = Math.ceil(labels.length / maxLabels)
+
+      for (let i = 0; i < labels.length; i += step) {
+        result.push({
+          text: labels[i],
+          originalIndex: i
+        })
+      }
+
+      if (result[result.length - 1]?.originalIndex !== labels.length - 1) {
+        result.push({
+          text: labels[labels.length - 1],
+          originalIndex: labels.length - 1
+        })
+      }
+
+      return result
     }
   },
   methods: {
@@ -224,6 +527,107 @@ export default {
     getCallbackPercentage(value) {
       const total = this.callbackData.total || 0
       return total > 0 ? Math.round((value / total) * 100) : 0
+    },
+
+    // Line chart methods
+    getXPosition(index) {
+      if (!this.trendsData || !this.trendsData.labels || this.trendsData.labels.length <= 1) {
+        return this.padding.left + this.chartAreaWidth / 2
+      }
+
+      const step = this.chartAreaWidth / (this.trendsData.labels.length - 1)
+      return this.padding.left + (index * step)
+    },
+
+    getYPosition(value) {
+      const maxTick = Math.max(...this.yTicks)
+      const ratio = value / maxTick
+      return this.chartHeight - this.padding.bottom - (ratio * this.chartAreaHeight)
+    },
+
+    getLinePoints(data) {
+      if (!data || data.length === 0) return ''
+      return data.map((point, index) => {
+        if (point === null || point === undefined) return null
+        return `${this.getXPosition(index)},${this.getYPosition(point)}`
+      }).filter(Boolean).join(' ')
+    },
+
+    formatYTick(tick) {
+      if (tick >= 1000) {
+        return (tick / 1000).toFixed(1) + 'k'
+      }
+      return tick.toString()
+    },
+
+    toggleLine(metric) {
+      switch (metric) {
+        case 'inbound':
+          this.showInbound = !this.showInbound
+          break
+        case 'outbound':
+          this.showOutbound = !this.showOutbound
+          break
+        case 'missed':
+          this.showMissed = !this.showMissed
+          break
+        case 'completed':
+          this.showCompleted = !this.showCompleted
+          break
+        case 'pending':
+          this.showPending = !this.showPending
+          break
+      }
+    },
+
+    showTooltip(event, label, index, value) {
+      if (this.tooltipTimeout) {
+        clearTimeout(this.tooltipTimeout)
+        this.tooltipTimeout = null
+      }
+
+      const chartContainer = this.$el.querySelector('.h-80')
+      if (!chartContainer) return
+
+      const rect = chartContainer.getBoundingClientRect()
+
+      let x = event.clientX - rect.left
+      let y = event.clientY - rect.top
+
+      const tooltipWidth = 200
+      const tooltipHeight = 100
+      const padding = 10
+
+      if (x + tooltipWidth/2 > rect.width) {
+        x = rect.width - tooltipWidth/2 - padding
+      }
+
+      if (x - tooltipWidth/2 < 0) {
+        x = tooltipWidth/2 + padding
+      }
+
+      if (y - tooltipHeight - padding < 0) {
+        y = tooltipHeight + padding
+      }
+
+      this.tooltip.x = x
+      this.tooltip.y = y
+      this.tooltip.date = this.trendsData.labels[index] || ''
+      this.tooltip.label = label
+      this.tooltip.value = value
+      this.tooltip.color = this.colors[label.toLowerCase()]
+      this.tooltip.visible = true
+    },
+
+    hideTooltip() {
+      if (this.tooltipTimeout) {
+        clearTimeout(this.tooltipTimeout)
+      }
+
+      this.tooltipTimeout = setTimeout(() => {
+        this.tooltip.visible = false
+        this.tooltipTimeout = null
+      }, 50)
     }
   }
 }

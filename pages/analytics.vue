@@ -795,6 +795,7 @@
           title="Call Statistics"
           :call-data="callStatisticsData"
           :callback-data="callbackStatusData"
+          :trends-data="callTrendsData"
         />
       </div>
 
@@ -937,6 +938,14 @@ export default {
         missed: 0,        // Total missed calls
         callbacks: 0,     // Total callbacks made
         avgDuration: 0   // Average call duration in minutes
+      },
+      callTrendsData: {
+        labels: [],
+        inbound: [],
+        outbound: [],
+        missed: [],
+        completed: [],
+        pending: []
       },
       productPerformancePeriod: '30',
       productPerformanceData: [],
@@ -1144,6 +1153,7 @@ export default {
       this.callStatisticsPeriod = period;
       // Fetch real data from backend
       this.fetchCallStatistics(period);
+      this.fetchCallTrends(period);
     },
 
     updateProductPerformancePeriod(period) {
@@ -1322,6 +1332,7 @@ export default {
         this.updateCallStatisticsPeriod(this.analyticsFilters.dateRange)
       } else {
         this.fetchCallStatistics()
+        this.fetchCallTrends()
       }
 
       // Update product performance
@@ -1943,6 +1954,90 @@ export default {
       }
     },
 
+    // Fetch call trends data for line chart
+    async fetchCallTrends(period = null) {
+      try {
+        console.log('Fetching call trends data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.callStatisticsPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
+
+        // Add other filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        if (this.analyticsFilters.ticketTypes && this.analyticsFilters.ticketTypes.length > 0) {
+          this.analyticsFilters.ticketTypes.forEach(type => {
+            queryParams.append('ticketTypes', type);
+          });
+        }
+
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/call-trends${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          this.callTrendsData = {
+            labels: response.data.labels || [],
+            inbound: response.data.inbound || [],
+            outbound: response.data.outbound || [],
+            missed: response.data.missed || [],
+            completed: response.data.completed || [],
+            pending: response.data.pending || []
+          };
+
+          console.log('Call trends data updated:', this.callTrendsData);
+        }
+
+      } catch (error) {
+        console.error('Error fetching call trends data:', error);
+        // Keep existing data if API fails
+      }
+    },
+
     // Fetch product performance data
     async fetchProductPerformance(period = null) {
       try {
@@ -2361,6 +2456,7 @@ export default {
     this.fetchCustomerSatisfactionDistribution();
     this.fetchAgentPerformance();
     this.fetchCallStatistics();
+    this.fetchCallTrends();
     this.fetchProductPerformance();
     this.fetchCallbackStatus();
 

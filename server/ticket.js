@@ -50,6 +50,7 @@ router.get("/analytics/resolution-time-distribution", ticketController.getResolu
 router.get("/analytics/customer-satisfaction-distribution", ticketController.getCustomerSatisfactionDistribution);
 router.get("/analytics/agent-performance", ticketController.getAgentPerformance);
 router.get("/analytics/call-statistics", ticketController.getCallStatistics);
+router.get("/analytics/call-trends", ticketController.getCallTrends);
 router.get("/analytics/product-performance", ticketController.getProductPerformance);
 router.get("/analytics/callback-status", ticketController.getCallbackStatus);
 router.get("/analytics/filter-options", ticketController.getFilterOptions);
