@@ -150,12 +150,17 @@ export default {
 
     maxTotal() {
       return Math.max(...this.timeData.map(slot => slot.total), 1)
+    },
+
+    totalTickets() {
+      const sum = this.timeData.reduce((total, slot) => total + slot.total, 0)
+      return sum > 0 ? sum : 1
     }
   },
   methods: {
     getPercentage(value) {
-      const maxValue = this.maxTotal
-      return Math.min((value / maxValue) * 100, 100)
+      const total = this.totalTickets
+      return Math.min((value / total) * 100, 100)
     },
 
     getAgentColor(agentName) {
