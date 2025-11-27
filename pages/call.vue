@@ -184,19 +184,15 @@
                 </button>
                 <div v-if="expandedSections.dateRange" class="mt-1 space-y-2 pl-2">
                   <!-- Call Date Range -->
-                  <div class="space-y-1">
-                    <label class="text-xs font-medium text-gray-600">Call Date</label>
-                    <input
-                      type="date"
-                      v-model="activeFilters.dateRange.callDateFrom"
-                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                      placeholder="From"
-                    />
-                    <input
-                      type="date"
-                      v-model="activeFilters.dateRange.callDateTo"
-                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                      placeholder="To"
+                  <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1 block">Call Date</label>
+                    <DateRangePicker
+                      :startDate.sync="activeFilters.dateRange.callDateFrom"
+                      :endDate.sync="activeFilters.dateRange.callDateTo"
+                      placeholder="Select call date range"
+                      @update:startDate="activeFilters.dateRange.callDateFrom = $event"
+                      @update:endDate="activeFilters.dateRange.callDateTo = $event"
+                      @close-filter="closeFilterDropdown"
                     />
                   </div>
                 </div>
@@ -1361,8 +1357,14 @@
 </template>
 
 <script>
+import DateRangePicker from '~/components/DateRangePicker.vue'
+
 export default {
   name: 'CallTicketsList',
+
+  components: {
+    DateRangePicker
+  },
 
   data() {
     return {
@@ -1846,6 +1848,11 @@ export default {
     // Toggle filter dropdown
     toggleFilterDropdown() {
       this.showFilterDropdown = !this.showFilterDropdown
+    },
+
+    // Close filter dropdown
+    closeFilterDropdown() {
+      this.showFilterDropdown = false
     },
 
     // Toggle sort dropdown
