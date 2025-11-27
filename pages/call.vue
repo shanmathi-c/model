@@ -1,7 +1,7 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-md">
+    <div class="flex-shrink-0 px-6 py-4 ">
       <!-- Header Title -->
       <div class="mb-4">
         <h1 class="text-2xl font-bold text-gray-900">Callback Requests</h1>
