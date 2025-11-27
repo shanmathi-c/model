@@ -1571,6 +1571,7 @@ export default {
       // Filter options
       statusOptions: [
         { value: 'created', label: 'Unresolved' },
+        { value: 'assigned', label: 'Assigned' },
         { value: 'in-progress', label: 'In Progress' },
         { value: 'pending', label: 'Pending' },
         { value: 'resolved', label: 'Resolved' },
