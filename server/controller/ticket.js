@@ -4406,6 +4406,12 @@ export class ticketController {
                 });
             });
 
+            console.log('\n========== CALL TRENDS QUERY RESULTS ==========');
+            console.log('Query returned', results.length, 'rows');
+            results.forEach(row => {
+                console.log(`Date: ${row.date}, Inbound: ${row.inboundCalls}, Outbound: ${row.outboundCalls}, Missed: ${row.missedCalls}, Completed: ${row.completedCalls}, Pending: ${row.pendingCalls}`);
+            });
+
             // Generate date labels and data arrays
             const labels = [];
             const inboundData = [];
@@ -4414,10 +4420,12 @@ export class ticketController {
             const completedData = [];
             const pendingData = [];
 
-            // Create a map for quick lookup
+            // Create a map for quick lookup (use consistent date format)
             const dataMap = new Map();
             results.forEach(row => {
-                const dateStr = new Date(row.date).toISOString().split('T')[0];
+                // Format date as YYYY-MM-DD without timezone conversion
+                const d = new Date(row.date);
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 dataMap.set(dateStr, {
                     inbound: parseInt(row.inboundCalls) || 0,
                     outbound: parseInt(row.outboundCalls) || 0,
@@ -4427,22 +4435,35 @@ export class ticketController {
                 });
             });
 
+            console.log('Call Trends Data Map:', dataMap);
+
             // Generate all dates in the range
-            const startDateObj = customDateFilter && startDate ? new Date(startDate) : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-            const endDateObj = customDateFilter && endDate ? new Date(endDate) : new Date();
+            const startDateObj = customDateFilter && startDate ? new Date(startDate + ' 00:00:00') : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+            const endDateObj = customDateFilter && endDate ? new Date(endDate + ' 23:59:59') : new Date();
 
             for (let d = new Date(startDateObj); d <= endDateObj; d.setDate(d.getDate() + 1)) {
-                const dateStr = d.toISOString().split('T')[0];
-                const formattedLabel = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const formattedLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 labels.push(formattedLabel);
 
                 const data = dataMap.get(dateStr) || { inbound: 0, outbound: 0, missed: 0, completed: 0, pending: 0 };
+                console.log(`Date ${dateStr} (${formattedLabel}):`, data);
+
                 inboundData.push(data.inbound);
                 outboundData.push(data.outbound);
                 missedData.push(data.missed);
                 completedData.push(data.completed);
                 pendingData.push(data.pending);
             }
+
+            console.log('\n--- FINAL DATA SENT TO FRONTEND ---');
+            console.log('Labels:', labels);
+            console.log('Inbound:', inboundData);
+            console.log('Outbound:', outboundData);
+            console.log('Missed:', missedData);
+            console.log('Completed:', completedData);
+            console.log('Pending:', pendingData);
+            console.log('===============================================\n');
 
             return res.json({
                 message: "Call trends data fetched successfully",
