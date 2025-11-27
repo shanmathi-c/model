@@ -186,37 +186,29 @@
                     :class="{ 'rotate-90': expandedSections.dateRange }"
                   />
                 </button>
-                <div v-if="expandedSections.dateRange" class="mt-1 space-y-2 pl-2">
+                <div v-if="expandedSections.dateRange" class="mt-1 space-y-3 pl-2">
                   <!-- Created Date Range -->
-                  <div class="space-y-1">
-                    <label class="text-xs font-medium text-gray-600">Created Date</label>
-                    <input
-                      type="date"
-                      v-model="activeFilters.dateRange.createdFrom"
-                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      placeholder="From"
-                    />
-                    <input
-                      type="date"
-                      v-model="activeFilters.dateRange.createdTo"
-                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      placeholder="To"
+                  <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1 block">Created Date</label>
+                    <DateRangePicker
+                      :startDate.sync="activeFilters.dateRange.createdFrom"
+                      :endDate.sync="activeFilters.dateRange.createdTo"
+                      placeholder="Select created date range"
+                      @update:startDate="activeFilters.dateRange.createdFrom = $event"
+                      @update:endDate="activeFilters.dateRange.createdTo = $event"
+                      @close-filter="closeFilterDropdown"
                     />
                   </div>
                   <!-- Resolved Date Range -->
-                  <div class="space-y-1">
-                    <label class="text-xs font-medium text-gray-600">Resolved Date</label>
-                    <input
-                      type="date"
-                      v-model="activeFilters.dateRange.resolvedFrom"
-                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      placeholder="From"
-                    />
-                    <input
-                      type="date"
-                      v-model="activeFilters.dateRange.resolvedTo"
-                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      placeholder="To"
+                  <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1 block">Resolved Date</label>
+                    <DateRangePicker
+                      :startDate.sync="activeFilters.dateRange.resolvedFrom"
+                      :endDate.sync="activeFilters.dateRange.resolvedTo"
+                      placeholder="Select resolved date range"
+                      @update:startDate="activeFilters.dateRange.resolvedFrom = $event"
+                      @update:endDate="activeFilters.dateRange.resolvedTo = $event"
+                      @close-filter="closeFilterDropdown"
                     />
                   </div>
                 </div>
@@ -1535,8 +1527,14 @@
 </template>
 
 <script>
+import DateRangePicker from '~/components/DateRangePicker.vue'
+
 export default {
   name: 'TicketsPage',
+
+  components: {
+    DateRangePicker
+  },
 
   data() {
     return {
@@ -1857,6 +1855,12 @@ export default {
     toggleFilterSection(section) {
       this.expandedSections[section] = !this.expandedSections[section]
     },
+
+    // Close filter dropdown
+    closeFilterDropdown() {
+      this.showFilterDropdown = false
+    },
+
 
     // Toggle display dropdown
     toggleDisplayDropdown() {
