@@ -180,9 +180,9 @@
           <g v-for="(label, index) in visibleXLabels" :key="index">
             <text
               :x="getXPosition(label.originalIndex)"
-              :y="chartHeight - padding.bottom + (shouldRotateLabels ? 35 : 20)"
+              :y="chartHeight - padding.bottom + (shouldRotateLabels ? 30 : 18)"
               :text-anchor="shouldRotateLabels ? 'start' : 'middle'"
-              :transform="shouldRotateLabels ? `rotate(-45, ${getXPosition(label.originalIndex)}, ${chartHeight - padding.bottom + 35})` : ''"
+              :transform="shouldRotateLabels ? `rotate(-45, ${getXPosition(label.originalIndex)}, ${chartHeight - padding.bottom + 30})` : ''"
               class="text-xs fill-gray-500"
             >
               {{ label.text }}
@@ -293,32 +293,32 @@
             />
           </g>
 
-          <!-- Legend with toggle functionality -->
-          <g>
+          <!-- Legend with toggle functionality - Bottom Center -->
+          <g :transform="`translate(${legendStartX}, ${chartHeight - 25})`">
             <!-- Inbound Legend -->
             <g @click="toggleLine('inbound')" class="cursor-pointer">
-              <rect :x="chartWidth - 160" :y="12" width="12" height="12" :fill="showInbound ? colors.inbound : '#e5e7eb'" :stroke="colors.inbound" stroke-width="2" rx="2" />
-              <text :x="chartWidth - 140" :y="22" :class="['text-xs', showInbound ? 'fill-gray-700' : 'fill-gray-400']">Inbound</text>
+              <rect x="0" y="0" width="12" height="12" :fill="showInbound ? colors.inbound : '#e5e7eb'" :stroke="colors.inbound" stroke-width="2" rx="2" />
+              <text x="18" y="10" :class="['text-xs', showInbound ? 'fill-gray-700' : 'fill-gray-400']">Inbound</text>
             </g>
             <!-- Outbound Legend -->
             <g @click="toggleLine('outbound')" class="cursor-pointer">
-              <rect :x="chartWidth - 160" :y="32" width="12" height="12" :fill="showOutbound ? colors.outbound : '#e5e7eb'" :stroke="colors.outbound" stroke-width="2" rx="2" />
-              <text :x="chartWidth - 140" :y="42" :class="['text-xs', showOutbound ? 'fill-gray-700' : 'fill-gray-400']">Outbound</text>
+              <rect x="90" y="0" width="12" height="12" :fill="showOutbound ? colors.outbound : '#e5e7eb'" :stroke="colors.outbound" stroke-width="2" rx="2" />
+              <text x="108" y="10" :class="['text-xs', showOutbound ? 'fill-gray-700' : 'fill-gray-400']">Outbound</text>
             </g>
             <!-- Missed Legend -->
             <g @click="toggleLine('missed')" class="cursor-pointer">
-              <rect :x="chartWidth - 160" :y="52" width="12" height="12" :fill="showMissed ? colors.missed : '#e5e7eb'" :stroke="colors.missed" stroke-width="2" rx="2" />
-              <text :x="chartWidth - 140" :y="62" :class="['text-xs', showMissed ? 'fill-gray-700' : 'fill-gray-400']">Missed</text>
+              <rect x="190" y="0" width="12" height="12" :fill="showMissed ? colors.missed : '#e5e7eb'" :stroke="colors.missed" stroke-width="2" rx="2" />
+              <text x="208" y="10" :class="['text-xs', showMissed ? 'fill-gray-700' : 'fill-gray-400']">Missed</text>
             </g>
             <!-- Completed Legend -->
             <g @click="toggleLine('completed')" class="cursor-pointer">
-              <rect :x="chartWidth - 160" :y="72" width="12" height="12" :fill="showCompleted ? colors.completed : '#e5e7eb'" :stroke="colors.completed" stroke-width="2" rx="2" />
-              <text :x="chartWidth - 140" :y="82" :class="['text-xs', showCompleted ? 'fill-gray-700' : 'fill-gray-400']">Completed</text>
+              <rect x="270" y="0" width="12" height="12" :fill="showCompleted ? colors.completed : '#e5e7eb'" :stroke="colors.completed" stroke-width="2" rx="2" />
+              <text x="288" y="10" :class="['text-xs', showCompleted ? 'fill-gray-700' : 'fill-gray-400']">Completed</text>
             </g>
             <!-- Pending Legend -->
             <g @click="toggleLine('pending')" class="cursor-pointer">
-              <rect :x="chartWidth - 160" :y="92" width="12" height="12" :fill="showPending ? colors.pending : '#e5e7eb'" :stroke="colors.pending" stroke-width="2" rx="2" />
-              <text :x="chartWidth - 140" :y="102" :class="['text-xs', showPending ? 'fill-gray-700' : 'fill-gray-400']">Pending</text>
+              <rect x="370" y="0" width="12" height="12" :fill="showPending ? colors.pending : '#e5e7eb'" :stroke="colors.pending" stroke-width="2" rx="2" />
+              <text x="388" y="10" :class="['text-xs', showPending ? 'fill-gray-700' : 'fill-gray-400']">Pending</text>
             </g>
           </g>
         </svg>
@@ -335,13 +335,31 @@
             left: tooltip.x + 'px',
             top: tooltip.y + 'px',
             transform: `translate(-50%, -100%)`,
-            maxWidth: '200px'
+            maxWidth: '220px'
           }"
         >
-          <div class="text-sm font-semibold mb-1">{{ tooltip.date }}</div>
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: tooltip.color }"></div>
-            <span class="text-xs">{{ tooltip.label }}: <strong>{{ tooltip.value }}</strong></span>
+          <div class="text-sm font-semibold mb-2">{{ tooltip.date }}</div>
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.inbound }"></div>
+              <span class="text-xs">Inbound: <strong>{{ tooltip.data.inbound }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.outbound }"></div>
+              <span class="text-xs">Outbound: <strong>{{ tooltip.data.outbound }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.missed }"></div>
+              <span class="text-xs">Missed: <strong>{{ tooltip.data.missed }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.completed }"></div>
+              <span class="text-xs">Completed: <strong>{{ tooltip.data.completed }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.pending }"></div>
+              <span class="text-xs">Pending: <strong>{{ tooltip.data.pending }}</strong></span>
+            </div>
           </div>
           <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
             <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
@@ -384,8 +402,8 @@ export default {
       chartHeight: 320,
       padding: {
         top: 20,
-        right: 180,
-        bottom: 60,
+        right: 40,
+        bottom: 100,
         left: 60
       },
       colors: {
@@ -405,9 +423,13 @@ export default {
         x: 0,
         y: 0,
         date: '',
-        label: '',
-        value: null,
-        color: ''
+        data: {
+          inbound: 0,
+          outbound: 0,
+          missed: 0,
+          completed: 0,
+          pending: 0
+        }
       },
       tooltipTimeout: null
     }
@@ -496,6 +518,12 @@ export default {
       }
 
       return result
+    },
+
+    legendStartX() {
+      // Total width of legend items (approximate)
+      const legendWidth = 450
+      return (this.chartWidth - legendWidth) / 2
     }
   },
   methods: {
@@ -594,8 +622,8 @@ export default {
       let x = event.clientX - rect.left
       let y = event.clientY - rect.top
 
-      const tooltipWidth = 200
-      const tooltipHeight = 100
+      const tooltipWidth = 220
+      const tooltipHeight = 150
       const padding = 10
 
       if (x + tooltipWidth/2 > rect.width) {
@@ -613,9 +641,16 @@ export default {
       this.tooltip.x = x
       this.tooltip.y = y
       this.tooltip.date = this.trendsData.labels[index] || ''
-      this.tooltip.label = label
-      this.tooltip.value = value
-      this.tooltip.color = this.colors[label.toLowerCase()]
+
+      // Get all data for this index
+      this.tooltip.data = {
+        inbound: this.trendsData.inbound[index] || 0,
+        outbound: this.trendsData.outbound[index] || 0,
+        missed: this.trendsData.missed[index] || 0,
+        completed: this.trendsData.completed[index] || 0,
+        pending: this.trendsData.pending[index] || 0
+      }
+
       this.tooltip.visible = true
     },
 
