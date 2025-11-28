@@ -2108,8 +2108,21 @@ export default {
         if (response.message && response.message.includes('successfully')) {
           this.callStatus = 'connected'
           this.selectedTicket.callLogId = response.data.callId // Store call ID for end call
-          console.log('Call started with ID:', response.data.callId)
-          alert('Call connected successfully')
+
+          console.log('=== CALL STARTED ===');
+          console.log('Call ID:', response.data.callId);
+          console.log('Ticket ID:', response.data.ticketId);
+          console.log('Scenario:', response.data.scenario);
+          console.log('Start Time:', response.data.startTime);
+          console.log('Call Status:', response.data.callStatus);
+          console.log('===================');
+
+          // Show appropriate message based on scenario
+          if (response.data.ticketId === null) {
+            alert(`Call connected successfully! \n\nScenario 1: New call (${response.data.callId}) created - new ticket will be created from call page`);
+          } else {
+            alert(`Call connected successfully! \n\nScenario 2: Multiple calls for same ticket (${response.data.ticketId}) - Call ID: ${response.data.callId}`);
+          }
         } else {
           alert('Failed to start call')
         }

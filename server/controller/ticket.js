@@ -1675,18 +1675,20 @@ export class ticketController {
             // Get current timestamp
             const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            // NEW LOGIC: Check if previous call from same number is completed and ticket is resolved/closed
+            // NEW LOGIC: Check previous call to determine scenario
             const checkPreviousCall = (callback) => {
                 if (!customerPhone) {
-                    console.log('No customerPhone provided, skipping previous call check');
-                    return callback(null, false);
+                    console.log('No customerPhone provided, using default logic');
+                    return callback(null, { shouldCreateNewTicket: false, shouldCreateNewCallId: false });
                 }
 
                 console.log('=== CHECKING PREVIOUS CALL FOR PHONE:', customerPhone, '===');
 
                 // Query to find the most recent call from this phone number (excluding the current call being created)
+                console.log('=== DEBUG: QUERYING PREVIOUS CALL FOR PHONE:', customerPhone, '===');
                 connection.query(
-                    `SELECT c.callId, c.callStatus, c.ticketId, c.followupStatus, t.status as ticketStatus
+                    `SELECT c.callId, c.callStatus, c.ticketId, c.followupStatus, t.status as ticketStatus,
+                            c.id as call_id, t.id as ticket_id
                      FROM calls c
                      LEFT JOIN tickets t ON c.ticketId = t.ticketId
                      WHERE c.userPhone = ?
@@ -1696,47 +1698,118 @@ export class ticketController {
                     (err, result) => {
                         if (err) {
                             console.error('Error checking previous call:', err);
-                            return callback(null, false);
+                            return callback(null, { shouldCreateNewTicket: false, shouldCreateNewCallId: false });
                         }
+
+                        console.log('=== DEBUG: QUERY RESULT ===');
+                        console.log('Raw result:', result);
 
                         if (result && result.length > 0) {
                             const prevCall = result[0];
-                            const callCompleted = prevCall.callStatus === 'completed';
-                            const ticketClosedOrResolved = prevCall.ticketStatus === 'resolved' || prevCall.ticketStatus === 'closed';
-                            const shouldCreateNewTicket = callCompleted && ticketClosedOrResolved;
-
-                            console.log('=== PREVIOUS CALL DETAILS ===');
+                            console.log('=== DEBUG: PREVIOUS CALL FOUND ===');
                             console.log('Call ID:', prevCall.callId);
-                            console.log('Call Status:', prevCall.callStatus, '(completed?', callCompleted + ')');
-                            console.log('Ticket ID:', prevCall.ticketId);
-                            console.log('Ticket Status:', prevCall.ticketStatus, '(resolved/closed?', ticketClosedOrResolved + ')');
-                            console.log('Followup Status:', prevCall.followupStatus);
-                            console.log('SHOULD CREATE NEW TICKET?', shouldCreateNewTicket);
-                            console.log('=== END PREVIOUS CALL DETAILS ===');
+                            console.log('Call Status:', prevCall.callStatus);
+                            console.log('Call TicketId (from calls table):', prevCall.ticketId);
+                            console.log('Ticket Status (from tickets table):', prevCall.ticketStatus);
+                            console.log('Call internal ID:', prevCall.call_id);
+                            console.log('Ticket internal ID:', prevCall.ticket_id);
 
-                            // Return true if both conditions are met (should create new ticket)
-                            callback(null, shouldCreateNewTicket);
+                            const callCompleted = prevCall.callStatus === 'completed';
+                            const callPending = prevCall.callStatus === 'pending' || prevCall.callStatus === 'cancelled' || prevCall.callStatus === 'missed';
+                            const ticketOpen = prevCall.ticketStatus !== 'resolved' && prevCall.ticketStatus !== 'closed';
+                            const ticketClosedOrResolved = prevCall.ticketStatus === 'resolved' || prevCall.ticketStatus === 'closed';
+
+                            console.log('=== DEBUG: STATUS ANALYSIS ===');
+                            console.log('Call completed?', callCompleted);
+                            console.log('Call pending/cancelled/missed?', callPending);
+                            console.log('Ticket open?', ticketOpen);
+                            console.log('Ticket closed/resolved?', ticketClosedOrResolved);
+
+                            console.log('=== PREVIOUS CALL ANALYSIS ===');
+                            console.log('Call ID:', prevCall.callId);
+                            console.log('Call Status:', prevCall.callStatus);
+                            console.log('  - is completed?', callCompleted);
+                            console.log('  - is pending/cancelled/missed?', callPending);
+                            console.log('Ticket Status:', prevCall.ticketStatus);
+                            console.log('  - is open?', ticketOpen);
+                            console.log('  - is closed/resolved?', ticketClosedOrResolved);
+                            console.log('');
+
+                            // SCENARIO 1: Create new callId with null ticketId if completed + ticket closed/resolved
+                            if (callCompleted && ticketClosedOrResolved) {
+                                console.log('✅ SCENARIO 1: CREATE NEW CALL ID WITH NULL TICKET ID');
+                                console.log('   Conditions met: Previous call completed AND ticket resolved/closed');
+                                console.log('   Will create new callId with ticketId = null');
+
+                                return callback(null, {
+                                    shouldCreateNewTicket: true,
+                                    shouldCreateNewCallId: false
+                                });
+                            }
+
+                            // SCENARIO 2: Create new callId for same ticket if pending + ticket open
+                            if (callPending && ticketOpen) {
+                                console.log('✅ SCENARIO 2: CREATE NEW CALL ID FOR SAME TICKET');
+                                console.log('   Conditions met: Call status is pending/cancelled/missed AND ticket is still open');
+                                console.log('   Will create new callId but keep same ticketId:', prevCall.ticketId);
+
+                                return callback(null, {
+                                    shouldCreateNewTicket: false,
+                                    shouldCreateNewCallId: true,
+                                    reuseTicketId: prevCall.ticketId
+                                });
+                            }
+
+                            // Default: Create new callId with null ticketId (like Scenario 1)
+                            console.log('✅ DEFAULT: CREATE NEW CALL ID WITH NULL TICKET ID');
+                            console.log('   Reason: Default case - conditions not met for specific scenarios');
+                            console.log('   Will create new callId with ticketId = null (new ticket from call page)');
+
+                            return callback(null, {
+                                shouldCreateNewTicket: true,
+                                shouldCreateNewCallId: false
+                            });
                         } else {
                             console.log('No previous call found for phone:', customerPhone);
-                            console.log('This appears to be the first call from this number');
-                            callback(null, false);
+                            console.log('✅ FIRST CALL: Creating new callId');
+                            callback(null, { shouldCreateNewTicket: false, shouldCreateNewCallId: false });
                         }
                     }
                 );
             };
 
             // First, if ticketId is provided, get the formatted ticketId from tickets table
-            const getFormattedTicketId = (shouldCreateNewTicket, callback) => {
+            const getFormattedTicketId = (scenarioResult, callback) => {
                 console.log('=== GET FORMATTED TICKET ID ===');
-                console.log('shouldCreateNewTicket:', shouldCreateNewTicket);
+                console.log('scenarioResult:', scenarioResult);
                 console.log('ticketId from request:', ticketId);
 
-                // If we should create a new ticket (previous call completed + ticket resolved/closed), set ticketId to null
+                // Handle object result from checkPreviousCall
+                const shouldCreateNewTicket = scenarioResult.shouldCreateNewTicket;
+                const shouldCreateNewCallId = scenarioResult.shouldCreateNewCallId;
+                const reuseTicketId = scenarioResult.reuseTicketId;
+
+                console.log('shouldCreateNewTicket:', shouldCreateNewTicket);
+                console.log('shouldCreateNewCallId:', shouldCreateNewCallId);
+                console.log('reuseTicketId:', reuseTicketId);
+
+                // SCENARIO 1: Previous call completed + ticket resolved/closed
+                // Create NEW callId with NULL ticketId (new ticket will be created from call page)
                 if (shouldCreateNewTicket) {
-                    console.log('✓ DECISION: Previous call completed and ticket resolved/closed');
-                    console.log('✓ ACTION: Setting ticketId to NULL for new ticket creation');
+                    console.log('✅ SCENARIO 1: Creating new callId with NULL ticketId');
+                    console.log('   Previous call completed AND ticket resolved/closed');
+                    console.log('   New ticket will be created from call page');
                     console.log('=== END GET FORMATTED TICKET ID ===');
-                    return callback(null, null);
+                    return callback(null, null); // ticketId = null for new ticket from call page
+                }
+
+                // SCENARIO 2: Multiple calls for same ticket - create new callId but reuse ticketId
+                if (shouldCreateNewCallId && reuseTicketId) {
+                    console.log('✅ SCENARIO 2: Creating new callId for same ticket');
+                    console.log('   Multiple calls allowed for same ticket');
+                    console.log('   Will reuse ticketId:', reuseTicketId, '(Directly from previous call - no lookup needed)');
+                    console.log('=== END GET FORMATTED TICKET ID ===');
+                    return callback(null, reuseTicketId); // Reuse existing ticketId directly
                 }
 
                 if (!ticketId || ticketId === 0) {
@@ -1749,12 +1822,13 @@ export class ticketController {
 
                 // Look up the formatted ticketId from tickets table
                 console.log('Looking up formatted ticketId for:', ticketId);
+                // First try to find by exact ticketId match, then by id
                 connection.query(
-                    "SELECT ticketId FROM tickets WHERE id = ? OR ticketId = ?",
-                    [ticketId, ticketId],
+                    "SELECT ticketId FROM tickets WHERE ticketId = ? LIMIT 1",
+                    [ticketId],
                     (err, result) => {
                         if (err) {
-                            console.error('Error looking up ticketId:', err);
+                            console.error('Error looking up ticketId by ticketId:', err);
                             console.log('Fallback: Using provided ticketId:', ticketId);
                             console.log('=== END GET FORMATTED TICKET ID ===');
                             return callback(null, ticketId); // Fallback to provided ticketId
@@ -1762,26 +1836,48 @@ export class ticketController {
 
                         if (result && result.length > 0) {
                             const formattedTicketId = result[0].ticketId;
-                            console.log('✓ Found formatted ticketId:', formattedTicketId);
+                            console.log('✓ Found formatted ticketId by ticketId:', formattedTicketId);
                             console.log('=== END GET FORMATTED TICKET ID ===');
                             callback(null, formattedTicketId);
                         } else {
-                            console.log('No ticket found in database, using provided ticketId:', ticketId);
-                            console.log('=== END GET FORMATTED TICKET ID ===');
-                            callback(null, ticketId);
+                            // If not found by ticketId, try by id (numeric field)
+                            console.log('No ticket found by ticketId, trying by id...');
+                            connection.query(
+                                "SELECT ticketId FROM tickets WHERE id = ? LIMIT 1",
+                                [ticketId],
+                                (err2, result2) => {
+                                    if (err2) {
+                                        console.error('Error looking up ticketId by id:', err2);
+                                        console.log('Fallback: Using provided ticketId:', ticketId);
+                                        console.log('=== END GET FORMATTED TICKET ID ===');
+                                        return callback(null, ticketId);
+                                    }
+
+                                    if (result2 && result2.length > 0) {
+                                        const formattedTicketId = result2[0].ticketId;
+                                        console.log('✓ Found formatted ticketId by id:', formattedTicketId);
+                                        console.log('=== END GET FORMATTED TICKET ID ===');
+                                        callback(null, formattedTicketId);
+                                    } else {
+                                        console.log('No ticket found in database by either ticketId or id, using provided ticketId:', ticketId);
+                                        console.log('=== END GET FORMATTED TICKET ID ===');
+                                        callback(null, ticketId);
+                                    }
+                                }
+                            );
                         }
                     }
                 );
             };
 
             // First check if previous call was completed and ticket was resolved/closed
-            checkPreviousCall((err, shouldCreateNewTicket) => {
+            checkPreviousCall((err, scenarioResult) => {
                 if (err) {
                     console.error('Error checking previous call:', err);
                 }
 
-                // Get formatted ticketId based on whether we should create a new ticket
-                getFormattedTicketId(shouldCreateNewTicket, (err, formattedTicketId) => {
+                // Get formatted ticketId based on scenario
+                getFormattedTicketId(scenarioResult, (err, formattedTicketId) => {
                     if (err) {
                         console.error('Error getting formatted ticketId:', err);
                     }
@@ -1909,7 +2005,9 @@ export class ticketController {
                                 callId: nextCallId, // Return the callId we set
                                 startTime: startTime,
                                 recordingUrl: finalRecordingUrl,
-                                callStatus: 'pending'
+                                callStatus: 'pending',
+                                ticketId: actualTicketId,
+                                scenario: actualTicketId === null ? 'Scenario 1 (new ticket from call page)' : 'Scenario 2 (multiple calls for same ticket)'
                             }
                         });
                     }
