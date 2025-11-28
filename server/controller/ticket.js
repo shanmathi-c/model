@@ -365,10 +365,10 @@ export class ticketController {
     static async createCallTicket(req, res) {
         const { productId, userId, name, email, countryCode, phone, subject, description, agentId, agentName, agentPhone, callType, callId } = req.body;
 
-        console.log('=== CREATE CALL TICKET REQUEST ===');
-        console.log('Request body:', req.body);
-        console.log('CallId from frontend:', callId);
-        console.log('Agent details:', { agentId, agentName, agentPhone });
+        // console.log('=== CREATE CALL TICKET REQUEST ===');
+        // console.log('Request body:', req.body);
+        // console.log('CallId from frontend:', callId);
+        // console.log('Agent details:', { agentId, agentName, agentPhone });
 
         // Validate required fields
         if (!name || !phone || !subject || !description) {
@@ -3125,13 +3125,22 @@ export class ticketController {
         try {
             const { dateRange, startDate, endDate, agents, products, status, ticketTypes, teams } = req.query;
 
-            // Calculate date range filter
+            // Calculate date range filter for ticket creation
             let dateFilter = '';
             if (dateRange === 'custom' && startDate && endDate) {
                 dateFilter = `AND t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
             } else if (dateRange && dateRange !== 'custom') {
                 const days = parseInt(dateRange);
                 dateFilter = `AND t.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+            }
+
+            // Calculate date range filter for resolution time (only tickets resolved in date range)
+            let resolutionDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                resolutionDateFilter = `AND t.updatedAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
+                const days = parseInt(dateRange);
+                resolutionDateFilter = `AND t.updatedAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
             }
 
             // Build filter conditions
@@ -3210,23 +3219,20 @@ export class ticketController {
                 WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
             `;
 
-            // 2. Average Resolution Time (in minutes) - from calls data
+            // 2. Average Resolution Time (in minutes) - from ticket creation to resolution
             const avgResolutionTimeQuery = `
                 SELECT
                     AVG(
                         CASE
-                            WHEN c.resolvedOn IS NOT NULL AND c.startTime IS NOT NULL THEN
-                                TIMESTAMPDIFF(MINUTE, c.startTime, c.resolvedOn)
-                            WHEN c.endTime IS NOT NULL AND c.startTime IS NOT NULL THEN
-                                TIMESTAMPDIFF(MINUTE, c.startTime, c.endTime)
+                            WHEN t.updatedAt IS NOT NULL AND t.createdAt IS NOT NULL THEN
+                                TIMESTAMPDIFF(MINUTE, t.createdAt, t.updatedAt)
                             ELSE NULL
                         END
                     ) as avgResolutionTimeMinutes
                 FROM tickets t
-                LEFT JOIN calls c ON t.ticketId = c.ticketId AND c.callStatus = 'completed'
-                WHERE (t.status = 'Resolved' OR t.status = 'Closed')
-                  AND (c.resolvedOn IS NOT NULL OR c.endTime IS NOT NULL)
-                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+                WHERE t.status = 'Resolved'
+                  AND t.updatedAt IS NOT NULL
+                  ${resolutionDateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
             `;
 
             // 3. First-Call-Resolution Rate
@@ -3300,12 +3306,57 @@ export class ticketController {
                     });
                 }),
                 new Promise((resolve, reject) => {
-                    connection.query(avgResolutionTimeQuery, queryParams, (err, result) => {
-                        if (err) reject(err);
-                        else resolve({
-                            minutes: Math.round(result[0]?.avgResolutionTimeMinutes || 0),
-                            hours: Math.round((result[0]?.avgResolutionTimeMinutes || 0) / 60 * 10) / 10
-                        });
+                    // First get detailed breakdown
+                    const detailQuery = `
+                        SELECT
+                            t.ticketId,
+                            t.createdAt,
+                            t.updatedAt as resolvedOn,
+                            TIMESTAMPDIFF(MINUTE, t.createdAt, t.updatedAt) as resolutionMinutes
+                        FROM tickets t
+                        WHERE t.status = 'Resolved'
+                          AND t.updatedAt IS NOT NULL
+                          AND t.createdAt IS NOT NULL
+                          ${resolutionDateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+                        ORDER BY resolutionMinutes DESC
+                    `;
+
+                    connection.query(detailQuery, queryParams, (err, detailResult) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            // Log the actual data
+                            console.log('\n========== RESOLUTION TIME CALCULATION BREAKDOWN ==========');
+                            console.log(`Total tickets found: ${detailResult.length}`);
+                            console.log('Note: Only tickets with status "Resolved" that were RESOLVED in the selected date range');
+                            console.log('\nIndividual ticket resolution times (from creation to resolution):');
+                            detailResult.forEach((row, index) => {
+                                const hours = Math.floor(row.resolutionMinutes / 60);
+                                const mins = row.resolutionMinutes % 60;
+                                console.log(`${index + 1}. Ticket ${row.ticketId}: ${row.resolutionMinutes} min (${hours}h ${mins}m) - Created: ${row.createdAt}, Resolved: ${row.resolvedOn}`);
+                            });
+
+                            // Calculate totals
+                            const totalMinutes = detailResult.reduce((sum, row) => sum + row.resolutionMinutes, 0);
+                            const avgMinutes = detailResult.length > 0 ? totalMinutes / detailResult.length : 0;
+                            const avgHours = Math.floor(avgMinutes / 60);
+                            const avgMins = Math.round(avgMinutes % 60);
+
+                            console.log('\n--- CALCULATION ---');
+                            console.log(`Total minutes: ${totalMinutes}`);
+                            console.log(`Average: ${totalMinutes} ÷ ${detailResult.length} = ${avgMinutes.toFixed(2)} minutes`);
+                            console.log(`Average formatted: ${avgHours}h ${avgMins}m`);
+                            console.log('========================================================\n');
+
+                            // Now run the original query
+                            connection.query(avgResolutionTimeQuery, queryParams, (err2, result) => {
+                                if (err2) reject(err2);
+                                else resolve({
+                                    minutes: Math.round(result[0]?.avgResolutionTimeMinutes || 0),
+                                    hours: Math.round((result[0]?.avgResolutionTimeMinutes || 0) / 60 * 10) / 10
+                                });
+                            });
+                        }
                     });
                 }),
                 new Promise((resolve, reject) => {
