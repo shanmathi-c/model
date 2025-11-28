@@ -3304,6 +3304,45 @@ export class ticketController {
                 WHERE 1=1 ${dateFilter} ${agentFilter} ${productFilter} ${ticketTypeFilter} ${teamFilter}
             `;
 
+            // 7. Average Reconnection Time (missed to pending)
+            // Build date filter for activity_log based on createdAt
+            let activityDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                activityDateFilter = `AND al_missed.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
+                const days = parseInt(dateRange);
+                activityDateFilter = `AND al_missed.createdAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+            } else {
+                activityDateFilter = `AND al_missed.createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
+            }
+
+            const reconnectionTimeQuery = `
+                SELECT
+                    AVG(reconnectionMinutes) as avgReconnectionMinutes,
+                    COUNT(*) as reconnectionCount
+                FROM (
+                    SELECT
+                        al_missed.callId,
+                        TIMESTAMPDIFF(MINUTE, al_missed.createdAt, al_pending.createdAt) as reconnectionMinutes
+                    FROM activity_log al_missed
+                    INNER JOIN activity_log al_pending
+                        ON CAST(al_missed.callId AS CHAR) = CAST(al_pending.callId AS CHAR)
+                    WHERE al_missed.callStatus = 'missed'
+                      AND al_pending.callStatus = 'pending'
+                      AND al_pending.createdAt > al_missed.createdAt
+                      AND al_missed.callId IS NOT NULL
+                      AND al_pending.callId IS NOT NULL
+                      AND al_pending.createdAt = (
+                          SELECT MIN(createdAt)
+                          FROM activity_log
+                          WHERE CAST(callId AS CHAR) = CAST(al_missed.callId AS CHAR)
+                            AND callStatus = 'pending'
+                            AND createdAt > al_missed.createdAt
+                      )
+                      ${activityDateFilter}
+                ) as reconnections
+            `;
+
             // Execute all queries in parallel
             const promises = [
                 new Promise((resolve, reject) => {
@@ -3425,6 +3464,15 @@ export class ticketController {
                         if (err) reject(err);
                         else resolve(result[0]?.count || 0);
                     });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(reconnectionTimeQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve({
+                            minutes: Math.round(result[0]?.avgReconnectionMinutes || 0),
+                            count: result[0]?.reconnectionCount || 0
+                        });
+                    });
                 })
             ];
 
@@ -3441,6 +3489,7 @@ export class ticketController {
                 resolvedCount: results[7],
                 closedCount: results[8],
                 inProgressCount: results[9],
+                avgReconnectionTime: results[10],
                 filters: {
                     dateRange: dateRange || '30',
                     agents: agents || [],

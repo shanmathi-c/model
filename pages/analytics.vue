@@ -685,8 +685,8 @@
         </div>
       </div>
 
-      <!-- Second Row - 5 cards -->
-      <div class="grid grid-cols-5 gap-1 mb-6">
+      <!-- Second Row - 6 cards -->
+      <div class="grid grid-cols-6 gap-1 mb-6">
         <!-- Closed -->
         <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
@@ -714,6 +714,21 @@
               {{ metrics.isLoading ? '...' : formatResolutionTime(metrics.avgResolutionTimeMinutes) }}
             </p>
             <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Resolution Time</p>
+          </div>
+        </div>
+
+        <!-- Avg Reconnection Time -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-pink-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : `${formatResolutionTime(metrics.avgReconnectionTimeMinutes)}(${formatNumber(metrics.reconnectionCount)})` }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Reconnection Time</p>
           </div>
         </div>
 
@@ -897,6 +912,8 @@ export default {
         closedCount: 0,
         ticketsChange: 0,
         avgResolutionTimeMinutes: 0,
+        avgReconnectionTimeMinutes: 0,
+        reconnectionCount: 0,
         fcrRate: 0,
         fcrCount: 0,
         fcrChange: 0,
@@ -1465,6 +1482,8 @@ export default {
           this.metrics.resolvedCount = data.resolvedCount || 0;
           this.metrics.closedCount = data.closedCount || 0;
           this.metrics.avgResolutionTimeMinutes = data.avgResolutionTime?.minutes || 0;
+          this.metrics.avgReconnectionTimeMinutes = data.avgReconnectionTime?.minutes || 0;
+          this.metrics.reconnectionCount = data.avgReconnectionTime?.count || 0;
           this.metrics.fcrRate = data.firstCallResolution?.rate || 0;
           this.metrics.fcrCount = data.firstCallResolution?.fcr || 0;
           this.metrics.csatScore = data.avgCustomerSatisfaction?.score || 0;
@@ -1510,6 +1529,8 @@ export default {
         this.metrics.resolvedCount = 0;
         this.metrics.closedCount = 0;
         this.metrics.avgResolutionTimeMinutes = 0;
+        this.metrics.avgReconnectionTimeMinutes = 0;
+        this.metrics.reconnectionCount = 0;
         this.metrics.fcrRate = 0;
         this.metrics.fcrCount = 0;
         this.metrics.csatScore = 0;
