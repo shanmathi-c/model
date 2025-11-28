@@ -607,7 +607,8 @@
     <!-- Main Content Area -->
     <div class="flex-1 overflow-auto p-6 analytics-content">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-9 gap-1 mb-6">
+      <!-- First Row - 5 cards -->
+      <div class="grid grid-cols-5 gap-1 mb-1">
         <!-- Total Tickets -->
         <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
@@ -653,6 +654,21 @@
           </div>
         </div>
 
+        <!-- In Progress -->
+        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+          <div class="flex flex-col items-center text-center p-1 h-full">
+            <div class="p-0.5 bg-cyan-100 rounded mb-0.5 flex-shrink-0">
+              <svg class="w-3 h-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+              {{ metrics.isLoading ? '...' : formatNumber(metrics.inProgressCount) }}
+            </p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">In Progress</p>
+          </div>
+        </div>
+
         <!-- Resolved -->
         <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
@@ -667,7 +683,10 @@
             <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Resolved</p>
           </div>
         </div>
+      </div>
 
+      <!-- Second Row - 5 cards -->
+      <div class="grid grid-cols-5 gap-1 mb-6">
         <!-- Closed -->
         <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
@@ -873,6 +892,7 @@ export default {
         totalTickets: 0,
         assignedCount: 0,
         pendingCount: 0,
+        inProgressCount: 0,
         resolvedCount: 0,
         closedCount: 0,
         ticketsChange: 0,
@@ -1441,6 +1461,7 @@ export default {
           this.metrics.totalTickets = data.totalTickets || 0;
           this.metrics.assignedCount = data.assignedCount || 0;
           this.metrics.pendingCount = data.pendingCount || 0;
+          this.metrics.inProgressCount = data.inProgressCount || 0;
           this.metrics.resolvedCount = data.resolvedCount || 0;
           this.metrics.closedCount = data.closedCount || 0;
           this.metrics.avgResolutionTimeMinutes = data.avgResolutionTime?.minutes || 0;
@@ -1462,6 +1483,7 @@ export default {
             totalTickets: this.metrics.totalTickets,
             assignedCount: this.metrics.assignedCount,
             pendingCount: this.metrics.pendingCount,
+            inProgressCount: this.metrics.inProgressCount,
             resolvedCount: this.metrics.resolvedCount,
             closedCount: this.metrics.closedCount,
             avgResolutionTime: this.metrics.avgResolutionTimeMinutes,
@@ -1484,6 +1506,7 @@ export default {
         this.metrics.totalTickets = 0;
         this.metrics.assignedCount = 0;
         this.metrics.pendingCount = 0;
+        this.metrics.inProgressCount = 0;
         this.metrics.resolvedCount = 0;
         this.metrics.closedCount = 0;
         this.metrics.avgResolutionTimeMinutes = 0;

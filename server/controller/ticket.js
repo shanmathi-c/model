@@ -3275,6 +3275,13 @@ export class ticketController {
                   ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
             `;
 
+            const inProgressCountQuery = `
+                SELECT COUNT(*) as count
+                FROM tickets t
+                WHERE t.status = 'in-progress'
+                  ${dateFilter} ${agentFilter} ${productFilter} ${statusFilter} ${ticketTypeFilter} ${teamFilter}
+            `;
+
             // 5. Average Customer Satisfaction from feedbacks table
             const avgCsatQuery = `
                 SELECT
@@ -3412,6 +3419,12 @@ export class ticketController {
                         if (err) reject(err);
                         else resolve(result[0]?.count || 0);
                     });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(inProgressCountQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result[0]?.count || 0);
+                    });
                 })
             ];
 
@@ -3427,6 +3440,7 @@ export class ticketController {
                 pendingCount: results[6],
                 resolvedCount: results[7],
                 closedCount: results[8],
+                inProgressCount: results[9],
                 filters: {
                     dateRange: dateRange || '30',
                     agents: agents || [],
