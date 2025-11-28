@@ -573,7 +573,10 @@ export class ticketController {
                             reason: subject,
                             callDescription: description,
                             startTime: null,
-                            endTime: null
+                            endTime: null,
+                            resolvedOn: null,
+                            followupStatus: 'pending',
+                            followupDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
                         };
 
                         await new Promise((resolve, reject) => {
@@ -1672,40 +1675,116 @@ export class ticketController {
             // Get current timestamp
             const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+            // NEW LOGIC: Check if previous call from same number is completed and ticket is resolved/closed
+            const checkPreviousCall = (callback) => {
+                if (!customerPhone) {
+                    console.log('No customerPhone provided, skipping previous call check');
+                    return callback(null, false);
+                }
+
+                console.log('=== CHECKING PREVIOUS CALL FOR PHONE:', customerPhone, '===');
+
+                // Query to find the most recent call from this phone number (excluding the current call being created)
+                connection.query(
+                    `SELECT c.callId, c.callStatus, c.ticketId, c.followupStatus, t.status as ticketStatus
+                     FROM calls c
+                     LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                     WHERE c.userPhone = ?
+                     ORDER BY c.id DESC
+                     LIMIT 1`,
+                    [customerPhone],
+                    (err, result) => {
+                        if (err) {
+                            console.error('Error checking previous call:', err);
+                            return callback(null, false);
+                        }
+
+                        if (result && result.length > 0) {
+                            const prevCall = result[0];
+                            const callCompleted = prevCall.callStatus === 'completed';
+                            const ticketClosedOrResolved = prevCall.ticketStatus === 'resolved' || prevCall.ticketStatus === 'closed';
+                            const shouldCreateNewTicket = callCompleted && ticketClosedOrResolved;
+
+                            console.log('=== PREVIOUS CALL DETAILS ===');
+                            console.log('Call ID:', prevCall.callId);
+                            console.log('Call Status:', prevCall.callStatus, '(completed?', callCompleted + ')');
+                            console.log('Ticket ID:', prevCall.ticketId);
+                            console.log('Ticket Status:', prevCall.ticketStatus, '(resolved/closed?', ticketClosedOrResolved + ')');
+                            console.log('Followup Status:', prevCall.followupStatus);
+                            console.log('SHOULD CREATE NEW TICKET?', shouldCreateNewTicket);
+                            console.log('=== END PREVIOUS CALL DETAILS ===');
+
+                            // Return true if both conditions are met (should create new ticket)
+                            callback(null, shouldCreateNewTicket);
+                        } else {
+                            console.log('No previous call found for phone:', customerPhone);
+                            console.log('This appears to be the first call from this number');
+                            callback(null, false);
+                        }
+                    }
+                );
+            };
+
             // First, if ticketId is provided, get the formatted ticketId from tickets table
-            const getFormattedTicketId = (callback) => {
+            const getFormattedTicketId = (shouldCreateNewTicket, callback) => {
+                console.log('=== GET FORMATTED TICKET ID ===');
+                console.log('shouldCreateNewTicket:', shouldCreateNewTicket);
+                console.log('ticketId from request:', ticketId);
+
+                // If we should create a new ticket (previous call completed + ticket resolved/closed), set ticketId to null
+                if (shouldCreateNewTicket) {
+                    console.log('✓ DECISION: Previous call completed and ticket resolved/closed');
+                    console.log('✓ ACTION: Setting ticketId to NULL for new ticket creation');
+                    console.log('=== END GET FORMATTED TICKET ID ===');
+                    return callback(null, null);
+                }
+
                 if (!ticketId || ticketId === 0) {
                     // No ticket, use callbackId or 0
-                    return callback(null, ticketId === 0 ? 0 : (ticketId || callbackId));
+                    const returnValue = ticketId === 0 ? 0 : (ticketId || callbackId);
+                    console.log('No ticketId provided, returning:', returnValue);
+                    console.log('=== END GET FORMATTED TICKET ID ===');
+                    return callback(null, returnValue);
                 }
 
                 // Look up the formatted ticketId from tickets table
+                console.log('Looking up formatted ticketId for:', ticketId);
                 connection.query(
                     "SELECT ticketId FROM tickets WHERE id = ? OR ticketId = ?",
                     [ticketId, ticketId],
                     (err, result) => {
                         if (err) {
                             console.error('Error looking up ticketId:', err);
+                            console.log('Fallback: Using provided ticketId:', ticketId);
+                            console.log('=== END GET FORMATTED TICKET ID ===');
                             return callback(null, ticketId); // Fallback to provided ticketId
                         }
 
                         if (result && result.length > 0) {
                             const formattedTicketId = result[0].ticketId;
-                            console.log('Found formatted ticketId:', formattedTicketId, 'for input:', ticketId);
+                            console.log('✓ Found formatted ticketId:', formattedTicketId);
+                            console.log('=== END GET FORMATTED TICKET ID ===');
                             callback(null, formattedTicketId);
                         } else {
-                            console.log('No ticket found, using provided ticketId:', ticketId);
+                            console.log('No ticket found in database, using provided ticketId:', ticketId);
+                            console.log('=== END GET FORMATTED TICKET ID ===');
                             callback(null, ticketId);
                         }
                     }
                 );
             };
 
-            // Get formatted ticketId first, then proceed with call creation
-            getFormattedTicketId((err, formattedTicketId) => {
+            // First check if previous call was completed and ticket was resolved/closed
+            checkPreviousCall((err, shouldCreateNewTicket) => {
                 if (err) {
-                    console.error('Error getting formatted ticketId:', err);
+                    console.error('Error checking previous call:', err);
                 }
+
+                // Get formatted ticketId based on whether we should create a new ticket
+                getFormattedTicketId(shouldCreateNewTicket, (err, formattedTicketId) => {
+                    if (err) {
+                        console.error('Error getting formatted ticketId:', err);
+                    }
 
                 // Now get all existing C-format callIds to determine the next one
                 connection.query(
@@ -1749,6 +1828,7 @@ export class ticketController {
                         insertCallLog(nextCallId, formattedTicketId);
                     }
                 );
+                });
             });
 
             // Helper function to insert call log
@@ -1759,39 +1839,45 @@ export class ticketController {
                     INSERT INTO calls (
                         callId, ticketId, userPhone, productId, agentId, agentPhone,
                         callStatus, ticketStatus, recordingUrl, callType, reason,
-                        callDescription, startTime, endTime
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        callDescription, startTime, endTime, resolvedOn, followupStatus, followupDate
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `;
 
                 const values = [
                     nextCallId, // callId as string
-                    actualTicketId, // Use the correctly calculated ticketId
+                    actualTicketId, // Use the correctly calculated ticketId (null if new ticket should be created)
                     customerPhone, // userPhone from frontend
                     productId || null, // productId from frontend
                     agentId, // agentId from frontend
                     agentNumber || agentName || 'Unknown', // agentPhone from frontend or fallback to agentName
                     'pending', // Initial callStatus - should be 'pending' when call starts
-                    ticketStatus || 'in-progress', // ticketStatus from frontend ticket status
+                    actualTicketId === null ? 'pending' : (ticketStatus || 'in-progress'), // ticketStatus - pending if no ticket linked
                     'pending', // recordingUrl initially pending
                     callType || 'outbound', // callType from frontend (inbound/outbound)
                     subject || 'Callback request from customer', // reason
                     subject || 'Callback request from customer', // callDescription
                     startTime, // Actual start time when connect call is clicked
-                    startTime // Set endTime to startTime initially, will be updated when call ends
+                    startTime, // Set endTime to startTime initially, will be updated when call ends
+                    null, // resolvedOn - explicitly set to null, should only be set when status changes to resolved
+                    'pending', // followupStatus - set to 'pending' initially, will be updated when ticket status changes
+                    new Date().toISOString().slice(0, 19).replace('T', ' ') // followupDate - set to current date by default
                 ];
 
-                console.log('Inserting call with values:', {
-                    callId: nextCallId,
-                    ticketId: actualTicketId,
-                    userPhone: customerPhone,
-                    productId: productId || null,
-                    agentId: agentId,
-                    agentPhone: agentNumber || agentName || 'Unknown',
-                    callStatus: 'pending',
-                    ticketStatus: 'in-progress',
-                    callType: callType || 'outbound',
-                    startTime: startTime
-                });
+                console.log('=== INSERTING NEW CALL ===');
+                console.log('Call ID:', nextCallId);
+                console.log('Ticket ID:', actualTicketId, actualTicketId === null ? '(NULL - New ticket should be created from call page)' : '(Linked to existing ticket)');
+                console.log('User Phone:', customerPhone);
+                console.log('Product ID:', productId || null);
+                console.log('Agent ID:', agentId);
+                console.log('Agent Phone:', agentNumber || agentName || 'Unknown');
+                console.log('Call Status:', 'pending');
+                console.log('Ticket Status:', actualTicketId === null ? 'pending' : (ticketStatus || 'in-progress'));
+                console.log('Call Type:', callType || 'outbound');
+                console.log('Start Time:', startTime);
+                console.log('Resolved On:', null, '(NULL - will only be set when status changes to resolved)');
+                console.log('Followup Status:', 'pending', '(will be updated when ticket status changes)');
+                console.log('Followup Date:', new Date().toISOString().slice(0, 19).replace('T', ' '), '(Current date - will be updated when followup is scheduled)');
+                console.log('=== END INSERTING NEW CALL ===');
 
                 connection.query(insertQuery, values, (err, result) => {
                     if (err) {
@@ -2992,11 +3078,15 @@ export class ticketController {
                                 const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
                                 callUpdateFields.push("resolvedOn = ?");
                                 callUpdateValues.push(currentTimestamp);
+                                console.log(`Setting resolvedOn to ${currentTimestamp} because followupStatus changed to 'resolved'`);
                             } else if (followupStatus !== 'closed') {
                                 // If status is changed to something other than resolved or closed, clear resolvedOn
                                 // When transitioning to 'closed', preserve the existing resolvedOn date
                                 callUpdateFields.push("resolvedOn = ?");
                                 callUpdateValues.push(null);
+                                console.log(`Clearing resolvedOn because followupStatus changed to '${followupStatus}' (not resolved or closed)`);
+                            } else {
+                                console.log(`Preserving existing resolvedOn because followupStatus changed to 'closed'`);
                             }
                             // When followupStatus is 'closed', we don't update resolvedOn field,
                             // thus preserving the existing resolvedOn date
