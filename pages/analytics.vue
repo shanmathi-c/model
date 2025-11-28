@@ -403,9 +403,9 @@
       </div>
 
       <!-- Ticket Trends Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Tickets Created vs Resolved Over Time</h2>
-        <table class="w-full border-collapse border border-gray-300" style="font-size: 10px;">
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 8px;">
           <thead>
             <tr class="bg-gray-100">
               <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Date</th>
@@ -434,7 +434,7 @@
       </div>
 
       <!-- Resolution Time Distribution Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Resolution Time Distribution</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
@@ -460,7 +460,7 @@
       </div>
 
       <!-- Customer Satisfaction Distribution Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Customer Satisfaction Distribution</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
@@ -512,7 +512,7 @@
       </div>
 
       <!-- Agent Performance Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Agent Performance Leaderboard</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 9px;">
           <thead>
@@ -546,7 +546,7 @@
       </div>
 
       <!-- Call Statistics Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Statistics</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
@@ -589,7 +589,7 @@
       </div>
 
       <!-- Product Performance Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Product Performance Breakdown</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 10px;">
           <thead>
@@ -617,7 +617,7 @@
       </div>
 
       <!-- Callback Status Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Callback Status</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
@@ -657,9 +657,9 @@
       </div>
 
       <!-- Call Trends Table -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Trends Over Time</h2>
-        <table class="w-full border-collapse border border-gray-300" style="font-size: 9px;">
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 8px;">
           <thead>
             <tr class="bg-gray-100">
               <th class="border border-gray-300 px-2 py-1 text-left font-semibold">Date</th>
@@ -687,7 +687,7 @@
       </div>
 
       <!-- Status Counts Summary -->
-      <div class="mb-6 page-break-before">
+      <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Status Distribution Summary</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
@@ -2427,21 +2427,33 @@ export default {
         // Show loading message
         console.log('Generating PDF...');
 
-        // Ensure all data is fetched before generating PDF
-        console.log('Fetching all data for PDF export...');
-        await Promise.all([
-          this.fetchAnalyticsData(),
-          this.fetchTicketTrends(),
-          this.fetchResolutionTimeDistribution(),
-          this.fetchCustomerSatisfactionDistribution(),
-          this.fetchAgentPerformance(),
-          this.fetchCallStatistics(),
-          this.fetchProductPerformance(),
-          this.fetchCallbackStatus(),
-          this.fetchCallTrends()
-        ]);
+        // Store current filters
+        const currentDateRange = this.analyticsFilters.dateRange;
 
-        console.log('All data fetched. Data summary:', {
+        // Temporarily use current date range for all fetches
+        const dateRangeToUse = this.analyticsFilters.dateRange;
+
+        // Ensure all data is fetched before generating PDF
+        console.log('Fetching all data for PDF export with date range:', dateRangeToUse);
+
+        try {
+          await Promise.all([
+            this.fetchAnalyticsData(),
+            this.fetchTicketTrends(dateRangeToUse),
+            this.fetchResolutionTimeDistribution(dateRangeToUse),
+            this.fetchCustomerSatisfactionDistribution(dateRangeToUse),
+            this.fetchAgentPerformance(dateRangeToUse),
+            this.fetchCallStatistics(dateRangeToUse),
+            this.fetchProductPerformance(dateRangeToUse),
+            this.fetchCallbackStatus(dateRangeToUse),
+            this.fetchCallTrends(dateRangeToUse)
+          ]);
+        } catch (fetchError) {
+          console.error('Error fetching data:', fetchError);
+          // Continue anyway with whatever data we have
+        }
+
+        const dataSummary = {
           totalTickets: this.metrics?.totalTickets || 0,
           agentPerformanceCount: this.agentPerformanceData?.length || 0,
           productPerformanceCount: this.productPerformanceData?.length || 0,
@@ -2449,13 +2461,38 @@ export default {
           callbackStatusTotal: this.callbackStatusData?.total || 0,
           callTrendsLabels: this.callTrendsData?.labels?.length || 0,
           ticketTrendsLabels: this.ticketTrends?.labels?.length || 0
-        });
+        };
+
+        console.log('All data fetched. Data summary:', dataSummary);
+        console.log('Detailed Agent Performance Data:', this.agentPerformanceData);
+        console.log('Detailed Product Performance Data:', this.productPerformanceData);
+        console.log('Detailed Call Statistics Data:', this.callStatisticsData);
+
+        // Log if data is available
+        const dataAvailability = {
+          hasAgentData: !!(this.agentPerformanceData && this.agentPerformanceData.length > 0),
+          agentCount: this.agentPerformanceData?.length || 0,
+          hasProductData: !!(this.productPerformanceData && this.productPerformanceData.length > 0),
+          productCount: this.productPerformanceData?.length || 0,
+          hasCallStatsData: !!(this.callStatisticsData && this.callStatisticsData.inbound !== undefined),
+          callStatsInbound: this.callStatisticsData?.inbound || 0
+        };
+
+        console.log('Data availability check:', dataAvailability);
 
         // Show the export content
         this.isExportingPDF = true;
 
         // Wait for Vue to render the element and ensure DOM is ready
         await this.$nextTick();
+
+        // Log data right before rendering
+        console.log('Data right before PDF render:', {
+          agentPerformanceData: JSON.stringify(this.agentPerformanceData),
+          productPerformanceData: JSON.stringify(this.productPerformanceData),
+          callStatisticsData: JSON.stringify(this.callStatisticsData)
+        });
+
         await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Use the export content
@@ -2482,9 +2519,9 @@ export default {
         const opt = {
           margin: 0,
           filename: `Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
+          image: { type: 'jpeg', quality: 0.95 },
           html2canvas: {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             logging: false,
             allowTaint: true,
@@ -2507,15 +2544,37 @@ export default {
             compress: true
           },
           pagebreak: {
-            mode: ['avoid-all', 'css', 'legacy'],
-            before: '.page-break-before',
-            after: '.page-break-after',
-            avoid: 'tr'
-          }
+            mode: ['avoid-all', 'css', 'legacy']
+          },
+          enableLinks: false
         };
 
         console.log('Starting PDF generation with html2pdf...');
-        await html2pdf().set(opt).from(element).save();
+
+        // Use html2pdf with proper multi-page support
+        try {
+          await html2pdf()
+            .set(opt)
+            .from(element)
+            .toPdf()
+            .get('pdf')
+            .then(function (pdf) {
+              const totalPages = pdf.internal.getNumberOfPages();
+              console.log('Total pages in PDF:', totalPages);
+
+              // Add page numbers
+              for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(10);
+                pdf.setTextColor(128);
+                pdf.text('Page ' + i + ' of ' + totalPages, pdf.internal.pageSize.getWidth() / 2, pdf.internal.pageSize.getHeight() - 10, { align: 'center' });
+              }
+            })
+            .save();
+        } catch (pdfError) {
+          console.error('Error in PDF generation:', pdfError);
+          throw pdfError;
+        }
 
         // Hide the export content after generating PDF
         this.isExportingPDF = false;
@@ -2730,11 +2789,26 @@ export default {
   table-layout: fixed;
   width: 100%;
   word-wrap: break-word;
+  page-break-inside: auto;
+}
+
+.export-content tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
 }
 
 .export-content td,
 .export-content th {
   overflow-wrap: break-word;
+  page-break-inside: avoid;
+}
+
+.export-content thead {
+  display: table-header-group;
+}
+
+.export-content tfoot {
+  display: table-footer-group;
 }
 
 .page-break-before {
