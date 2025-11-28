@@ -935,49 +935,6 @@
               </div>
             </div>
 
-            <!-- First Call Resolution -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div class="flex items-center gap-2 mb-4">
-                <div class="bg-gradient-to-r from-teal-100 to-cyan-100 rounded-lg p-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900">First Call Resolution</h3>
-              </div>
-              <div class="space-y-3">
-                <p class="text-xs text-gray-600">Was this issue resolved on the first call?</p>
-                <div class="flex items-center gap-6">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      v-model="selectedTicketDetails.firstCallResolution"
-                      :value="true"
-                      @change="updateFirstCallResolution"
-                      class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                    />
-                    <span class="text-sm font-medium text-gray-900">Yes</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      v-model="selectedTicketDetails.firstCallResolution"
-                      :value="false"
-                      @change="updateFirstCallResolution"
-                      class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
-                    />
-                    <span class="text-sm font-medium text-gray-900">No</span>
-                  </label>
-                </div>
-                <div v-if="selectedTicketDetails.firstCallResolution !== null && selectedTicketDetails.firstCallResolution !== undefined" class="mt-2">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                        :class="selectedTicketDetails.firstCallResolution ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                    {{ selectedTicketDetails.firstCallResolution ? 'FCR: Yes' : 'FCR: No' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
             <!-- Update Ticket Status -->
             <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div class="flex items-center gap-2 mb-4">
