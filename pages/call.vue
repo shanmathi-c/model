@@ -890,6 +890,26 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Update Call Status -->
+              <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 text-sm mb-3">Update Call Status</h5>
+                <div class="space-y-3">
+                  <select
+                    v-model="selectedCallStatus"
+                    @change="updateCallStatus"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                    <option value="missed">Missed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <p class="text-xs text-gray-500">Select the current status of this call</p>
+                </div>
+              </div>
             </div>
 
               </div>
@@ -1085,9 +1105,11 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                   >
                     <option value="pending">Pending</option>
+                    <option value="ongoing">Ongoing</option>
                     <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
                     <option value="missed">Missed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="resolved">Resolved</option>
                   </select>
                 </div>
                 <p class="text-xs text-gray-500 italic">Status will update immediately when changed</p>
@@ -2106,6 +2128,49 @@ export default {
       this.showCallModal = false
       this.selectedCall = null
       this.callStatus = 'pending'
+    },
+
+    // Update call status
+    async updateCallStatus() {
+      if (!this.selectedCall) return
+
+      try {
+        const callId = this.selectedCall.callId || this.selectedCall.id
+        if (!callId) {
+          console.error('No call ID found')
+          return
+        }
+
+        console.log('Updating call status to:', this.selectedCallStatus)
+
+        const response = await fetch(`http://localhost:5001/calls/${callId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: this.selectedCallStatus
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update call status')
+        }
+
+        const result = await response.json()
+        console.log('Call status updated successfully:', result)
+
+        // Update local call data
+        const callIndex = this.calls.findIndex(c => (c.callId || c.id) === callId)
+        if (callIndex !== -1) {
+          this.calls[callIndex].status = this.selectedCallStatus
+          this.selectedCall.status = this.selectedCallStatus
+        }
+
+      } catch (error) {
+        console.error('Error updating call status:', error)
+        alert('Failed to update call status')
+      }
     },
 
     // Open recording modal

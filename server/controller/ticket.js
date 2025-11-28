@@ -2274,21 +2274,22 @@ export class ticketController {
     // Update call status
     static updateCallStatus(req, res) {
         const { callId } = req.params;
-        const { callStatus } = req.body;
+        const { callStatus, status } = req.body;
+        const newStatus = callStatus || status;
 
-        console.log('Received updateCallStatus request for callId:', callId, 'callStatus:', callStatus);
+        console.log('Received updateCallStatus request for callId:', callId, 'status:', newStatus);
 
-        if (!callStatus) {
+        if (!newStatus) {
             return res.status(400).json({
-                message: "Missing required field: callStatus"
+                message: "Missing required field: callStatus or status"
             });
         }
 
         // Validate status value
-        const validStatuses = ['pending', 'completed', 'cancelled', 'missed'];
-        if (!validStatuses.includes(callStatus)) {
+        const validStatuses = ['pending', 'ongoing', 'completed', 'missed', 'cancelled', 'resolved'];
+        if (!validStatuses.includes(newStatus)) {
             return res.status(400).json({
-                message: "Invalid callStatus. Must be one of: pending, completed, cancelled, missed"
+                message: "Invalid status. Must be one of: pending, ongoing, completed, missed, cancelled, resolved"
             });
         }
 
@@ -2306,9 +2307,11 @@ export class ticketController {
                     const previousCallStatus = callData && callData.length > 0 ? callData[0].callStatus : null;
 
                     // Update the callStatus in calls table
+                    // If status is resolved, set firstCall to 1, otherwise set to 0
+                    const firstCallValue = newStatus === 'resolved' ? 1 : 0;
                     connection.query(
-                        "UPDATE calls SET callStatus = ? WHERE callId = ?",
-                        [callStatus, callId],
+                        "UPDATE calls SET callStatus = ?, firstCall = ? WHERE callId = ?",
+                        [newStatus, firstCallValue, callId],
                         async (err, result) => {
                             if (err) {
                                 return res.status(500).json({
@@ -2329,12 +2332,12 @@ export class ticketController {
                                     await ticketController.logActivity(
                                         ticketId,
                                         'call_status_changed',
-                                        `Call ${callId} status changed from ${previousCallStatus || 'none'} to ${callStatus}`,
+                                        `Call ${callId} status changed from ${previousCallStatus || 'none'} to ${newStatus}`,
                                         {
                                             callId: callId,
-                                            callStatus: callStatus,
+                                            callStatus: newStatus,
                                             previousStatus: previousCallStatus,
-                                            currentStatus: callStatus,
+                                            currentStatus: newStatus,
                                             additionalInfo: {
                                                 statusType: 'call_status'
                                             }
@@ -2349,7 +2352,7 @@ export class ticketController {
                                 message: "Call status updated successfully",
                                 data: {
                                     callId: callId,
-                                    callStatus: callStatus
+                                    callStatus: newStatus
                                 }
                             });
                         }
