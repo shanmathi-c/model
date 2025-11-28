@@ -408,7 +408,7 @@ export default {
       },
       colors: {
         inbound: '#3b82f6',
-        outbound: '#10b981',
+        outbound: '#8b5cf6',
         missed: '#ef4444',
         completed: '#10b981',
         pending: '#f59e0b'
