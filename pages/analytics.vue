@@ -741,9 +741,9 @@
               </svg>
             </div>
             <p class="text-sm font-semibold text-gray-900 truncate w-full">
-              {{ metrics.isLoading ? '...' : `${metrics.csatScore}/5(${formatNumber(metrics.csatCount)})` }}
+              {{ metrics.isLoading ? '...' : `${Math.round((metrics.csatScore / 5) * 100)}% | ${metrics.csatScore}/5 | (${formatNumber(metrics.csatCount)})` }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Customer Satisfaction (star rating)</p>
+            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Customer Satisfaction</p>
           </div>
         </div>
 
