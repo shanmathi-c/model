@@ -326,53 +326,86 @@
       </div>
     </div>
 
+    <!-- Loading Overlay for PDF Export -->
+    <div v-if="isExportingPDF" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9998; display: flex; align-items: center; justify-content: center;">
+      <div class="text-white text-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+        <p class="text-lg font-semibold">Generating PDF...</p>
+        <p class="text-sm mt-2">Please wait, this may take a few seconds</p>
+      </div>
+    </div>
+
     <!-- Hidden Export View (Tables only, no charts) -->
-    <div v-show="isExportingPDF" ref="exportContent" class="export-content bg-white p-8" style="position: absolute; left: -9999px; top: 0;">
-      <div class="mb-8 text-center border-b pb-4">
-        <h1 class="text-3xl font-bold text-gray-900">Analytics Report</h1>
-        <p class="text-gray-600 mt-2">Generated on {{ new Date().toLocaleDateString() }}</p>
-        <p class="text-gray-600">Period: Last {{ analyticsFilters.dateRange }} days</p>
+    <div v-if="isExportingPDF" ref="exportContent" class="export-content bg-white" style="position: fixed; left: 0; top: 0; width: 210mm; padding: 15mm 20mm; z-index: 9999; overflow: visible; box-sizing: border-box;">
+      <div class="mb-6 text-center border-b pb-3">
+        <h1 class="text-2xl font-bold text-gray-900">Analytics Report</h1>
+        <p class="text-sm text-gray-600 mt-1">Generated on {{ new Date().toLocaleDateString() }}</p>
+        <p class="text-sm text-gray-600">Period: Last {{ analyticsFilters.dateRange }} days</p>
       </div>
 
       <!-- Summary Metrics Table -->
-      <div class="mb-8">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Summary Metrics</h2>
-        <table class="w-full border-collapse border border-gray-300">
+      <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Summary Metrics</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
             <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Metric</th>
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Value</th>
+              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Metric</th>
+              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Value</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">Total Tickets</td>
-              <td class="border border-gray-300 px-4 py-2 font-medium">{{ formatNumber(metrics.totalTickets) }}</td>
+              <td class="border border-gray-300 px-3 py-2">Total Tickets</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatNumber(metrics.totalTickets) }}</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">Average Resolution Time</td>
-              <td class="border border-gray-300 px-4 py-2 font-medium">{{ formatResolutionTime(metrics.avgResolutionTimeMinutes) }}</td>
+              <td class="border border-gray-300 px-3 py-2">Assigned Tickets</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatNumber(metrics.assignedCount) }}</td>
             </tr>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">First Call Resolution Rate</td>
-              <td class="border border-gray-300 px-4 py-2 font-medium">{{ metrics.fcrRate }}% ({{ formatNumber(metrics.fcrCount) }} tickets)</td>
+              <td class="border border-gray-300 px-3 py-2">Pending Tickets</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatNumber(metrics.pendingCount) }}</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">Average Customer Satisfaction</td>
-              <td class="border border-gray-300 px-4 py-2 font-medium">{{ metrics.csatScore }}/5 ({{ formatNumber(metrics.csatCount) }} ratings)</td>
+              <td class="border border-gray-300 px-3 py-2">In Progress Tickets</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatNumber(metrics.inProgressCount) }}</td>
             </tr>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">Callback Completion Rate</td>
-              <td class="border border-gray-300 px-4 py-2 font-medium">{{ metrics.callbackCompletionRate }}% ({{ formatNumber(metrics.callbackCount) }} completed)</td>
+              <td class="border border-gray-300 px-3 py-2">Resolved Tickets</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatNumber(metrics.resolvedCount) }}</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-2">Closed Tickets</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatNumber(metrics.closedCount) }}</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-2">Average Resolution Time</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatResolutionTime(metrics.avgResolutionTimeMinutes) }}</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-2">Average Reconnection Time</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ formatResolutionTime(metrics.avgReconnectionTimeMinutes) }} ({{ formatNumber(metrics.reconnectionCount) }} reconnections)</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-2">First Call Resolution Rate</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ metrics.fcrRate }}% ({{ formatNumber(metrics.fcrCount) }} tickets)</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-2">Average Customer Satisfaction</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ metrics.csatScore }}/5 or {{ Math.round((metrics.csatScore / 5) * 100) }}% ({{ formatNumber(metrics.csatCount) }} ratings)</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-2">Callback Completion Rate</td>
+              <td class="border border-gray-300 px-3 py-2 font-medium">{{ metrics.callbackCompletionRate }}% ({{ formatNumber(metrics.callbackCount) }} completed)</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Ticket Trends Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Tickets Created vs Resolved Over Time</h2>
-        <table class="w-full border-collapse border border-gray-300 text-sm">
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Tickets Created vs Resolved Over Time</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 10px;">
           <thead>
             <tr class="bg-gray-100">
               <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Date</th>
@@ -401,97 +434,97 @@
       </div>
 
       <!-- Resolution Time Distribution Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Resolution Time Distribution</h2>
-        <table class="w-full border-collapse border border-gray-300">
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Resolution Time Distribution</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
             <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Time Range</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Count</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Percentage</th>
+              <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Time Range</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Percentage</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, index) in timeDistributionData" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
-              <td class="border border-gray-300 px-4 py-2">{{ item.timeRange }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ item.total }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getTimeDistributionPercentage(item.total) }}%</td>
+              <td class="border border-gray-300 px-3 py-1">{{ item.timeRange }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ item.total }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ getTimeDistributionPercentage(item.total) }}%</td>
             </tr>
             <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-4 py-2">Total</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getTotalTimeDistribution() }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">100%</td>
+              <td class="border border-gray-300 px-3 py-1">Total</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ getTotalTimeDistribution() }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">100%</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Customer Satisfaction Distribution Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Customer Satisfaction Distribution</h2>
-        <table class="w-full border-collapse border border-gray-300">
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Customer Satisfaction Distribution</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
             <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Rating</th>
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Description</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Count</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Percentage</th>
+              <th class="border border-gray-300 px-2 py-1 text-left font-semibold">Rating</th>
+              <th class="border border-gray-300 px-2 py-1 text-left font-semibold">Description</th>
+              <th class="border border-gray-300 px-2 py-1 text-right font-semibold">Count</th>
+              <th class="border border-gray-300 px-2 py-1 text-right font-semibold">Percentage</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">5 Stars</td>
-              <td class="border border-gray-300 px-4 py-2">Very Satisfied</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ customerSatisfactionData[5] || 0 }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCSATPercentage(5) }}%</td>
+              <td class="border border-gray-300 px-2 py-1">5 Stars</td>
+              <td class="border border-gray-300 px-2 py-1">Very Satisfied</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ customerSatisfactionData[5] || 0 }}</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ getCSATPercentage(5) }}%</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">4 Stars</td>
-              <td class="border border-gray-300 px-4 py-2">Satisfied</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ customerSatisfactionData[4] || 0 }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCSATPercentage(4) }}%</td>
+              <td class="border border-gray-300 px-2 py-1">4 Stars</td>
+              <td class="border border-gray-300 px-2 py-1">Satisfied</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ customerSatisfactionData[4] || 0 }}</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ getCSATPercentage(4) }}%</td>
             </tr>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">3 Stars</td>
-              <td class="border border-gray-300 px-4 py-2">Neutral</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ customerSatisfactionData[3] || 0 }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCSATPercentage(3) }}%</td>
+              <td class="border border-gray-300 px-2 py-1">3 Stars</td>
+              <td class="border border-gray-300 px-2 py-1">Neutral</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ customerSatisfactionData[3] || 0 }}</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ getCSATPercentage(3) }}%</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">2 Stars</td>
-              <td class="border border-gray-300 px-4 py-2">Dissatisfied</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ customerSatisfactionData[2] || 0 }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCSATPercentage(2) }}%</td>
+              <td class="border border-gray-300 px-2 py-1">2 Stars</td>
+              <td class="border border-gray-300 px-2 py-1">Dissatisfied</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ customerSatisfactionData[2] || 0 }}</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ getCSATPercentage(2) }}%</td>
             </tr>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">1 Star</td>
-              <td class="border border-gray-300 px-4 py-2">Very Dissatisfied</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ customerSatisfactionData[1] || 0 }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getCSATPercentage(1) }}%</td>
+              <td class="border border-gray-300 px-2 py-1">1 Star</td>
+              <td class="border border-gray-300 px-2 py-1">Very Dissatisfied</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ customerSatisfactionData[1] || 0 }}</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ getCSATPercentage(1) }}%</td>
             </tr>
             <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-4 py-2" colspan="2">Total Ratings</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ getTotalCSAT() }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">100%</td>
+              <td class="border border-gray-300 px-2 py-1" colspan="2">Total Ratings</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">{{ getTotalCSAT() }}</td>
+              <td class="border border-gray-300 px-2 py-1 text-right">100%</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Agent Performance Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Agent Performance Leaderboard</h2>
-        <table class="w-full border-collapse border border-gray-300 text-sm">
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Agent Performance Leaderboard</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 9px;">
           <thead>
             <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Rank</th>
-              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Agent Name</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Assigned</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Resolved</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Resolution Rate</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Avg Resolution Time</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">FCR Rate</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">CSAT Rating</th>
+              <th class="border border-gray-300 px-1 py-1 text-center font-semibold">Rank</th>
+              <th class="border border-gray-300 px-2 py-1 text-left font-semibold">Agent Name</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Assigned</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Resolved</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Res.Rate</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Avg Time</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">FCR%</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">CSAT</th>
             </tr>
           </thead>
           <tbody>
@@ -499,66 +532,66 @@
               <td colspan="8" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No agent performance data available</td>
             </tr>
             <tr v-for="(agent, index) in agentPerformanceData" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
-              <td class="border border-gray-300 px-3 py-2 text-center">{{ agent.rank || (index + 1) }}</td>
-              <td class="border border-gray-300 px-3 py-2">{{ agent.name }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.assigned }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.resolved }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ getAgentResolutionRate(agent) }}%</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ formatResolutionTime(agent.resolutionTime) }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.fcrRate }}%</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ agent.csatRating }}/5</td>
+              <td class="border border-gray-300 px-1 py-1 text-center">{{ agent.rank || (index + 1) }}</td>
+              <td class="border border-gray-300 px-2 py-1">{{ agent.name }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ agent.assigned }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ agent.resolved }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ getAgentResolutionRate(agent) }}%</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ formatResolutionTime(agent.resolutionTime) }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ agent.fcrRate }}%</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ agent.csatRating }}/5</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Call Statistics Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Call Statistics</h2>
-        <table class="w-full border-collapse border border-gray-300">
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Statistics</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
             <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Metric</th>
-              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Count</th>
+              <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Metric</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">Total Inbound Calls</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callStatisticsData.inbound) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Total Inbound Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.inbound) }}</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">Total Outbound Calls</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callStatisticsData.outbound) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Total Outbound Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.outbound) }}</td>
             </tr>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">Completed Calls</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callStatisticsData.completed) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Completed Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.completed) }}</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">Missed Calls</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callStatisticsData.missed) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Missed Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.missed) }}</td>
             </tr>
             <tr>
-              <td class="border border-gray-300 px-4 py-2">Callbacks Made</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatNumber(callStatisticsData.callbacks) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Callbacks Made</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.callbacks) }}</td>
             </tr>
             <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">Average Call Duration</td>
-              <td class="border border-gray-300 px-4 py-2 text-right font-medium">{{ formatResolutionTime(callStatisticsData.avgDuration) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Average Call Duration</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatResolutionTime(callStatisticsData.avgDuration) }}</td>
             </tr>
             <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-4 py-2">Total Calls</td>
-              <td class="border border-gray-300 px-4 py-2 text-right">{{ formatNumber(callStatisticsData.inbound + callStatisticsData.outbound) }}</td>
+              <td class="border border-gray-300 px-3 py-1">Total Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(callStatisticsData.inbound + callStatisticsData.outbound) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Product Performance Table -->
-      <div class="mb-8 page-break-before">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Product Performance Breakdown</h2>
-        <table class="w-full border-collapse border border-gray-300 text-sm">
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Product Performance Breakdown</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 10px;">
           <thead>
             <tr class="bg-gray-100">
               <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Product</th>
@@ -578,6 +611,122 @@
               <td class="border border-gray-300 px-3 py-2 text-right">{{ formatResolutionTime(product.resolutionTime) }}</td>
               <td class="border border-gray-300 px-3 py-2 text-right">{{ product.csat }}/5</td>
               <td class="border border-gray-300 px-3 py-2 text-right">{{ product.volumeTrend > 0 ? '+' : '' }}{{ product.volumeTrend }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Callback Status Table -->
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Callback Status</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Status</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">Pending Callbacks</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callbackStatusData.pending) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ getCallbackPercentage(callbackStatusData.pending) }}%</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-1">Missed Callbacks</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callbackStatusData.missed) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ getCallbackPercentage(callbackStatusData.missed) }}%</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">Successful Callbacks</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callbackStatusData.successful) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ getCallbackPercentage(callbackStatusData.successful) }}%</td>
+            </tr>
+            <tr class="bg-blue-50 font-semibold">
+              <td class="border border-gray-300 px-3 py-1">Total Callbacks</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(callbackStatusData.total) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">100%</td>
+            </tr>
+            <tr class="bg-green-50">
+              <td class="border border-gray-300 px-3 py-1">Success Rate</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium" colspan="2">{{ callbackStatusData.successRate }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Call Trends Table -->
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Trends Over Time</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 9px;">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-2 py-1 text-left font-semibold">Date</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Inbound</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Outbound</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Completed</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Missed</th>
+              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Pending</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!callTrendsData.labels || callTrendsData.labels.length === 0">
+              <td colspan="6" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No call trends data available</td>
+            </tr>
+            <tr v-for="(label, index) in callTrendsData.labels" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
+              <td class="border border-gray-300 px-2 py-1">{{ label }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.inbound[index] || 0 }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.outbound[index] || 0 }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.completed[index] || 0 }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.missed[index] || 0 }}</td>
+              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.pending[index] || 0 }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Status Counts Summary -->
+      <div class="mb-6 page-break-before">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Status Distribution Summary</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Status</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
+              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">Assigned</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.assignedCount) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.assignedCount / metrics.totalTickets) * 100) : 0 }}%</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-1">Pending</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.pendingCount) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.pendingCount / metrics.totalTickets) * 100) : 0 }}%</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">In Progress</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.inProgressCount) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.inProgressCount / metrics.totalTickets) * 100) : 0 }}%</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-1">Resolved</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.resolvedCount) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.resolvedCount / metrics.totalTickets) * 100) : 0 }}%</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">Closed</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.closedCount) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.closedCount / metrics.totalTickets) * 100) : 0 }}%</td>
+            </tr>
+            <tr class="bg-blue-50 font-semibold">
+              <td class="border border-gray-300 px-3 py-1">Total Tickets</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(metrics.totalTickets) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">100%</td>
             </tr>
           </tbody>
         </table>
@@ -2278,14 +2427,38 @@ export default {
         // Show loading message
         console.log('Generating PDF...');
 
-        // Show the export content temporarily (off-screen)
+        // Ensure all data is fetched before generating PDF
+        console.log('Fetching all data for PDF export...');
+        await Promise.all([
+          this.fetchAnalyticsData(),
+          this.fetchTicketTrends(),
+          this.fetchResolutionTimeDistribution(),
+          this.fetchCustomerSatisfactionDistribution(),
+          this.fetchAgentPerformance(),
+          this.fetchCallStatistics(),
+          this.fetchProductPerformance(),
+          this.fetchCallbackStatus(),
+          this.fetchCallTrends()
+        ]);
+
+        console.log('All data fetched. Data summary:', {
+          totalTickets: this.metrics?.totalTickets || 0,
+          agentPerformanceCount: this.agentPerformanceData?.length || 0,
+          productPerformanceCount: this.productPerformanceData?.length || 0,
+          callStatisticsInbound: this.callStatisticsData?.inbound || 0,
+          callbackStatusTotal: this.callbackStatusData?.total || 0,
+          callTrendsLabels: this.callTrendsData?.labels?.length || 0,
+          ticketTrendsLabels: this.ticketTrends?.labels?.length || 0
+        });
+
+        // Show the export content
         this.isExportingPDF = true;
 
-        // Wait for Vue to render the element
+        // Wait for Vue to render the element and ensure DOM is ready
         await this.$nextTick();
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
-        // Use the hidden export content (tables only, no charts)
+        // Use the export content
         const element = this.$refs.exportContent;
 
         if (!element) {
@@ -2293,22 +2466,39 @@ export default {
           throw new Error('Export content element not found');
         }
 
-        console.log('Element found, generating PDF...');
+        console.log('Element found, generating PDF...', {
+          scrollHeight: element.scrollHeight,
+          clientHeight: element.clientHeight,
+          offsetWidth: element.offsetWidth
+        });
+
+        // Verify element has content
+        if (element.scrollHeight < 100) {
+          console.error('Element appears to be empty or not rendered properly');
+          this.isExportingPDF = false;
+          throw new Error('Export content is empty. Please ensure data is loaded.');
+        }
 
         const opt = {
-          margin: [10, 10, 10, 10],
+          margin: 0,
           filename: `Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.95 },
+          image: { type: 'jpeg', quality: 0.98 },
           html2canvas: {
             scale: 2,
             useCORS: true,
-            logging: true,
+            logging: false,
             allowTaint: true,
             scrollY: 0,
             scrollX: 0,
             backgroundColor: '#ffffff',
-            windowWidth: 1200,
-            windowHeight: element.scrollHeight
+            windowWidth: element.offsetWidth,
+            windowHeight: element.scrollHeight,
+            width: element.offsetWidth,
+            height: element.scrollHeight,
+            x: 0,
+            y: 0,
+            removeContainer: false,
+            letterRendering: true
           },
           jsPDF: {
             unit: 'mm',
@@ -2324,6 +2514,7 @@ export default {
           }
         };
 
+        console.log('Starting PDF generation with html2pdf...');
         await html2pdf().set(opt).from(element).save();
 
         // Hide the export content after generating PDF
@@ -2532,5 +2723,21 @@ export default {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Export content styles for PDF */
+.export-content table {
+  table-layout: fixed;
+  width: 100%;
+  word-wrap: break-word;
+}
+
+.export-content td,
+.export-content th {
+  overflow-wrap: break-word;
+}
+
+.page-break-before {
+  page-break-before: always;
 }
 </style>
