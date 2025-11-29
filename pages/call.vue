@@ -1172,37 +1172,6 @@
               </div>
             </div>
 
-            <!-- Call Transcript -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                  <div class="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 class="text-base font-bold text-gray-900">Call Transcript</h3>
-                </div>
-                <button v-if="callTranscript" class="text-xs text-blue-600 hover:text-blue-700">Download Transcript</button>
-              </div>
-              <div v-if="callTranscript" class="max-h-60 overflow-y-auto space-y-3">
-                <div v-for="(line, index) in callTranscript" :key="index" class="flex gap-3">
-                  <span class="text-xs font-medium" :class="line.speaker === 'Agent' ? 'text-green-600' : 'text-blue-600'">
-                    {{ line.speaker }}:
-                  </span>
-                  <p class="text-sm text-gray-700 flex-1">{{ line.text }}</p>
-                  <span class="text-xs text-gray-400">{{ line.timestamp }}</span>
-                </div>
-              </div>
-              <div v-else class="text-center py-8 text-gray-500">
-                <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p class="text-sm">Transcript not available</p>
-                <button class="mt-2 text-xs text-blue-600 hover:text-blue-700">Request Transcript</button>
-              </div>
-            </div>
-
             <!-- Related Ticket Information -->
             <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div class="flex items-center gap-2 mb-4">
@@ -1365,68 +1334,6 @@
               Your browser does not support the audio element.
             </audio>
           </div>
-
-          <!-- Call Transcript / Conversation Sample -->
-          <div class="w-full bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-xs font-semibold text-gray-900">Transcript</h4>
-              <span class="text-xs text-gray-500">Customer-Agent</span>
-            </div>
-            <div class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scrollbar">
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">Good morning! This is Sarah from customer support. How may I assist you today?</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
-                <span class="text-gray-700">Hi Sarah, I'm having multiple issues. First, I haven't received the curriculum link that was supposed to be sent yesterday.</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">I apologize for the inconvenience. Let me check your account. Can you please provide your registered email address?</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
-                <span class="text-gray-700">It's john.doe@email.com. Also, my dashboard is not opening properly - it just shows a blank screen.</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">I see your account now. Let me address both issues. First, I'll resend the curriculum link immediately. For the dashboard issue, have you tried clearing your browser cache?</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
-                <span class="text-gray-700">Yes, I've tried that already. It's still not working. And one more thing - the course content is not very clear. The videos are too fast.</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">I understand. For the dashboard, I'll create a technical support ticket for our IT team. They'll contact you within 2 hours. The curriculum link has been sent to your email now.</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
-                <span class="text-gray-700">Okay, that's good. But what about the video speed issue?</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">You can adjust the playback speed in the video player settings. Click the gear icon and select your preferred speed - 0.75x or 0.5x for slower playback.</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
-                <span class="text-gray-700">Oh, I didn't know that! Let me check my email for the curriculum link... Yes, I got it now. Thank you!</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">Great! Your ticket number is T00234 for the dashboard issue. Our tech team will reach out soon. Is there anything else I can help you with?</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
-                <span class="text-gray-700">No, that covers everything. Thanks for your help, Sarah!</span>
-              </div>
-              <div class="flex gap-1.5">
-                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
-                <span class="text-gray-700">You're welcome! Have a wonderful day and happy learning!</span>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Modal Footer -->
@@ -1576,7 +1483,6 @@ export default {
       // Call Details Side Panel
       showCallDetailsPanel: false,
       selectedCallDetails: null,
-      callTranscript: null,
       callNotes: [],
       showAddCallNote: false,
       newCallNote: '',
@@ -2719,16 +2625,14 @@ export default {
     closeCallDetails() {
       this.showCallDetailsPanel = false
       this.selectedCallDetails = null
-      this.callTranscript = null
       this.callNotes = []
       this.showAddCallNote = false
       this.newCallNote = ''
     },
 
     async loadCallRelatedData(callId) {
-      // TODO: Fetch call transcript, notes, and related data from backend
+      // TODO: Fetch call notes and related data from backend
       // For now, using placeholder data
-      this.callTranscript = null // Will be populated from API
       this.callNotes = []
 
       // Parse existing notes and display them in the call notes list
