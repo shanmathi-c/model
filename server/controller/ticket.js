@@ -1809,11 +1809,12 @@ export class ticketController {
                 // Query to find the most recent call from this phone number (excluding the current call being created)
                 console.log('=== DEBUG: QUERYING PREVIOUS CALL FOR PHONE:', customerPhone, '===');
                 connection.query(
-                    `SELECT c.callId, c.callStatus, c.ticketId, c.followupStatus, t.status as ticketStatus,
+                    `SELECT c.callId, c.callStatus, c.ticketId, c.followupStatus, c.agentId, t.status as ticketStatus,
                             c.id as call_id, t.id as ticket_id
                      FROM calls c
                      LEFT JOIN tickets t ON c.ticketId = t.ticketId
-                     WHERE c.userPhone = ?
+                     WHERE REPLACE(REPLACE(REPLACE(c.userPhone, ' ', ''), '+', ''), '-', '') =
+                           REPLACE(REPLACE(REPLACE(?, ' ', ''), '+', ''), '-', '')
                      ORDER BY c.id DESC
                      LIMIT 1`,
                     [customerPhone],
@@ -1861,11 +1862,13 @@ export class ticketController {
                                 console.log('✅ SCENARIO 2: CREATE NEW CALL ID FOR SAME TICKET');
                                 console.log('   Conditions met: Ticket status is Unresolved/Assigned/In Progress/Pending');
                                 console.log('   Will create new callId but keep same ticketId:', prevCall.ticketId);
+                                console.log('   Will keep same agentId:', prevCall.agentId);
 
                                 return callback(null, {
                                     shouldCreateNewTicket: false,
                                     shouldCreateNewCallId: true,
-                                    reuseTicketId: prevCall.ticketId
+                                    reuseTicketId: prevCall.ticketId,
+                                    reuseAgentId: prevCall.agentId
                                 });
                             }
 
@@ -1933,10 +1936,18 @@ export class ticketController {
                     return callback(null, reuseTicketId); // Reuse existing ticketId directly
                 }
 
+                // If we're in scenario 2 but reuseTicketId is somehow missing, still check if ticket should be reused
+                if (shouldCreateNewCallId && !reuseTicketId) {
+                    console.log('⚠️ SCENARIO 2 detected but reuseTicketId is missing!');
+                    console.log('   This should not happen. Falling back to default logic.');
+                }
+
                 if (!ticketId || ticketId === 0) {
-                    // No ticket, use callbackId or 0
-                    const returnValue = ticketId === 0 ? 0 : (ticketId || callbackId);
-                    console.log('No ticketId provided, returning:', returnValue);
+                    // No ticket from request - check if we should use callbackId
+                    // But NOT if we're supposed to create a new ticket (Scenario 1)
+                    const returnValue = shouldCreateNewTicket ? null : (ticketId === 0 ? 0 : (ticketId || callbackId));
+                    console.log('No valid ticketId from request, returning:', returnValue);
+                    console.log('   shouldCreateNewTicket:', shouldCreateNewTicket);
                     console.log('=== END GET FORMATTED TICKET ID ===');
                     return callback(null, returnValue);
                 }
@@ -2042,14 +2053,23 @@ export class ticketController {
                     }
 
                         // Continue with insertion
-                        insertCallLog(nextCallId, formattedTicketId);
+                        insertCallLog(nextCallId, formattedTicketId, scenarioResult);
                     }
                 );
                 });
             });
 
             // Helper function to insert call log
-            function insertCallLog(nextCallId, actualTicketId) {
+            function insertCallLog(nextCallId, actualTicketId, scenarioResult) {
+                // Determine which agentId to use: reuse existing agent for Scenario 2, otherwise use new agent
+                const finalAgentId = (scenarioResult && scenarioResult.reuseAgentId) ? scenarioResult.reuseAgentId : agentId;
+
+                console.log('=== AGENT ASSIGNMENT ===');
+                console.log('Scenario 2 (reuse agent)?:', !!(scenarioResult && scenarioResult.reuseAgentId));
+                console.log('Original agentId from request:', agentId);
+                console.log('Reuse agentId from previous call:', scenarioResult ? scenarioResult.reuseAgentId : 'N/A');
+                console.log('Final agentId to use:', finalAgentId);
+                console.log('=== END AGENT ASSIGNMENT ===');
 
                 // Use explicit SQL to ensure callId is saved as string
                 const insertQuery = `
@@ -2065,7 +2085,7 @@ export class ticketController {
                     actualTicketId, // Use the correctly calculated ticketId (null if new ticket should be created)
                     customerPhone, // userPhone from frontend
                     productId || null, // productId from frontend
-                    agentId, // agentId from frontend
+                    finalAgentId, // agentId - reuse from previous call in Scenario 2, or use new agentId
                     agentNumber || agentName || 'Unknown', // agentPhone from frontend or fallback to agentName
                     'pending', // Initial callStatus - should be 'pending' when call starts
                     actualTicketId === null ? 'pending' : (ticketStatus || 'in-progress'), // ticketStatus - pending if no ticket linked
