@@ -2193,36 +2193,93 @@ export default {
         this.callStatus = 'connected'
         console.log('Call started with:', this.selectedCall.phone)
 
-        // Update existing call record with connected status and start time
-        const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
+        // Check if this is a reconnect scenario (inbound+missed OR outbound+pending OR outbound+missed)
+        const isInboundMissed = this.selectedCall.callType === 'inbound' && this.selectedCall.status === 'missed'
+        const isOutboundPending = this.selectedCall.callType === 'outbound' && this.selectedCall.status === 'pending'
+        const isOutboundMissed = this.selectedCall.callType === 'outbound' && this.selectedCall.status === 'missed'
 
-        if (!callIdToUpdate) {
-          throw new Error('No call ID found to update')
-        }
+        console.log('Is reconnect scenario?', isInboundMissed || isOutboundPending || isOutboundMissed)
+        console.log('  - Inbound+Missed:', isInboundMissed)
+        console.log('  - Outbound+Pending:', isOutboundPending)
+        console.log('  - Outbound+Missed:', isOutboundMissed)
 
-        console.log('Updating call status to connected for callId:', callIdToUpdate)
+        if (isInboundMissed || isOutboundPending || isOutboundMissed) {
+          // Reconnect scenario: Create NEW callId
+          console.log('🔄 RECONNECT: Creating new call for:', this.selectedCall.phone)
 
-        const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/start`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
+          const reconnectPayload = {
+            customerPhone: this.selectedCall.phone,
+            agentId: this.selectedCall.agentId || null,
+            productId: this.selectedCall.productId || null,
+            ticketId: this.selectedCall.ticketId || null,
+            subject: this.selectedCall.reason || this.selectedCall.subject || 'Reconnect call'
           }
-        })
 
-        if (!response.ok) {
-          throw new Error('Failed to start call')
+          console.log('Reconnect payload:', reconnectPayload)
+
+          const response = await fetch('http://localhost:5001/calls/reconnect', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(reconnectPayload)
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to create reconnect call')
+          }
+
+          const result = await response.json()
+          console.log('✅ Reconnect call created successfully:', result)
+
+          // Update selectedCall with the new call data
+          this.selectedCall = {
+            ...this.selectedCall,
+            callId: result.data.callId,
+            id: result.data.callId,
+            callType: 'outbound',
+            status: 'pending',
+            callDateTime: result.data.startTime,
+            recordingUrl: result.data.recordingUrl,
+            ticketId: result.data.ticketId,
+            agentId: result.data.agentId
+          }
+
+          // Refresh the calls list to show the new call
+          await this.fetchCallLogs()
+
+        } else {
+          // Normal scenario: Update existing call with start time
+          const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
+
+          if (!callIdToUpdate) {
+            throw new Error('No call ID found to update')
+          }
+
+          console.log('Updating call status to connected for callId:', callIdToUpdate)
+
+          const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/start`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to start call')
+          }
+
+          const result = await response.json()
+          console.log('Call started successfully:', result)
+
+          // Update local call data - keep status as pending, only update start time
+          if (this.selectedCall) {
+            this.selectedCall.callDateTime = result.data.startTime
+          }
+
+          // Refresh the calls list to show updated start time
+          await this.fetchCallLogs()
         }
-
-        const result = await response.json()
-        console.log('Call started successfully:', result)
-
-        // Update local call data - keep status as pending, only update start time
-        if (this.selectedCall) {
-          this.selectedCall.callDateTime = result.data.startTime
-        }
-
-        // Refresh the calls list to show updated start time
-        await this.fetchCallLogs()
 
       } catch (error) {
         console.error('Error starting call:', error)

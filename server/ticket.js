@@ -14,6 +14,7 @@ router.delete("/callback/:callbackId", ticketController.deleteCallback);
 
 // Call logs routes
 router.post("/calls", ticketController.createCallLog);
+router.post("/calls/reconnect", ticketController.reconnectCall);
 router.put("/calls/:callId/start", ticketController.startCall);
 router.put("/calls/:callId/end", ticketController.endCall);
 router.put("/calls/:callId/missed", ticketController.missedCall);

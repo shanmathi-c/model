@@ -2164,6 +2164,220 @@ export class ticketController {
         }
     }
 
+    // Reconnect call from call page - creates NEW callId for missed inbound or pending outbound calls
+    static reconnectCall(req, res) {
+        const { customerPhone, agentId, productId, ticketId, subject } = req.body;
+
+        console.log('=== RECONNECT CALL REQUEST ===');
+        console.log('Request:', { customerPhone, agentId, productId, ticketId, subject });
+
+        try {
+            if (!customerPhone) {
+                return res.status(400).json({
+                    message: "customerPhone is required"
+                });
+            }
+
+            // Find the most recent call from this phone number
+            connection.query(
+                `SELECT c.callId, c.callStatus, c.callType, c.ticketId, c.agentId, c.productId,
+                        t.status as ticketStatus
+                 FROM calls c
+                 LEFT JOIN tickets t ON c.ticketId = t.ticketId
+                 WHERE REPLACE(REPLACE(REPLACE(c.userPhone, ' ', ''), '+', ''), '-', '') =
+                       REPLACE(REPLACE(REPLACE(?, ' ', ''), '+', ''), '-', '')
+                 ORDER BY c.id DESC
+                 LIMIT 1`,
+                [customerPhone],
+                async (err, result) => {
+                    if (err) {
+                        console.error('Error finding previous call:', err);
+                        return res.status(500).json({
+                            message: "Error finding previous call",
+                            error: err
+                        });
+                    }
+
+                    let reuseTicketId = null;
+                    let reuseAgentId = agentId;
+                    let reuseProductId = productId;
+
+                    if (result && result.length > 0) {
+                        const prevCall = result[0];
+                        console.log('=== PREVIOUS CALL FOUND ===');
+                        console.log('Previous call:', prevCall);
+
+                        // Check if this is a reconnect scenario
+                        const isInboundMissed = prevCall.callType === 'inbound' && prevCall.callStatus === 'missed';
+                        const isOutboundPending = prevCall.callType === 'outbound' && prevCall.callStatus === 'pending';
+                        const isOutboundMissed = prevCall.callType === 'outbound' && prevCall.callStatus === 'missed';
+
+                        console.log('Is inbound+missed?', isInboundMissed);
+                        console.log('Is outbound+pending?', isOutboundPending);
+                        console.log('Is outbound+missed?', isOutboundMissed);
+
+                        if (isInboundMissed || isOutboundPending || isOutboundMissed) {
+                            console.log('✅ RECONNECT SCENARIO: Creating new outbound call');
+                            // Reuse ticketId, agentId, and productId from previous call
+                            reuseTicketId = prevCall.ticketId;
+                            reuseAgentId = agentId || prevCall.agentId;
+                            reuseProductId = productId || prevCall.productId;
+                            console.log('Will reuse - ticketId:', reuseTicketId, ', agentId:', reuseAgentId, ', productId:', reuseProductId);
+                        }
+                    }
+
+                    // Fetch agentPhone from agents table if agentId is provided
+                    let finalAgentPhone = null;
+                    if (reuseAgentId) {
+                        try {
+                            const agentResult = await new Promise((resolve, reject) => {
+                                connection.query(
+                                    "SELECT phone FROM agents WHERE id = ?",
+                                    [reuseAgentId],
+                                    (err, result) => {
+                                        if (err) reject(err);
+                                        else resolve(result);
+                                    }
+                                );
+                            });
+
+                            if (agentResult && agentResult.length > 0) {
+                                finalAgentPhone = agentResult[0].phone;
+                                console.log('Fetched agentPhone from agents table:', finalAgentPhone);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching agent phone:', error);
+                        }
+                    }
+
+                    // Generate new callId
+                    try {
+                        const callIdResult = await new Promise((resolve, reject) => {
+                            connection.query(
+                                "SELECT callId FROM calls WHERE callId REGEXP '^C[0-9]+$' ORDER BY CAST(SUBSTRING(callId, 2) AS UNSIGNED) DESC LIMIT 1",
+                                (err, result) => {
+                                    if (err) reject(err);
+                                    else resolve(result);
+                                }
+                            );
+                        });
+
+                        let nextCallId;
+                        if (!callIdResult || callIdResult.length === 0) {
+                            nextCallId = 'C001';
+                        } else {
+                            const lastCallId = callIdResult[0].callId;
+                            const match = lastCallId.match(/C(\d+)/);
+                            if (match) {
+                                const lastNumber = parseInt(match[1]);
+                                nextCallId = `C${String(lastNumber + 1).padStart(3, '0')}`;
+                            } else {
+                                nextCallId = 'C001';
+                            }
+                        }
+
+                        console.log('Generated new callId:', nextCallId);
+
+                        // Get current timestamp
+                        const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+                        // Create new call record
+                        const newCallData = {
+                            callId: nextCallId,
+                            ticketId: reuseTicketId,
+                            userPhone: customerPhone,
+                            productId: reuseProductId,
+                            agentId: reuseAgentId,
+                            agentPhone: finalAgentPhone,
+                            callStatus: 'pending',
+                            ticketStatus: reuseTicketId ? 'in-progress' : 'pending',
+                            recordingUrl: null,
+                            callType: 'outbound', // Always outbound when reconnecting from call page
+                            reason: subject || 'Reconnect call',
+                            callDescription: subject || 'Reconnect call',
+                            startTime: startTime,
+                            endTime: startTime,
+                            resolvedOn: null,
+                            followupStatus: 'pending',
+                            followupDate: startTime
+                        };
+
+                        console.log('=== CREATING NEW RECONNECT CALL ===');
+                        console.log('Call data:', newCallData);
+
+                        connection.query("INSERT INTO calls SET ?", newCallData, (insertErr, insertResult) => {
+                            if (insertErr) {
+                                console.error('Error creating reconnect call:', insertErr);
+                                return res.status(500).json({
+                                    message: "Error creating reconnect call",
+                                    error: insertErr
+                                });
+                            }
+
+                            const finalRecordingUrl = `/recordings/${nextCallId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}.mp3`;
+
+                            // Update recording URL
+                            connection.query(
+                                "UPDATE calls SET recordingUrl = ? WHERE id = ?",
+                                [finalRecordingUrl, insertResult.insertId],
+                                async (updateErr) => {
+                                    if (updateErr) {
+                                        console.error('Error updating recording URL:', updateErr);
+                                    }
+
+                                    // Log activity if ticketId exists
+                                    if (reuseTicketId) {
+                                        try {
+                                            await ticketController.logActivity(
+                                                reuseTicketId,
+                                                'call_reconnected',
+                                                `Reconnect call ${nextCallId} created (outbound) for ${customerPhone}`,
+                                                null
+                                            );
+                                            console.log('Activity logged for reconnect call');
+                                        } catch (logErr) {
+                                            console.error('Error logging reconnect call activity:', logErr);
+                                        }
+                                    }
+                                }
+                            );
+
+                            console.log('✅ Reconnect call created successfully');
+
+                            return res.json({
+                                message: "Reconnect call created successfully",
+                                data: {
+                                    callId: nextCallId,
+                                    startTime: startTime,
+                                    recordingUrl: finalRecordingUrl,
+                                    callStatus: 'pending',
+                                    callType: 'outbound',
+                                    ticketId: reuseTicketId,
+                                    agentId: reuseAgentId,
+                                    reconnect: true
+                                }
+                            });
+                        });
+
+                    } catch (error) {
+                        console.error('Error generating callId:', error);
+                        return res.status(500).json({
+                            message: "Error generating callId",
+                            error: error.message
+                        });
+                    }
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in reconnectCall:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
     // Start call (update existing call with start time and ensure status is pending)
     static startCall(req, res) {
         const { callId } = req.params;
