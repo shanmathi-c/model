@@ -1312,63 +1312,112 @@
 
     <!-- Recording Modal -->
     <div v-if="showRecordingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-      <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+      <div class="bg-white rounded-lg shadow-2xl max-w-md w-full">
         <!-- Modal Header -->
-        <div class="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 class="text-lg font-bold text-gray-900">Call Recording</h3>
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <h3 class="text-base font-bold text-gray-900">Call Recording</h3>
           <button
             @click="closeRecordingModal"
             class="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
           >
-            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         <!-- Recording Content -->
-        <div class="p-6">
-          <div class="flex flex-col items-center gap-4">
-            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg class="w-8 h-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div class="text-center">
-              <p class="text-sm font-medium text-gray-900 mb-2">Playing Call Recording</p>
-              <p class="text-xs text-gray-500 mb-4">{{ recordingUrl }}</p>
-            </div>
+        <div class="p-4">
+          <!-- Audio Player -->
+          <div class="w-full mb-3">
+            <audio
+              controls
+              :src="recordingUrl || getDummyAudioUrl()"
+              class="w-full h-9 rounded"
+              preload="metadata"
+            >
+              Your browser does not support the audio element.
+            </audio>
+          </div>
 
-            <!-- Audio Player -->
-            <div class="w-full">
-              <audio
-                controls
-                :src="recordingUrl"
-                class="w-full h-10 rounded"
-                preload="metadata"
-              >
-                Your browser does not support the audio element.
-              </audio>
+          <!-- Call Transcript / Conversation Sample -->
+          <div class="w-full bg-gray-50 rounded-lg p-3 border border-gray-200">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-semibold text-gray-900">Transcript</h4>
+              <span class="text-xs text-gray-500">Customer-Agent</span>
+            </div>
+            <div class="space-y-1.5 text-xs max-h-48 overflow-y-auto custom-scrollbar">
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">Good morning! This is Sarah from customer support. How may I assist you today?</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
+                <span class="text-gray-700">Hi Sarah, I'm having multiple issues. First, I haven't received the curriculum link that was supposed to be sent yesterday.</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">I apologize for the inconvenience. Let me check your account. Can you please provide your registered email address?</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
+                <span class="text-gray-700">It's john.doe@email.com. Also, my dashboard is not opening properly - it just shows a blank screen.</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">I see your account now. Let me address both issues. First, I'll resend the curriculum link immediately. For the dashboard issue, have you tried clearing your browser cache?</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
+                <span class="text-gray-700">Yes, I've tried that already. It's still not working. And one more thing - the course content is not very clear. The videos are too fast.</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">I understand. For the dashboard, I'll create a technical support ticket for our IT team. They'll contact you within 2 hours. The curriculum link has been sent to your email now.</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
+                <span class="text-gray-700">Okay, that's good. But what about the video speed issue?</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">You can adjust the playback speed in the video player settings. Click the gear icon and select your preferred speed - 0.75x or 0.5x for slower playback.</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
+                <span class="text-gray-700">Oh, I didn't know that! Let me check my email for the curriculum link... Yes, I got it now. Thank you!</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">Great! Your ticket number is T00234 for the dashboard issue. Our tech team will reach out soon. Is there anything else I can help you with?</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-green-600 flex-shrink-0">Customer:</span>
+                <span class="text-gray-700">No, that covers everything. Thanks for your help, Sarah!</span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="font-medium text-blue-600 flex-shrink-0">Agent:</span>
+                <span class="text-gray-700">You're welcome! Have a wonderful day and happy learning!</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
           <button
             @click="closeRecordingModal"
-            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium text-sm transition-colors"
+            class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm font-medium transition-colors"
           >
             Close
           </button>
           <a
-            :href="recordingUrl"
+            :href="recordingUrl || getDummyAudioUrl()"
             download
             target="_blank"
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors inline-flex items-center gap-2"
+            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors inline-flex items-center gap-1.5"
           >
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Download
@@ -2844,6 +2893,17 @@ export default {
         // Reset to previous status on error
         this.selectedCallDetailsStatus = this.selectedCallDetails.callStatus || this.selectedCallDetails.status || 'pending'
       }
+    },
+
+    // Get dummy audio URL for demonstration
+    getDummyAudioUrl() {
+      // Local audio file path for customer-agent conversation
+      // This simulates a realistic customer-agent interaction about:
+      // - Curriculum link not received
+      // - Dashboard not opening
+      // - Course content unclear / videos too fast
+      // Place your MP3 file at: public/audio/customer-agent-conversation.mp3
+      return '/audio/customer-agent-conversation.mp3'
     }
   },
 

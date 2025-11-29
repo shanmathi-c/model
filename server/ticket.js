@@ -1,6 +1,31 @@
 import express from "express";
+import multer from "multer";
+import path from "path";
 import {ticketController} from "./controller/ticket.js";
 const router = express.Router();
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/recordings/') // Save to public/recordings folder
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, 'recording-' + uniqueSuffix + path.extname(file.originalname))
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype === 'audio/mpeg' || file.originalname.endsWith('.mp3')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only MP3 files are allowed'));
+    }
+  }
+});
 
 router.post("/new-tickets", ticketController.createTicket);
 router.post("/call-tickets", ticketController.createCallTicket);
@@ -15,6 +40,7 @@ router.delete("/callback/:callbackId", ticketController.deleteCallback);
 // Call logs routes
 router.post("/calls", ticketController.createCallLog);
 router.post("/calls/reconnect", ticketController.reconnectCall);
+router.post("/calls/upload-recording", upload.single('recording'), ticketController.uploadRecording);
 router.put("/calls/:callId/start", ticketController.startCall);
 router.put("/calls/:callId/end", ticketController.endCall);
 router.put("/calls/:callId/missed", ticketController.missedCall);

@@ -2378,6 +2378,73 @@ export class ticketController {
         }
     }
 
+    // Upload recording file for a call
+    static uploadRecording(req, res) {
+        const { callId } = req.body;
+        const file = req.file;
+
+        console.log('=== UPLOAD RECORDING REQUEST ===');
+        console.log('CallId:', callId);
+        console.log('File:', file);
+
+        if (!file) {
+            return res.status(400).json({
+                message: "No file uploaded"
+            });
+        }
+
+        if (!callId) {
+            return res.status(400).json({
+                message: "callId is required"
+            });
+        }
+
+        try {
+            // Generate recording URL path
+            const recordingUrl = `/recordings/${file.filename}`;
+            console.log('Recording URL:', recordingUrl);
+
+            // Update calls table with the recording URL
+            connection.query(
+                "UPDATE calls SET recordingUrl = ? WHERE callId = ?",
+                [recordingUrl, callId],
+                (err, result) => {
+                    if (err) {
+                        console.error('Error updating recording URL:', err);
+                        return res.status(500).json({
+                            message: "Error updating recording URL",
+                            error: err
+                        });
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return res.status(404).json({
+                            message: "Call not found"
+                        });
+                    }
+
+                    console.log('✅ Recording uploaded and URL updated successfully');
+
+                    return res.json({
+                        message: "Recording uploaded successfully",
+                        data: {
+                            callId: callId,
+                            recordingUrl: recordingUrl,
+                            filename: file.filename
+                        }
+                    });
+                }
+            );
+
+        } catch (error) {
+            console.error('Error in uploadRecording:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
+
     // Start call (update existing call with start time and ensure status is pending)
     static startCall(req, res) {
         const { callId } = req.params;
