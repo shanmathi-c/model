@@ -1798,6 +1798,33 @@ export class ticketController {
                 console.log('customerPhone value:', customerPhone);
                 console.log('customerPhone type:', typeof customerPhone);
                 console.log('customerPhone truthy?:', !!customerPhone);
+                console.log('ticketId from request:', ticketId);
+                console.log('ticketStatus from request:', ticketStatus);
+
+                // PRIORITY: If ticketId and ticketStatus are provided from frontend (from ticket page)
+                // Check if ticket status is open and use Scenario 2
+                if (ticketId && ticketStatus) {
+                    const openTicketStatuses = ['unresolved', 'assigned', 'in progress', 'in-progress', 'pending'];
+                    const isTicketOpen = openTicketStatuses.includes(ticketStatus.toLowerCase());
+
+                    console.log('=== TICKET PAGE CALL DETECTED ===');
+                    console.log('TicketId provided:', ticketId);
+                    console.log('TicketStatus provided:', ticketStatus);
+                    console.log('Is ticket open?', isTicketOpen);
+
+                    if (isTicketOpen) {
+                        console.log('✅ SCENARIO 2 (FROM TICKET PAGE): Using provided ticketId');
+                        console.log('   Will create new callId but keep same ticketId:', ticketId);
+                        console.log('   Will use agentId:', agentId);
+
+                        return callback(null, {
+                            shouldCreateNewTicket: false,
+                            shouldCreateNewCallId: true,
+                            reuseTicketId: ticketId,
+                            reuseAgentId: agentId
+                        });
+                    }
+                }
 
                 if (!customerPhone) {
                     console.log('⚠️ No customerPhone provided, using default logic - SKIPPING SCENARIO DETECTION');

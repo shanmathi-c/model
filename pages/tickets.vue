@@ -686,6 +686,32 @@
                       <p class="text-xs text-green-600">Currently speaking with {{ selectedTicket.customerName }}</p>
                     </div>
                   </div>
+
+                  <!-- Upload Recording File -->
+                  <div class="mt-3 bg-white border border-gray-200 rounded-lg p-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                      </svg>
+                      Upload Call Recording (MP3)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".mp3,audio/mpeg"
+                      @change="handleRecordingUpload"
+                      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    <p v-if="uploadedRecording" class="mt-2 text-xs text-green-600 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      {{ uploadedRecording.name }}
+                    </p>
+                  </div>
+
                   <!-- Call Control Buttons in Connected State -->
                   <div class="flex gap-3 mt-3">
                     <button
@@ -1575,6 +1601,7 @@ export default {
       selectedTicket: null,
       callStatus: 'pending',
       assignedAgent: null,
+      uploadedRecording: null, // Store uploaded recording file
 
       // Compact column options
       columnOptions: [
@@ -2033,15 +2060,15 @@ export default {
       try {
         // Create call log when call starts
         const callData = {
-          callbackId: this.selectedTicket.id, // Backend expects callbackId for ticketId
-          ticketId: this.selectedTicket.id,
+          callbackId: this.selectedTicket.id, // Backend expects callbackId for internal id
+          ticketId: this.selectedTicket.ticketId, // Use formatted ticketId (TKT001, etc.)
           agentId: this.selectedTicket.agentId,
           agentName: this.selectedTicket.agentName || 'Unknown Agent',
           agentNumber: this.selectedTicket.agentPhone || this.selectedTicket.agentContact || this.generateAgentPhone(this.selectedTicket.agentId),
           customerPhone: this.selectedTicket.phone,
           customerName: this.selectedTicket.customerName,
           productId: this.selectedTicket.productId || null,
-          subject: `Call for ticket ${this.selectedTicket.id} - ${this.selectedTicket.productCategory || 'No Product'}`,
+          subject: `Call for ticket ${this.selectedTicket.ticketId} - ${this.selectedTicket.productCategory || 'No Product'}`,
           callType: 'outbound', // Calls from tickets page are outbound (support calling customer)
           ticketStatus: this.selectedTicket.status || 'assigned' // Send current ticket status
         }
@@ -2125,6 +2152,58 @@ export default {
         this.callStatus = 'ended' // Still update UI even if API fails
         alert(`Call ended (recording not available): ${error.message}`)
       }
+    },
+
+    // Handle recording file upload
+    async handleRecordingUpload(event) {
+      // Prevent any default behavior
+      event.preventDefault()
+      event.stopPropagation()
+
+      const file = event.target.files[0]
+      if (!file) return
+
+      console.log('Selected file:', file.name, file.type, file.size)
+
+      // Validate file type
+      if (!file.type.includes('audio') && !file.name.endsWith('.mp3')) {
+        console.error('Invalid file type')
+        this.uploadedRecording = null
+        return
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        console.error('File too large')
+        this.uploadedRecording = null
+        return
+      }
+
+      this.uploadedRecording = file
+
+      // Upload file to server
+      try {
+        const formData = new FormData()
+        formData.append('recording', file)
+        formData.append('callId', this.selectedTicket?.callLogId || '')
+
+        console.log('Uploading recording for callId:', this.selectedTicket?.callLogId)
+
+        const response = await $fetch('http://localhost:5001/calls/upload-recording', {
+          method: 'POST',
+          body: formData
+        })
+
+        console.log('✅ Recording uploaded successfully:', response)
+        // Don't close modal, just keep the file reference
+
+      } catch (error) {
+        console.error('Error uploading recording:', error)
+        this.uploadedRecording = null
+      }
+
+      // Keep modal open - don't change callStatus or close modal
+      return false
     },
 
     async disconnectCall() {
