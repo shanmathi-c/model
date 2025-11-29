@@ -445,20 +445,36 @@ export class ticketController {
                     !['resolved', 'completed'].includes(existingRecord.callStatus.toLowerCase());
 
                 if (isTicketOpen || isCallOpen) {
-                    // Scenario 2: Reuse existing ticket and agent
+                    // Scenario 2: Reuse existing ticket and agent, but create NEW call record
                     console.log('Reusing existing ticket and agent:', existingRecord);
 
-                    // Update the existing call if callId is provided
+                    // Create a NEW call record with new callId linked to existing ticketId
                     if (callId) {
+                        const newCallData = {
+                            callId: callId,
+                            ticketId: existingRecord.ticketId,
+                            userPhone: fullPhone,
+                            productId: productId || existingRecord.productId,
+                            agentId: agentId || existingRecord.agentId,
+                            agentPhone: agentPhone || null,
+                            callStatus: 'pending',
+                            ticketStatus: existingRecord.ticketStatus || 'assigned',
+                            recordingUrl: null,
+                            callType: callType || 'inbound',
+                            reason: subject,
+                            callDescription: description,
+                            startTime: null,
+                            endTime: null,
+                            resolvedOn: null,
+                            followupStatus: 'pending',
+                            followupDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                        };
+
                         await new Promise((resolve, reject) => {
-                            connection.query(
-                                "UPDATE calls SET ticketId = ?, agentId = COALESCE(?, agentId), userPhone = ? WHERE callId = ?",
-                                [existingRecord.ticketId, agentId || existingRecord.agentId, fullPhone, callId],
-                                (err, result) => {
-                                    if (err) reject(err);
-                                    else resolve(result);
-                                }
-                            );
+                            connection.query("INSERT INTO calls SET ?", newCallData, (err, result) => {
+                                if (err) reject(err);
+                                else resolve(result);
+                            });
                         });
                     }
 
@@ -468,7 +484,7 @@ export class ticketController {
                         data: {
                             ticketId: existingRecord.ticketId,
                             callId: callId,
-                            agentId: existingRecord.agentId,
+                            agentId: agentId || existingRecord.agentId,
                             agentName: existingRecord.agentName,
                             existingTicket: true
                         }
@@ -1751,11 +1767,13 @@ export class ticketController {
     static createCallLog(req, res) {
         const { callbackId, ticketId, agentId, agentName, agentNumber, customerPhone, customerName, productId, subject, callType, ticketStatus } = req.body;
 
+        console.log('=== CREATE CALL LOG REQUEST ===');
         console.log('Received createCallLog request:', {
             callbackId,
             ticketId,
             agentId,
             agentName,
+            agentNumber,
             customerPhone,
             customerName,
             productId,
@@ -1763,6 +1781,8 @@ export class ticketController {
             callType,
             ticketStatus
         });
+        console.log('customerPhone exists?', !!customerPhone);
+        console.log('=== END CREATE CALL LOG REQUEST ===');
 
         try {
             // Generate recording URL (pending status) - will use insertId after database insertion
@@ -1774,8 +1794,13 @@ export class ticketController {
 
             // NEW LOGIC: Check previous call to determine scenario
             const checkPreviousCall = (callback) => {
+                console.log('=== INSIDE checkPreviousCall ===');
+                console.log('customerPhone value:', customerPhone);
+                console.log('customerPhone type:', typeof customerPhone);
+                console.log('customerPhone truthy?:', !!customerPhone);
+
                 if (!customerPhone) {
-                    console.log('No customerPhone provided, using default logic');
+                    console.log('⚠️ No customerPhone provided, using default logic - SKIPPING SCENARIO DETECTION');
                     return callback(null, { shouldCreateNewTicket: false, shouldCreateNewCallId: false });
                 }
 
@@ -1811,49 +1836,48 @@ export class ticketController {
                             console.log('Call internal ID:', prevCall.call_id);
                             console.log('Ticket internal ID:', prevCall.ticket_id);
 
-                            const callCompleted = prevCall.callStatus === 'completed';
-                            const callPending = prevCall.callStatus === 'pending' || prevCall.callStatus === 'cancelled' || prevCall.callStatus === 'missed';
-                            const ticketOpen = prevCall.ticketStatus !== 'resolved' && prevCall.ticketStatus !== 'closed';
-                            const ticketClosedOrResolved = prevCall.ticketStatus === 'resolved' || prevCall.ticketStatus === 'closed';
+                            // Check if ticket is in open status (Unresolved, Assigned, In Progress, Pending)
+                            const openTicketStatuses = ['unresolved', 'assigned', 'in progress', 'in-progress', 'pending'];
+                            const ticketOpen = prevCall.ticketStatus && openTicketStatuses.includes(prevCall.ticketStatus.toLowerCase());
+                            const ticketClosedOrResolved = prevCall.ticketStatus && (prevCall.ticketStatus.toLowerCase() === 'resolved' || prevCall.ticketStatus.toLowerCase() === 'closed');
+                            const callResolvedOrCompleted = prevCall.callStatus && (prevCall.callStatus.toLowerCase() === 'completed' || prevCall.callStatus.toLowerCase() === 'resolved');
 
                             console.log('=== DEBUG: STATUS ANALYSIS ===');
-                            console.log('Call completed?', callCompleted);
-                            console.log('Call pending/cancelled/missed?', callPending);
-                            console.log('Ticket open?', ticketOpen);
+                            console.log('Call resolved/completed?', callResolvedOrCompleted);
+                            console.log('Ticket open (Unresolved/Assigned/In Progress/Pending)?', ticketOpen);
                             console.log('Ticket closed/resolved?', ticketClosedOrResolved);
 
                             console.log('=== PREVIOUS CALL ANALYSIS ===');
                             console.log('Call ID:', prevCall.callId);
                             console.log('Call Status:', prevCall.callStatus);
-                            console.log('  - is completed?', callCompleted);
-                            console.log('  - is pending/cancelled/missed?', callPending);
+                            console.log('  - is resolved/completed?', callResolvedOrCompleted);
                             console.log('Ticket Status:', prevCall.ticketStatus);
-                            console.log('  - is open?', ticketOpen);
+                            console.log('  - is open (Unresolved/Assigned/In Progress/Pending)?', ticketOpen);
                             console.log('  - is closed/resolved?', ticketClosedOrResolved);
                             console.log('');
 
-                            // SCENARIO 1: Create new callId with null ticketId if completed + ticket closed/resolved
-                            if (callCompleted && ticketClosedOrResolved) {
-                                console.log('✅ SCENARIO 1: CREATE NEW CALL ID WITH NULL TICKET ID');
-                                console.log('   Conditions met: Previous call completed AND ticket resolved/closed');
-                                console.log('   Will create new callId with ticketId = null');
-
-                                return callback(null, {
-                                    shouldCreateNewTicket: true,
-                                    shouldCreateNewCallId: false
-                                });
-                            }
-
-                            // SCENARIO 2: Create new callId for same ticket if pending + ticket open
-                            if (callPending && ticketOpen) {
+                            // SCENARIO 2: Create new callId for same ticket if ticket is open (Unresolved/Assigned/In Progress/Pending)
+                            if (ticketOpen && prevCall.ticketId) {
                                 console.log('✅ SCENARIO 2: CREATE NEW CALL ID FOR SAME TICKET');
-                                console.log('   Conditions met: Call status is pending/cancelled/missed AND ticket is still open');
+                                console.log('   Conditions met: Ticket status is Unresolved/Assigned/In Progress/Pending');
                                 console.log('   Will create new callId but keep same ticketId:', prevCall.ticketId);
 
                                 return callback(null, {
                                     shouldCreateNewTicket: false,
                                     shouldCreateNewCallId: true,
                                     reuseTicketId: prevCall.ticketId
+                                });
+                            }
+
+                            // SCENARIO 1: Create new callId with null ticketId if call resolved/completed AND ticket closed/resolved
+                            if (callResolvedOrCompleted && ticketClosedOrResolved) {
+                                console.log('✅ SCENARIO 1: CREATE NEW CALL ID WITH NULL TICKET ID');
+                                console.log('   Conditions met: Previous call resolved/completed AND ticket resolved/closed');
+                                console.log('   Will create new callId with ticketId = null');
+
+                                return callback(null, {
+                                    shouldCreateNewTicket: true,
+                                    shouldCreateNewCallId: false
                                 });
                             }
 
