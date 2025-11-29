@@ -2312,6 +2312,17 @@ export class ticketController {
                         // Get current timestamp
                         const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+                        // Determine if we should set recording URL, startTime, and endTime based on status
+                        const isMissedCall = reuseCallStatus === 'missed';
+                        const recordingUrl = isMissedCall ? null : `/recordings/${nextCallId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}.mp3`;
+                        const callStartTime = isMissedCall ? null : startTime;
+                        const callEndTime = isMissedCall ? null : startTime;
+
+                        console.log('Call status:', reuseCallStatus);
+                        console.log('Is missed call?', isMissedCall);
+                        console.log('Recording URL:', recordingUrl);
+                        console.log('Start/End Time:', callStartTime, '/', callEndTime);
+
                         // Create new call record
                         const newCallData = {
                             callId: nextCallId,
@@ -2322,12 +2333,12 @@ export class ticketController {
                             agentPhone: finalAgentPhone,
                             callStatus: reuseCallStatus, // Preserve original status (pending/missed/completed/resolved)
                             ticketStatus: reuseTicketId ? 'in-progress' : 'pending',
-                            recordingUrl: null,
+                            recordingUrl: recordingUrl, // null if missed, otherwise generated URL
                             callType: 'outbound', // Always outbound when reconnecting from call page (even if original was inbound)
                             reason: subject || 'Reconnect call',
                             callDescription: subject || 'Reconnect call',
-                            startTime: startTime,
-                            endTime: startTime,
+                            startTime: callStartTime, // null if missed, otherwise current timestamp
+                            endTime: callEndTime, // null if missed, otherwise current timestamp
                             resolvedOn: null,
                             followupStatus: 'pending',
                             followupDate: startTime
@@ -2336,7 +2347,7 @@ export class ticketController {
                         console.log('=== CREATING NEW RECONNECT CALL ===');
                         console.log('Call data:', newCallData);
 
-                        connection.query("INSERT INTO calls SET ?", newCallData, (insertErr, insertResult) => {
+                        connection.query("INSERT INTO calls SET ?", newCallData, async (insertErr, insertResult) => {
                             if (insertErr) {
                                 console.error('Error creating reconnect call:', insertErr);
                                 return res.status(500).json({
@@ -2345,33 +2356,20 @@ export class ticketController {
                                 });
                             }
 
-                            const finalRecordingUrl = `/recordings/${nextCallId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}.mp3`;
-
-                            // Update recording URL
-                            connection.query(
-                                "UPDATE calls SET recordingUrl = ? WHERE id = ?",
-                                [finalRecordingUrl, insertResult.insertId],
-                                async (updateErr) => {
-                                    if (updateErr) {
-                                        console.error('Error updating recording URL:', updateErr);
-                                    }
-
-                                    // Log activity if ticketId exists
-                                    if (reuseTicketId) {
-                                        try {
-                                            await ticketController.logActivity(
-                                                reuseTicketId,
-                                                'call_reconnected',
-                                                `Reconnect call ${nextCallId} created (outbound) for ${customerPhone}`,
-                                                null
-                                            );
-                                            console.log('Activity logged for reconnect call');
-                                        } catch (logErr) {
-                                            console.error('Error logging reconnect call activity:', logErr);
-                                        }
-                                    }
+                            // Log activity if ticketId exists
+                            if (reuseTicketId) {
+                                try {
+                                    await ticketController.logActivity(
+                                        reuseTicketId,
+                                        'call_reconnected',
+                                        `Reconnect call ${nextCallId} created (outbound, ${reuseCallStatus}) for ${customerPhone}`,
+                                        null
+                                    );
+                                    console.log('Activity logged for reconnect call');
+                                } catch (logErr) {
+                                    console.error('Error logging reconnect call activity:', logErr);
                                 }
-                            );
+                            }
 
                             console.log('✅ Reconnect call created successfully');
 
@@ -2379,8 +2377,8 @@ export class ticketController {
                                 message: "Reconnect call created successfully",
                                 data: {
                                     callId: nextCallId,
-                                    startTime: startTime,
-                                    recordingUrl: finalRecordingUrl,
+                                    startTime: callStartTime, // Use the status-based startTime
+                                    recordingUrl: recordingUrl, // Use the status-based recordingUrl
                                     callStatus: reuseCallStatus, // Return preserved status
                                     callType: 'outbound', // Always outbound for reconnects
                                     ticketId: reuseTicketId,
@@ -2667,9 +2665,9 @@ export class ticketController {
                     const ticketId = callData && callData.length > 0 ? callData[0].ticketId : null;
                     const previousCallStatus = callData && callData.length > 0 ? callData[0].callStatus : null;
 
-                    // Update call log with missed status (null start and end times)
+                    // Update call log with missed status (null start, end times, and recordingUrl)
                     connection.query(
-                        "UPDATE calls SET startTime = NULL, endTime = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE callId = ?",
+                        "UPDATE calls SET startTime = NULL, endTime = NULL, recordingUrl = NULL, callStatus = 'missed', ticketStatus = 'cancelled', reason = 'User disconnected' WHERE callId = ?",
                         [callId],
                         async (err, result) => {
                             if (err) {
