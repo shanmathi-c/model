@@ -2228,6 +2228,7 @@ export class ticketController {
                     let reuseTicketId = null;
                     let reuseAgentId = agentId;
                     let reuseProductId = productId;
+                    let reuseCallStatus = 'pending'; // Default status for new calls
 
                     if (result && result.length > 0) {
                         const prevCall = result[0];
@@ -2235,21 +2236,24 @@ export class ticketController {
                         console.log('Previous call:', prevCall);
 
                         // Check if this is a reconnect scenario
+                        const isInboundPending = prevCall.callType === 'inbound' && prevCall.callStatus === 'pending';
                         const isInboundMissed = prevCall.callType === 'inbound' && prevCall.callStatus === 'missed';
                         const isOutboundPending = prevCall.callType === 'outbound' && prevCall.callStatus === 'pending';
                         const isOutboundMissed = prevCall.callType === 'outbound' && prevCall.callStatus === 'missed';
 
+                        console.log('Is inbound+pending?', isInboundPending);
                         console.log('Is inbound+missed?', isInboundMissed);
                         console.log('Is outbound+pending?', isOutboundPending);
                         console.log('Is outbound+missed?', isOutboundMissed);
 
-                        if (isInboundMissed || isOutboundPending || isOutboundMissed) {
+                        if (isInboundPending || isInboundMissed || isOutboundPending || isOutboundMissed) {
                             console.log('✅ RECONNECT SCENARIO: Creating new outbound call');
-                            // Reuse ticketId, agentId, and productId from previous call
+                            // Reuse ticketId, agentId, productId, and callStatus from previous call
                             reuseTicketId = prevCall.ticketId;
                             reuseAgentId = agentId || prevCall.agentId;
                             reuseProductId = productId || prevCall.productId;
-                            console.log('Will reuse - ticketId:', reuseTicketId, ', agentId:', reuseAgentId, ', productId:', reuseProductId);
+                            reuseCallStatus = prevCall.callStatus; // Preserve original status (pending/missed/completed/resolved)
+                            console.log('Will reuse - ticketId:', reuseTicketId, ', agentId:', reuseAgentId, ', productId:', reuseProductId, ', callStatus:', reuseCallStatus);
                         }
                     }
 
@@ -2316,10 +2320,10 @@ export class ticketController {
                             productId: reuseProductId,
                             agentId: reuseAgentId,
                             agentPhone: finalAgentPhone,
-                            callStatus: 'pending',
+                            callStatus: reuseCallStatus, // Preserve original status (pending/missed/completed/resolved)
                             ticketStatus: reuseTicketId ? 'in-progress' : 'pending',
                             recordingUrl: null,
-                            callType: 'outbound', // Always outbound when reconnecting from call page
+                            callType: 'outbound', // Always outbound when reconnecting from call page (even if original was inbound)
                             reason: subject || 'Reconnect call',
                             callDescription: subject || 'Reconnect call',
                             startTime: startTime,
@@ -2377,8 +2381,8 @@ export class ticketController {
                                     callId: nextCallId,
                                     startTime: startTime,
                                     recordingUrl: finalRecordingUrl,
-                                    callStatus: 'pending',
-                                    callType: 'outbound',
+                                    callStatus: reuseCallStatus, // Return preserved status
+                                    callType: 'outbound', // Always outbound for reconnects
                                     ticketId: reuseTicketId,
                                     agentId: reuseAgentId,
                                     reconnect: true

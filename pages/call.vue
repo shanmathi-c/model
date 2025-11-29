@@ -836,6 +836,32 @@
                       <p class="text-xs text-green-600">Currently speaking with {{ selectedCall.customerName || 'Customer' }}</p>
                     </div>
                   </div>
+
+                  <!-- Upload Recording File -->
+                  <div class="mt-3 bg-white border border-gray-200 rounded-lg p-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                      </svg>
+                      Upload Call Recording (MP3)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".mp3,audio/mpeg"
+                      @change="handleRecordingUpload"
+                      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    <p v-if="uploadedRecording" class="mt-2 text-xs text-green-600 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      {{ uploadedRecording.name }}
+                    </p>
+                  </div>
+
                   <!-- Call Control Buttons in Connected State -->
                   <div class="flex gap-3 mt-3">
                     <button
@@ -1528,6 +1554,7 @@ export default {
       selectedCall: null,
       callStatus: 'pending',
       selectedCallStatus: 'pending',
+      uploadedRecording: null, // Store uploaded recording file
 
       // Recording Modal
       showRecordingModal: false,
@@ -2242,17 +2269,24 @@ export default {
         this.callStatus = 'connected'
         console.log('Call started with:', this.selectedCall.phone)
 
-        // Check if this is a reconnect scenario (inbound+missed OR outbound+pending OR outbound+missed)
+        // Check if this is a reconnect scenario (inbound+pending OR inbound+missed OR outbound+pending OR outbound+missed)
+        console.log('=== RECONNECT CHECK ===')
+        console.log('selectedCall.callType:', this.selectedCall.callType)
+        console.log('selectedCall.status:', this.selectedCall.status)
+
+        const isInboundPending = this.selectedCall.callType === 'inbound' && this.selectedCall.status === 'pending'
         const isInboundMissed = this.selectedCall.callType === 'inbound' && this.selectedCall.status === 'missed'
         const isOutboundPending = this.selectedCall.callType === 'outbound' && this.selectedCall.status === 'pending'
         const isOutboundMissed = this.selectedCall.callType === 'outbound' && this.selectedCall.status === 'missed'
 
-        console.log('Is reconnect scenario?', isInboundMissed || isOutboundPending || isOutboundMissed)
+        console.log('Is reconnect scenario?', isInboundPending || isInboundMissed || isOutboundPending || isOutboundMissed)
+        console.log('  - Inbound+Pending:', isInboundPending)
         console.log('  - Inbound+Missed:', isInboundMissed)
         console.log('  - Outbound+Pending:', isOutboundPending)
         console.log('  - Outbound+Missed:', isOutboundMissed)
+        console.log('=== END RECONNECT CHECK ===')
 
-        if (isInboundMissed || isOutboundPending || isOutboundMissed) {
+        if (isInboundPending || isInboundMissed || isOutboundPending || isOutboundMissed) {
           // Reconnect scenario: Create NEW callId
           console.log('🔄 RECONNECT: Creating new call for:', this.selectedCall.phone)
 
@@ -2286,8 +2320,8 @@ export default {
             ...this.selectedCall,
             callId: result.data.callId,
             id: result.data.callId,
-            callType: 'outbound',
-            status: 'pending',
+            callType: result.data.callType, // Use returned callType (will be 'outbound')
+            status: result.data.callStatus, // Use preserved status from original call
             callDateTime: result.data.startTime,
             recordingUrl: result.data.recordingUrl,
             ticketId: result.data.ticketId,
@@ -2440,6 +2474,61 @@ export default {
 
       } catch (error) {
         console.error('Error disconnecting call:', error)
+      }
+    },
+
+    // Handle recording file upload
+    async handleRecordingUpload(event) {
+      const file = event.target.files[0]
+      if (!file) return
+
+      console.log('Selected file:', file.name, file.type, file.size)
+
+      // Validate file type
+      if (!file.type.includes('audio') && !file.name.endsWith('.mp3')) {
+        alert('Please upload an MP3 audio file')
+        return
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB')
+        return
+      }
+
+      this.uploadedRecording = file
+
+      // Upload file to server
+      try {
+        const formData = new FormData()
+        formData.append('recording', file)
+        formData.append('callId', this.selectedCall?.callId || this.selectedCall?.id || '')
+
+        console.log('Uploading recording for callId:', this.selectedCall?.callId || this.selectedCall?.id)
+
+        const response = await fetch('http://localhost:5001/calls/upload-recording', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to upload recording')
+        }
+
+        const result = await response.json()
+        console.log('Recording uploaded successfully:', result)
+
+        // Update selectedCall with new recording URL
+        if (this.selectedCall) {
+          this.selectedCall.recordingUrl = result.data.recordingUrl
+        }
+
+        alert('Recording uploaded successfully!')
+
+      } catch (error) {
+        console.error('Error uploading recording:', error)
+        alert('Failed to upload recording. Please try again.')
+        this.uploadedRecording = null
       }
     },
 
