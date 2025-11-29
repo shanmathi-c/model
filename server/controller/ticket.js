@@ -363,22 +363,122 @@ export class ticketController {
     }
 
     static async createCallTicket(req, res) {
-        const { productId, userId, name, email, countryCode, phone, subject, description, agentId, agentName, agentPhone, callType, callId } = req.body;
+        let { productId, userId, name, email, countryCode, phone, subject, description, agentId, agentName, agentPhone, callType, callId } = req.body;
 
         // console.log('=== CREATE CALL TICKET REQUEST ===');
         // console.log('Request body:', req.body);
         // console.log('CallId from frontend:', callId);
         // console.log('Agent details:', { agentId, agentName, agentPhone });
 
-        // Validate required fields
-        if (!name || !phone || !subject || !description) {
+        // Validate required fields (name can be fetched from callback table)
+        if (!phone || !subject || !description) {
             return res.status(400).json({
                 message: "Missing required fields",
-                required: ['name', 'phone', 'subject', 'description']
+                required: ['phone', 'subject', 'description']
             });
         }
 
         try {
+            // Combine country code and phone for checking existing tickets
+            const fullPhone = countryCode ? countryCode + ' ' + phone : phone;
+
+            // If name is not provided, try to fetch from callback table using phone number
+            if (!name) {
+                const callbackData = await new Promise((resolve, reject) => {
+                    connection.query(
+                        "SELECT name, email FROM callback WHERE phone = ? OR phone LIKE ? ORDER BY createdAt DESC LIMIT 1",
+                        [fullPhone, `%${phone}%`],
+                        (err, result) => {
+                            if (err) reject(err);
+                            else resolve(result);
+                        }
+                    );
+                });
+
+                if (callbackData.length > 0) {
+                    name = callbackData[0].name;
+                    // Also use email from callback if not provided
+                    if (!email && callbackData[0].email) {
+                        email = callbackData[0].email;
+                    }
+                    console.log('Fetched customer data from callback table:', { name, email });
+                }
+            }
+
+            // If name is still not available, return error
+            if (!name) {
+                return res.status(400).json({
+                    message: "Customer name is required and could not be found in callback table",
+                    required: ['name']
+                });
+            }
+
+            // Check for existing tickets/calls with this phone number
+            const existingRecords = await new Promise((resolve, reject) => {
+                connection.query(
+                    `SELECT
+                        t.ticketId, t.status as ticketStatus, t.productId,
+                        c.callId, c.callStatus, c.agentId, c.ticketId as callTicketId,
+                        a.agentName
+                    FROM tickets t
+                    LEFT JOIN calls c ON t.ticketId = c.ticketId
+                    LEFT JOIN agents a ON c.agentId = a.agentId
+                    WHERE t.phone = ?
+                    ORDER BY t.createdAt DESC
+                    LIMIT 1`,
+                    [fullPhone],
+                    (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    }
+                );
+            });
+
+            console.log('Existing records for phone:', fullPhone, existingRecords);
+
+            // Scenario 2: If ticket/call exists and is NOT resolved/completed
+            if (existingRecords.length > 0) {
+                const existingRecord = existingRecords[0];
+                const isTicketOpen = existingRecord.ticketStatus &&
+                    !['resolved', 'closed'].includes(existingRecord.ticketStatus.toLowerCase());
+                const isCallOpen = existingRecord.callStatus &&
+                    !['resolved', 'completed'].includes(existingRecord.callStatus.toLowerCase());
+
+                if (isTicketOpen || isCallOpen) {
+                    // Scenario 2: Reuse existing ticket and agent
+                    console.log('Reusing existing ticket and agent:', existingRecord);
+
+                    // Update the existing call if callId is provided
+                    if (callId) {
+                        await new Promise((resolve, reject) => {
+                            connection.query(
+                                "UPDATE calls SET ticketId = ?, agentId = COALESCE(?, agentId), userPhone = ? WHERE callId = ?",
+                                [existingRecord.ticketId, agentId || existingRecord.agentId, fullPhone, callId],
+                                (err, result) => {
+                                    if (err) reject(err);
+                                    else resolve(result);
+                                }
+                            );
+                        });
+                    }
+
+                    return res.json({
+                        message: "Connected to existing ticket",
+                        reuseExisting: true,
+                        data: {
+                            ticketId: existingRecord.ticketId,
+                            callId: callId,
+                            agentId: existingRecord.agentId,
+                            agentName: existingRecord.agentName,
+                            existingTicket: true
+                        }
+                    });
+                }
+            }
+
+            // Scenario 1: Create new ticket (either no existing records or previous was resolved/completed)
+            console.log('Creating new ticket - no open tickets found');
+
             // Generate unique ticket ID
             const ticketId = await ticketController.generateTicketId();
 
@@ -390,9 +490,6 @@ export class ticketController {
                 // Generate a new sequential userId
                 finalUserId = await ticketController.generateUserId();
             }
-
-            // Combine country code and phone into a single phone field
-            const fullPhone = countryCode ? countryCode + ' ' + phone : phone;
 
             // First, create the ticket in tickets table
             const dbTicketData = {
@@ -1244,7 +1341,7 @@ export class ticketController {
                             (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
                      FROM tickets t
                      ${whereClause}
-                     ORDER BY t.created_at DESC
+                     ORDER BY t.createdAt DESC
                      LIMIT ${limit} OFFSET ${offset}`,
 
                     // Try with 'name' column and 'id'
@@ -2507,10 +2604,14 @@ export class ticketController {
                    (SELECT name FROM tickets
                     WHERE (ticketId = c.ticketId COLLATE utf8mb4_unicode_ci
                            OR id = c.ticketId
-                           OR phone = c.userPhone COLLATE utf8mb4_unicode_ci)
+                           OR phone = c.userPhone COLLATE utf8mb4_unicode_ci
+                           OR REPLACE(REPLACE(REPLACE(phone, ' ', ''), '+', ''), '-', '') = REPLACE(REPLACE(REPLACE(c.userPhone, ' ', ''), '+', ''), '-', ''))
+                    ORDER BY createdAt DESC
                     LIMIT 1) AS ticketCustomerName,
                    (SELECT name FROM callback
                     WHERE phone = c.userPhone COLLATE utf8mb4_unicode_ci
+                       OR REPLACE(REPLACE(REPLACE(phone, ' ', ''), '+', ''), '-', '') = REPLACE(REPLACE(REPLACE(c.userPhone, ' ', ''), '+', ''), '-', '')
+                    ORDER BY createdAt DESC
                     LIMIT 1) AS callbackCustomerName
             FROM calls c
             ${whereClause}
@@ -2526,13 +2627,22 @@ export class ticketController {
                     });
                 } else {
                     // Process results to combine customer names
-                    const processedResult = result.map(row => ({
-                        ...row,
-                        customerName: row.ticketCustomerName || row.callbackCustomerName || 'Unknown Customer',
-                        // Remove the temporary fields
-                        ticketCustomerName: undefined,
-                        callbackCustomerName: undefined
-                    }));
+                    const processedResult = result.map(row => {
+                        const customerName = row.ticketCustomerName || row.callbackCustomerName || 'Unknown Customer';
+
+                        // Debug logging for customer name resolution
+                        if (customerName === 'Unknown Customer') {
+                            console.log(`Unknown customer for call ${row.callId} - Phone: ${row.userPhone}, ticketCustomerName: ${row.ticketCustomerName}, callbackCustomerName: ${row.callbackCustomerName}`);
+                        }
+
+                        return {
+                            ...row,
+                            customerName: customerName,
+                            // Remove the temporary fields
+                            ticketCustomerName: undefined,
+                            callbackCustomerName: undefined
+                        };
+                    });
 
                     console.log(`Fetched ${processedResult.length} call logs from calls table${ticketId ? ` for ticketId: ${ticketId}` : ''}`);
 

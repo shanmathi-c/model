@@ -2491,8 +2491,12 @@ export default {
         const result = await response.json()
         console.log('Ticket created:', result)
 
-        // Show success message (you can add a toast/notification here)
-        alert(`Ticket created successfully! Ticket ID: ${result.data.ticketId}`)
+        // Show success message based on whether ticket was reused or newly created
+        if (result.reuseExisting) {
+          alert(`Call connected to existing ticket!\n\nTicket ID: ${result.data.ticketId}\nAgent: ${result.data.agentName || 'Not Assigned'}\n\nThis phone number has an open ticket, so the call has been linked to the existing ticket.`)
+        } else {
+          alert(`Ticket created successfully! Ticket ID: ${result.data.ticketId}`)
+        }
 
         // Close modal
         this.closeTicketModal()
