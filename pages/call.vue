@@ -2418,62 +2418,63 @@ export default {
 
       try {
         console.log('Call disconnected for:', this.selectedCall.phone)
+        console.log('Current callStatus:', this.callStatus)
+        console.log('Call type:', this.selectedCall.callType)
 
-        // If disconnecting from pending state
-        if (this.callStatus === 'pending') {
-          // Check if call was already started (has startTime)
-          if (this.selectedCall.callDateTime) {
-            // Call was connected, so just end it normally (keep as pending)
-            await this.endCall()
-            this.callStatus = 'disconnected'
-          } else {
-            // Call was never connected, mark as missed
-            this.callStatus = 'missed'
+        // For OUTBOUND calls: Always mark as missed when disconnecting
+        if (this.selectedCall.callType === 'outbound') {
+          this.callStatus = 'missed'
 
-            // Update existing call record as missed
-            const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
+          // Update existing call record as missed
+          const callIdToUpdate = this.selectedCall.callId || this.selectedCall.id
 
-            if (!callIdToUpdate) {
-              throw new Error('No call ID found to update')
-            }
-
-            console.log('Marking call as missed for callId:', callIdToUpdate)
-
-            const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/missed`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              }
-            })
-
-            if (!response.ok) {
-              throw new Error('Failed to mark call as missed')
-            }
-
-            const result = await response.json()
-            console.log('Call marked as missed successfully:', result)
-
-            // Update local call data
-            if (this.selectedCall) {
-              this.selectedCall.status = 'missed'
-            }
-
-            // Refresh the calls list to show updated status
-            await this.fetchCallLogs()
+          if (!callIdToUpdate) {
+            throw new Error('No call ID found to update')
           }
-        } else if (this.callStatus === 'connected') {
-          // If disconnecting from connected state, end the call first
-          await this.endCall()
-          this.callStatus = 'disconnected'
+
+          console.log('Marking outbound call as missed for callId:', callIdToUpdate)
+
+          const response = await fetch(`http://localhost:5001/calls/${callIdToUpdate}/missed`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to mark call as missed')
+          }
+
+          const result = await response.json()
+          console.log('Outbound call marked as missed successfully:', result)
+
+          // Update local call data with null values
+          if (this.selectedCall) {
+            this.selectedCall.status = 'missed'
+            this.selectedCall.callDateTime = null
+            this.selectedCall.endTime = null
+            this.selectedCall.recordingUrl = null
+          }
+
+          // Refresh the calls list to show updated status
+          await this.fetchCallLogs()
         } else {
+          // For INBOUND calls: Just disconnect without marking as missed
+          console.log('Disconnecting inbound call (not marking as missed)')
           this.callStatus = 'disconnected'
+
+          // Close the modal
+          this.closeCallModal()
         }
 
-        // Keep modal open to show the missed/disconnected status
+        // Keep modal open to show the missed status for outbound calls
         // User can close it manually
 
       } catch (error) {
         console.error('Error disconnecting call:', error)
+        if (this.selectedCall.callType === 'outbound') {
+          this.callStatus = 'missed' // Still update UI even if API fails
+        }
       }
     },
 
