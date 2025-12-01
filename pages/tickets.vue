@@ -485,10 +485,13 @@
                   </td>
 
                   <!-- Way of Communication -->
-                  <td v-if="visibleColumns.communicationWay" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize" :class="getCommunicationWayClass(ticket.communicationWay)">
-                      {{ ticket.communicationWay || 'phone' }}
-                    </span>
+                  <td v-if="visibleColumns.communicationWay" class="px-6 py-4 whitespace-nowrap align-middle" @click.stop>
+                    <select v-model="ticket.wayOfCommunication" class="px-2 py-1 text-xs border border-gray-300 rounded-md" @change="updateCommunicationWay(ticket)" @click.stop>
+                      <option value="">Select...</option>
+                      <option value="Call">Call</option>
+                      <option value="Email">Email</option>
+                      <option value="Chat">Chat</option>
+                    </select>
                   </td>
 
                   <!-- Type -->
@@ -2099,6 +2102,33 @@ export default {
         'walkin': 'bg-orange-100 text-orange-800'
       }
       return classes[way] || 'bg-gray-100 text-gray-800'
+    },
+
+    // Update communication way
+    async updateCommunicationWay(ticket) {
+      try {
+        const response = await $fetch(`http://localhost:5001/tickets/${ticket.id}/details`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+            communicationWay: ticket.wayOfCommunication
+          }
+        })
+
+        if (response.message && response.message.includes('successfully')) {
+          console.log('Communication way updated successfully')
+        } else {
+          console.error('Failed to update communication way:', response)
+          // Revert the change if update failed
+          ticket.wayOfCommunication = ticket.wayOfCommunication === 'phone' ? 'email' : 'phone'
+        }
+      } catch (error) {
+        console.error('Error updating communication way:', error)
+        // Revert the change if update failed
+        ticket.wayOfCommunication = ticket.wayOfCommunication === 'phone' ? 'email' : 'phone'
+      }
     },
 
     // Format date

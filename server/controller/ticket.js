@@ -1338,7 +1338,8 @@ export class ticketController {
                             COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment,
                             COALESCE((SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1), NULL) as resolvedOn,
                             COALESCE((SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1), NULL) as notes,
-                            COALESCE((SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1), NULL) as fcr
+                            COALESCE((SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1), NULL) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.createdAt DESC
@@ -1354,7 +1355,8 @@ export class ticketController {
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
+                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.createdAt DESC
@@ -1370,7 +1372,8 @@ export class ticketController {
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
+                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -3635,7 +3638,7 @@ export class ticketController {
     // Update ticket details and sync to calls table
     static updateTicketDetails(req, res) {
         const { id } = req.params;
-        const { subject, description, priority, followupDate, followupStatus, firstCallResolution, notes } = req.body;
+        const { subject, description, priority, followupDate, followupStatus, firstCallResolution, notes, communicationWay } = req.body;
 
         try {
             // First, get the ticket to find its ticketId
@@ -3671,7 +3674,6 @@ export class ticketController {
                         ticketUpdateFields.push("description = ?");
                         ticketUpdateValues.push(description);
                     }
-
                     // Update tickets table if there are fields to update
                     const updateTicketsTable = (callback) => {
                         if (ticketUpdateFields.length > 0) {
@@ -3709,25 +3711,29 @@ export class ticketController {
                         if (followupStatus !== undefined) {
                             callUpdateFields.push("followupStatus = ?");
                             callUpdateValues.push(followupStatus);
+                        }
+                        if (communicationWay !== undefined) {
+                            callUpdateFields.push("wayOfCommunication = ?");
+                            callUpdateValues.push(communicationWay);
+                        }
 
                             // Only set resolvedOn if status is being changed to 'resolved'
-                            if (followupStatus === 'resolved') {
-                                const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                                callUpdateFields.push("resolvedOn = ?");
-                                callUpdateValues.push(currentTimestamp);
-                                console.log(`Setting resolvedOn to ${currentTimestamp} because followupStatus changed to 'resolved'`);
-                            } else if (followupStatus !== 'closed') {
-                                // If status is changed to something other than resolved or closed, clear resolvedOn
-                                // When transitioning to 'closed', preserve the existing resolvedOn date
-                                callUpdateFields.push("resolvedOn = ?");
-                                callUpdateValues.push(null);
-                                console.log(`Clearing resolvedOn because followupStatus changed to '${followupStatus}' (not resolved or closed)`);
-                            } else {
-                                console.log(`Preserving existing resolvedOn because followupStatus changed to 'closed'`);
-                            }
-                            // When followupStatus is 'closed', we don't update resolvedOn field,
-                            // thus preserving the existing resolvedOn date
+                        if (followupStatus === 'resolved') {
+                            const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                            callUpdateFields.push("resolvedOn = ?");
+                            callUpdateValues.push(currentTimestamp);
+                            console.log(`Setting resolvedOn to ${currentTimestamp} because followupStatus changed to 'resolved'`);
+                        } else if (followupStatus !== 'closed') {
+                            // If status is changed to something other than resolved or closed, clear resolvedOn
+                            // When transitioning to 'closed', preserve the existing resolvedOn date
+                            callUpdateFields.push("resolvedOn = ?");
+                            callUpdateValues.push(null);
+                            console.log(`Clearing resolvedOn because followupStatus changed to '${followupStatus}' (not resolved or closed)`);
+                        } else {
+                            console.log(`Preserving existing resolvedOn because followupStatus changed to 'closed'`);
                         }
+                        // When followupStatus is 'closed', we don't update resolvedOn field,
+                        // thus preserving the existing resolvedOn date
                         if (priority !== undefined) {
                             callUpdateFields.push("priority = ?");
                             callUpdateValues.push(priority);
@@ -3784,7 +3790,8 @@ export class ticketController {
                                                 followupDate,
                                                 followupStatus,
                                                 firstCallResolution,
-                                                notes
+                                                notes,
+                                                wayOfCommunication: communicationWay
                                             }
                                         }
                                     });
@@ -3796,7 +3803,8 @@ export class ticketController {
                                         ticketId: ticketId,
                                         updatedFields: {
                                             subject,
-                                            description
+                                            description,
+                                            wayOfCommunication: communicationWay
                                         }
                                     }
                                 });
