@@ -383,9 +383,9 @@
                 <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
                 <tr>
                   <th v-if="visibleColumns.serialId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 60px; min-width: 60px;">ID</th>
-                  <th v-if="visibleColumns.ticketId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Ticket ID</th>
-                  <th v-if="visibleColumns.freshdeskId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Freshdesk ID</th>
-                  <th v-if="visibleColumns.callId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Call ID</th>
+                  <th v-if="visibleColumns.ticketId" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Ticket ID</th>
+                  <th v-if="visibleColumns.freshdeskId" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Freshdesk ID</th>
+                  <th v-if="visibleColumns.callId" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Call ID</th>
                   <th v-if="visibleColumns.customer" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 200px; min-width: 200px;">Customer</th>
                   <th v-if="visibleColumns.phone" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 140px; min-width: 140px;">Phone</th>
                   <th v-if="visibleColumns.agent" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 160px; min-width: 160px;">Agent</th>
@@ -417,18 +417,18 @@
 
                   <!-- Ticket ID -->
                   <td v-if="visibleColumns.ticketId" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span class="text-sm font-medium text-blue-600">{{ ticket.ticketId || '#' + ticket.id }}</span>
+                    <span class="text-sm font-medium text-gray-600">{{ ticket.ticketId || '#' + ticket.id }}</span>
                   </td>
 
                   <!-- Freshdesk ID -->
                   <td v-if="visibleColumns.freshdeskId" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span v-if="ticket.freshdeskId" class="text-sm font-medium text-green-600">{{ ticket.freshdeskId }}</span>
+                    <span v-if="ticket.freshdeskId" class="text-sm font-medium text-gray-600">{{ ticket.freshdeskId }}</span>
                     <span v-else class="text-sm text-gray-400">-</span>
                   </td>
 
                   <!-- Call ID -->
                   <td v-if="visibleColumns.callId" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span v-if="ticket.callId" class="text-sm font-medium text-blue-600">{{ ticket.callId }}</span>
+                    <span v-if="ticket.callId" class="text-sm font-medium text-gray-600">{{ ticket.callId }}</span>
                     <span v-else class="text-sm text-gray-400">-</span>
                   </td>
 
@@ -1859,6 +1859,7 @@ export default {
               followupDate: ticket.followupDate || ticket.followup_date || null,
               followupStatus: ticket.followupStatus || ticket.followup_status || null,
               freshdeskId: ticket.freshdeskId || null,
+              callId: ticket.callId || null,
               feedbackLink: null,
               feedbackLinkCopied: false
             }
