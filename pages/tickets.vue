@@ -500,13 +500,20 @@
                   </td>
 
                   <!-- Status -->
-                  <td v-if="visibleColumns.status" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      :class="getStatusClass(ticket.status)"
+                  <td v-if="visibleColumns.status" class="px-6 py-4 whitespace-nowrap align-middle" @click.stop>
+                    <select
+                      v-model="ticket.status"
+                      class="px-2 py-1 text-xs border border-gray-300 rounded-md capitalize"
+                      @change="updateTicketStatus(ticket)"
+                      @click.stop
                     >
-                      {{ ticket.status }}
-                    </span>
+                      <option value="created">Created</option>
+                      <option value="assigned">Assigned</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="pending">Pending</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                    </select>
                   </td>
 
                   <!-- Created Date -->
@@ -2128,6 +2135,42 @@ export default {
         console.error('Error updating communication way:', error)
         // Revert the change if update failed
         ticket.wayOfCommunication = ticket.wayOfCommunication === 'phone' ? 'email' : 'phone'
+      }
+    },
+
+    // Update ticket status
+    async updateTicketStatus(ticket) {
+      try {
+        // Store original status to revert if needed
+        const originalStatus = ticket.status
+
+        const response = await $fetch(`http://localhost:5001/tickets/${ticket.id}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+            status: ticket.status
+          }
+        })
+
+        if (response.message && response.message.includes('successfully')) {
+          console.log('Ticket status updated successfully')
+
+          // If status is resolved, show feedback link modal
+          if (ticket.status === 'resolved') {
+            this.selectedTicketDetails = ticket
+            await this.generateFeedbackLink()
+          }
+        } else {
+          console.error('Failed to update ticket status:', response)
+          // Revert the change if update failed
+          ticket.status = originalStatus
+        }
+      } catch (error) {
+        console.error('Error updating ticket status:', error)
+        // Revert the change if update failed
+        ticket.status = originalStatus
       }
     },
 
