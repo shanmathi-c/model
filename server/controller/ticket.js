@@ -1297,7 +1297,7 @@ export class ticketController {
         });
     }
 
-    // Fetch paginated tickets
+    // Fetch paginated tickets and standalone inbound calls
     static async getTickets(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
@@ -1306,17 +1306,25 @@ export class ticketController {
             const status = req.query.status;
 
             // Build WHERE clause for status filter
-            let whereClause = '';
+            let ticketsWhereClause = '';
+            let callsWhereClause = '';
+
             if (status) {
-                whereClause = `WHERE t.status = '${status}'`;
+                ticketsWhereClause = `WHERE t.status = '${status}'`;
+                callsWhereClause = `WHERE c.ticketStatus = '${status}'`;
             }
 
-            // Get total count with status filter
-            const countQuery = status
+            // Get total count for tickets
+            const ticketsCountQuery = status
                 ? `SELECT COUNT(*) as total FROM tickets t WHERE t.status = '${status}'`
                 : "SELECT COUNT(*) as total FROM tickets";
 
-            connection.query(countQuery, (err, countResult) => {
+            // Get total count for all inbound calls
+            const callsCountQuery = status
+                ? `SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound' AND c.ticketStatus = '${status}'`
+                : "SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound'";
+
+            connection.query(ticketsCountQuery, (err, ticketsCountResult) => {
                 if (err) {
                     return res.status(500).json({
                         message: "Error fetching ticket count",
@@ -1324,175 +1332,104 @@ export class ticketController {
                     });
                 }
 
-                const total = countResult[0].total;
+                connection.query(callsCountQuery, (err, callsCountResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            message: "Error fetching call count",
+                            error: err
+                        });
+                    }
 
-                // Try queries with different product column names and date columns
-                const queries = [
-                    // Try with 'name' column and 'createdAt'
-                    `SELECT t.*,
-                            COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
-                            COALESCE((SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1), NULL) as assignedAgentName,
-                            COALESCE((SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1), NULL) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            COALESCE((SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1), NULL) as feedbackStatus,
-                            COALESCE((SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1), NULL) as feedbackRating,
-                            COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment,
-                            COALESCE((SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1), NULL) as resolvedOn,
-                            COALESCE((SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1), NULL) as notes,
-                            COALESCE((SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1), NULL) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.createdAt DESC
-                     LIMIT ${limit} OFFSET ${offset}`,
+                    const totalTickets = ticketsCountResult[0].total;
+                    const totalCalls = callsCountResult[0].total;
+                    const total = totalTickets + totalCalls;
 
-                    // Try with 'name' column and 'created_at'
-                    `SELECT t.*,
-                            COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
-                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
-                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
-                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.createdAt DESC
-                     LIMIT ${limit} OFFSET ${offset}`,
+                    // Combined query to fetch both tickets and standalone inbound calls
+                    const combinedQuery = `
+                        SELECT * FROM (
+                            -- Tickets from create page
+                            SELECT
+                                t.ticketId,
+                                t.name as customerName,
+                                t.email as customerEmail,
+                                t.phone as customerPhone,
+                                t.productId,
+                                t.status,
+                                NULL as priority,
+                                t.subject,
+                                t.description,
+                                t.createdAt,
+                                t.updatedAt,
+                                NULL as resolvedAt,
+                                NULL as resolvedBy,
+                                t.createdAt as created_at,
+                                COALESCE((SELECT p.productName FROM product p WHERE p.productId = t.productId LIMIT 1), 'No Product') as productName,
+                                COALESCE((SELECT a.agentName FROM \`assign-ticket\` at LEFT JOIN agents a ON at.agentId = a.id WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1), NULL) as assignedAgentName,
+                                COALESCE((SELECT at.importAction FROM \`assign-ticket\` at WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1), NULL) as importAction,
+                                (SELECT at.id FROM \`assign-ticket\` at WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1) as freshdeskId,
+                                (SELECT GROUP_CONCAT(c.callId ORDER BY c.callId SEPARATOR ',') FROM calls c WHERE c.ticketId = t.ticketId) as callId,
+                                COALESCE((SELECT f.deliveryStatus FROM feedbacks f WHERE f.ticketId = t.ticketId ORDER BY f.createdAt DESC LIMIT 1), NULL) as feedbackStatus,
+                                COALESCE((SELECT f.rating FROM feedbacks f WHERE f.ticketId = t.ticketId ORDER BY f.createdAt DESC LIMIT 1), NULL) as feedbackRating,
+                                COALESCE((SELECT f.feedbackComment FROM feedbacks f WHERE f.ticketId = t.ticketId ORDER BY f.createdAt DESC LIMIT 1), NULL) as feedbackComment,
+                                COALESCE((SELECT c.resolvedOn FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1), NULL) as resolvedOn,
+                                COALESCE((SELECT c.notes FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1), NULL) as notes,
+                                COALESCE((SELECT CASE WHEN c.firstCall = 1 THEN 1 ELSE NULL END FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1), NULL) as fcr,
+                                (SELECT c.wayOfCommunication FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1) as wayOfCommunication,
+                                'ticket' as dataSource
+                            FROM tickets t
+                            ${ticketsWhereClause}
 
-                    // Try with 'name' column and 'id'
-                    `SELECT t.*,
-                            COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
-                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
-                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
-                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.id DESC
-                     LIMIT ${limit} OFFSET ${offset}`,
+                            UNION ALL
 
-                    // Try with 'product_name' column
-                    `SELECT t.*,
-                            COALESCE((SELECT p1.product_name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
-                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
-                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
-                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.id DESC
-                     LIMIT ${limit} OFFSET ${offset}`,
+                            -- All inbound calls (both with and without ticketId)
+                            SELECT
+                                COALESCE(c.ticketId, c.callId) as ticketId,
+                                c.userPhone as customerName,
+                                NULL as customerEmail,
+                                c.userPhone as customerPhone,
+                                c.productId,
+                                COALESCE(c.ticketStatus, 'pending') as status,
+                                NULL as priority,
+                                c.reason as subject,
+                                c.callDescription as description,
+                                c.startTime as createdAt,
+                                c.endTime as updatedAt,
+                                c.resolvedOn,
+                                NULL as resolvedBy,
+                                c.startTime as created_at,
+                                COALESCE((SELECT p.productName FROM product p WHERE p.productId = c.productId LIMIT 1), 'No Product') as productName,
+                                COALESCE((SELECT a.agentName FROM agents a WHERE a.id = c.agentId LIMIT 1), NULL) as assignedAgentName,
+                                NULL as importAction,
+                                (SELECT at.id FROM \`assign-ticket\` at WHERE at.ticketId = c.ticketId ORDER BY at.id DESC LIMIT 1) as freshdeskId,
+                                c.callId as callId,
+                                NULL as feedbackStatus,
+                                NULL as feedbackRating,
+                                NULL as feedbackComment,
+                                c.resolvedOn,
+                                c.notes,
+                                CASE WHEN c.firstCall = 1 THEN 1 ELSE NULL END as fcr,
+                                c.wayOfCommunication,
+                                'call' as dataSource
+                            FROM calls c
+                            WHERE c.callType = 'inbound'
+                            ${callsWhereClause}
+                        ) combined_data
+                        ORDER BY createdAt DESC
+                        LIMIT ${limit} OFFSET ${offset}
+                    `;
 
-                    // Try with 'title' column
-                    `SELECT t.*,
-                            COALESCE((SELECT p1.title FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
-                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
-                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
-                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.id DESC
-                     LIMIT ${limit} OFFSET ${offset}`,
-
-                    // Try with 'productName' column
-                    `SELECT t.*,
-                            COALESCE((SELECT p1.productName FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
-                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
-                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
-                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.id DESC
-                     LIMIT ${limit} OFFSET ${offset}`,
-
-                    // Final fallback without product join
-                    `SELECT t.*, 'No Product' as productName,
-                            (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
-                            (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
-                            -- Get id from assign-ticket table as freshdeskId for tickets
-                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
-                            -- Get all callIds for this ticket using GROUP_CONCAT
-                            (SELECT GROUP_CONCAT(c1.callId ORDER BY c1.callId SEPARATOR ',') FROM calls c1 WHERE c1.ticketId = t.ticketId) as callId,
-                            (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
-                            (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
-                            (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
-                            (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
-                            (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
-                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
-                     FROM tickets t
-                     ${whereClause}
-                     ORDER BY t.id DESC
-                     LIMIT ${limit} OFFSET ${offset}`
-                ];
-
-                // Try queries in sequence
-                const tryQuery = (queryIndex) => {
-                    connection.query(queries[queryIndex], (err, result) => {
-                        if (err && queryIndex < queries.length - 1) {
-                            console.log(`Tickets Query ${queryIndex + 1} failed:`, err.sqlMessage);
-                            tryQuery(queryIndex + 1);
-                        } else if (err) {
-                            console.log('All tickets queries failed');
+                    // Execute combined query to fetch both tickets and standalone inbound calls
+                    connection.query(combinedQuery, (err, result) => {
+                        if (err) {
+                            console.log('Combined query failed:', err.sqlMessage);
                             return res.status(500).json({
-                                message: "Error fetching tickets",
+                                message: "Error fetching tickets and calls data",
                                 error: err
                             });
                         } else {
-                            console.log(`Tickets Query ${queryIndex + 1} succeeded`);
+                            console.log('Combined query executed successfully');
                             return res.json({
-                                message: "Tickets fetched successfully",
+                                message: "Tickets and calls fetched successfully",
                                 data: result,
                                 pagination: {
                                     total: total,
@@ -1503,9 +1440,7 @@ export class ticketController {
                             });
                         }
                     });
-                };
-
-                tryQuery(0);
+                });
             });
         } catch (error) {
             console.error('Error in getTickets:', error);
