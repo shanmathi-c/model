@@ -1333,6 +1333,8 @@ export class ticketController {
                             COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
                             COALESCE((SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1), NULL) as assignedAgentName,
                             COALESCE((SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1), NULL) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             COALESCE((SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1), NULL) as feedbackStatus,
                             COALESCE((SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1), NULL) as feedbackRating,
                             COALESCE((SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1), NULL) as feedbackComment,
@@ -1350,6 +1352,8 @@ export class ticketController {
                             COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
                             (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
@@ -1367,6 +1371,8 @@ export class ticketController {
                             COALESCE((SELECT p1.name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
                             (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
@@ -1384,6 +1390,8 @@ export class ticketController {
                             COALESCE((SELECT p1.product_name FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
                             (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
@@ -1400,6 +1408,8 @@ export class ticketController {
                             COALESCE((SELECT p1.title FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
                             (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
@@ -1416,6 +1426,8 @@ export class ticketController {
                             COALESCE((SELECT p1.productName FROM product p1 WHERE p1.productId = t.productId LIMIT 1), 'No Product') as productName,
                             (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
@@ -1431,6 +1443,8 @@ export class ticketController {
                     `SELECT t.*, 'No Product' as productName,
                             (SELECT a1.agentName FROM \`assign-ticket\` at1 LEFT JOIN agents a1 ON at1.agentId = a1.id WHERE at1.ticketId = t.ticketId ORDER BY at1.id DESC LIMIT 1) as assignedAgentName,
                             (SELECT at2.importAction FROM \`assign-ticket\` at2 WHERE at2.ticketId = t.ticketId ORDER BY at2.id DESC LIMIT 1) as importAction,
+                            -- Get id from assign-ticket table as freshdeskId for tickets
+                            (SELECT at3.id FROM \`assign-ticket\` at3 WHERE at3.ticketId = t.ticketId ORDER BY at3.id DESC LIMIT 1) as freshdeskId,
                             (SELECT f1.deliveryStatus FROM feedbacks f1 WHERE f1.ticketId = t.ticketId ORDER BY f1.createdAt DESC LIMIT 1) as feedbackStatus,
                             (SELECT f2.rating FROM feedbacks f2 WHERE f2.ticketId = t.ticketId ORDER BY f2.createdAt DESC LIMIT 1) as feedbackRating,
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,

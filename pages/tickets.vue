@@ -1858,6 +1858,7 @@ export default {
               feedbackComment: ticket.feedbackComment || null,
               followupDate: ticket.followupDate || ticket.followup_date || null,
               followupStatus: ticket.followupStatus || ticket.followup_status || null,
+              freshdeskId: ticket.freshdeskId || null,
               feedbackLink: null,
               feedbackLinkCopied: false
             }
