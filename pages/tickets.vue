@@ -486,11 +486,11 @@
 
                   <!-- Way of Communication -->
                   <td v-if="visibleColumns.communicationWay" class="px-6 py-4 whitespace-nowrap align-middle" @click.stop>
-                    <select v-model="ticket.wayOfCommunication" class="px-2 py-1 text-xs border border-gray-300 rounded-md" @change="updateCommunicationWay(ticket)" @click.stop>
+                    <select v-model="ticket.wayOfCommunication" class="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white" @change="updateCommunicationWay(ticket)" @click.stop>
                       <option value="">Select...</option>
-                      <option value="Call">Call</option>
-                      <option value="Email">Email</option>
-                      <option value="Chat">Chat</option>
+                      <option value="Call" :selected="ticket.wayOfCommunication === 'Call'">Call</option>
+                      <option value="Email" :selected="ticket.wayOfCommunication === 'Email'">Email</option>
+                      <option value="Chat" :selected="ticket.wayOfCommunication === 'Chat'">Chat</option>
                     </select>
                   </td>
 
@@ -1860,6 +1860,7 @@ export default {
               followupStatus: ticket.followupStatus || ticket.followup_status || null,
               freshdeskId: ticket.freshdeskId || null,
               callId: ticket.callId || null,
+              wayOfCommunication: ticket.wayOfCommunication || null,
               feedbackLink: null,
               feedbackLinkCopied: false
             }

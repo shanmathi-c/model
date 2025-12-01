@@ -1364,6 +1364,7 @@ export class ticketController {
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
                             (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication,
                             (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
@@ -1385,6 +1386,7 @@ export class ticketController {
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
                             (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication,
                             (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
@@ -1405,7 +1407,8 @@ export class ticketController {
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
+                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1425,7 +1428,8 @@ export class ticketController {
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
+                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1445,7 +1449,8 @@ export class ticketController {
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
+                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
@@ -1464,7 +1469,8 @@ export class ticketController {
                             (SELECT f3.feedbackComment FROM feedbacks f3 WHERE f3.ticketId = t.ticketId ORDER BY f3.createdAt DESC LIMIT 1) as feedbackComment,
                             (SELECT c1.resolvedOn FROM calls c1 WHERE c1.ticketId = t.ticketId ORDER BY c1.id DESC LIMIT 1) as resolvedOn,
                             (SELECT c2.notes FROM calls c2 WHERE c2.ticketId = t.ticketId ORDER BY c2.id DESC LIMIT 1) as notes,
-                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr
+                            (SELECT CASE WHEN c3.firstCall = 1 THEN 1 ELSE NULL END FROM calls c3 WHERE c3.ticketId = t.ticketId ORDER BY c3.id DESC LIMIT 1) as fcr,
+                            (SELECT c4.wayOfCommunication FROM calls c4 WHERE c4.ticketId = t.ticketId ORDER BY c4.id DESC LIMIT 1) as wayOfCommunication
                      FROM tickets t
                      ${whereClause}
                      ORDER BY t.id DESC
