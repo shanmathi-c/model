@@ -1,9 +1,9 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 px-6 py-4 ">
+    <div class="flex-shrink-0 px-6 ">
       <!-- Header Title -->
-      <div class="mb-4">
+      <div class="mb-1">
         <h1 class="text-2xl font-bold text-gray-900">Callback Requests</h1>
         <p class="text-gray-600 mt-1">View and manage customer callback requests</p>
       </div>
@@ -523,56 +523,56 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Pagination Controls - Fixed at the bottom of the table container -->
-        <div class="px-4 py-3 bg-white border-t border-gray-200 mt-auto">
-          <div class="flex flex-col gap-2">
-            <!-- Info row -->
-            <!-- <div class="text-sm text-gray-700">
-              Showing <span class="font-medium">{{ Math.min(((currentPage - 1) * itemsPerPage) + 1, filteredCalls.length) }}</span> to
-              <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredCalls.length) }}</span> of
-              <span class="font-medium">{{ filteredCalls.length }}</span> calls (Page {{ currentPage }} of {{ totalPages }})
-            </div> -->
+      <!-- Pagination Controls - Fixed at the bottom of the table container -->
+      <div class="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
+        <div class="flex flex-col gap-2">
+          <!-- Info row -->
+          <!-- <div class="text-sm text-gray-700">
+            Showing <span class="font-medium">{{ Math.min(((currentPage - 1) * itemsPerPage) + 1, filteredCalls.length) }}</span> to
+            <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredCalls.length) }}</span> of
+            <span class="font-medium">{{ filteredCalls.length }}</span> calls (Page {{ currentPage }} of {{ totalPages }})
+          </div> -->
 
-            <!-- Controls row -->
-            <div class="flex items-center justify-center">
-              <!-- Previous Button -->
+          <!-- Controls row -->
+          <div class="flex items-center justify-center">
+            <!-- Previous Button -->
+            <button
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
+              :class="currentPage === 1
+                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              Previous
+            </button>
+
+            <!-- Page Numbers -->
+            <template v-for="page in pageNumbers" :key="page">
               <button
-                @click="prevPage"
-                :disabled="currentPage === 1"
-                class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
-                :class="currentPage === 1
-                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                @click="goToPage(page)"
+                class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
+                :class="page === currentPage
+                  ? 'border-blue-500 bg-blue-500 text-white'
                   : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
               >
-                Previous
+                {{ page }}
               </button>
+            </template>
 
-              <!-- Page Numbers -->
-              <template v-for="page in pageNumbers" :key="page">
-                <button
-                  @click="goToPage(page)"
-                  class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
-                  :class="page === currentPage
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-                >
-                  {{ page }}
-                </button>
-              </template>
-
-              <!-- Next Button -->
-              <button
-                @click="nextPage"
-                :disabled="currentPage === totalPages"
-                class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
-                :class="currentPage === totalPages
-                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-              >
-                Next
-              </button>
-            </div>
+            <!-- Next Button -->
+            <button
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
+              :class="currentPage === totalPages
+                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
@@ -1454,7 +1454,7 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 3,
+      itemsPerPage: 10,
 
       // Call Modal
       showCallModal: false,
