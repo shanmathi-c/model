@@ -2246,13 +2246,76 @@ export class ticketController {
                         console.log('Is outbound+pending?', isOutboundPending);
                         console.log('Is outbound+missed?', isOutboundMissed);
 
-                        if (isInboundPending || isInboundMissed || isOutboundPending || isOutboundMissed) {
-                            console.log('✅ RECONNECT SCENARIO: Creating new outbound call');
+                        // For MISSED calls, update existing callId instead of creating new one
+                        if (isInboundMissed || isOutboundMissed) {
+                            console.log('✅ RECONNECT MISSED CALL SCENARIO: Updating existing call');
+
+                            // Update the existing missed call with startTime, endTime, and new status
+                            const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                            const recordingUrl = `/recordings/${prevCall.callId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}.mp3`;
+
+                            connection.query(
+                                "UPDATE calls SET startTime = ?, endTime = ?, callStatus = 'pending', recordingUrl = ?, ticketStatus = 'in-progress', agentId = ?, productId = ? WHERE callId = ?",
+                                [currentTime, currentTime, recordingUrl, agentId || prevCall.agentId, productId || prevCall.productId, prevCall.callId],
+                                async (err, updateResult) => {
+                                    if (err) {
+                                        console.error('Error updating missed call:', err);
+                                        return res.status(500).json({
+                                            message: "Error updating missed call",
+                                            error: err
+                                        });
+                                    }
+
+                                    console.log('✅ Missed call updated successfully');
+                                    console.log('Updated callId:', prevCall.callId);
+
+                                    // Log activity if ticketId exists
+                                    if (prevCall.ticketId) {
+                                        try {
+                                            await ticketController.logActivity(
+                                                prevCall.ticketId,
+                                                'call_reconnected',
+                                                `Missed call ${prevCall.callId} reconnected successfully`,
+                                                {
+                                                    callId: prevCall.callId,
+                                                    startTime: currentTime,
+                                                    endTime: currentTime,
+                                                    duration: 0
+                                                }
+                                            );
+                                            console.log('Activity logged for reconnected call');
+                                        } catch (logErr) {
+                                            console.error('Error logging reconnect activity:', logErr);
+                                        }
+                                    }
+
+                                    return res.json({
+                                        message: "Missed call reconnected successfully",
+                                        data: {
+                                            callId: prevCall.callId, // Return existing callId
+                                            startTime: currentTime,
+                                            endTime: currentTime,
+                                            recordingUrl: recordingUrl,
+                                            callStatus: 'pending',
+                                            callType: prevCall.callType, // Keep original callType
+                                            ticketId: prevCall.ticketId,
+                                            agentId: agentId || prevCall.agentId,
+                                            reconnect: true
+                                        }
+                                    });
+                                }
+                            );
+                            return; // Exit early for missed calls
+                        }
+
+                        // For PENDING calls, create new call (existing logic)
+                        if (isInboundPending || isOutboundPending) {
+                            console.log('✅ RECONNECT PENDING CALL SCENARIO: Creating new outbound call');
                             // Reuse ticketId, agentId, productId, and callStatus from previous call
                             reuseTicketId = prevCall.ticketId;
                             reuseAgentId = agentId || prevCall.agentId;
                             reuseProductId = productId || prevCall.productId;
-                            reuseCallStatus = prevCall.callStatus; // Preserve original status (pending/missed/completed/resolved)
+                            reuseCallStatus = prevCall.callStatus; // Preserve original status
                             console.log('Will reuse - ticketId:', reuseTicketId, ', agentId:', reuseAgentId, ', productId:', reuseProductId, ', callStatus:', reuseCallStatus);
                         }
                     }
@@ -2581,6 +2644,15 @@ export class ticketController {
                     }
 
                     const callLog = callResult[0];
+
+                    // Check if startTime is null (call was never started via Connect Call)
+                    if (!callLog.startTime || callLog.startTime === null) {
+                        return res.status(400).json({
+                            message: "Cannot end call because it was never started. Please click 'Start Call' first, then 'End Call'.",
+                            error: "Call was never started - startTime is null"
+                        });
+                    }
+
                     const startTime = new Date(callLog.startTime);
                     const endTime = new Date();
                     const duration = Math.floor((endTime - startTime) / 1000); // Duration in seconds

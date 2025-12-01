@@ -1402,9 +1402,7 @@ export default {
       // Filter options
       callTypeOptions: [
         { value: 'inbound', label: 'Inbound' },
-        { value: 'outbound', label: 'Outbound' },
-        { value: 'missed', label: 'Missed' },
-        { value: 'voicemail', label: 'Voicemail' }
+        { value: 'outbound', label: 'Outbound' }
       ],
       statusOptions: [
         { value: 'pending', label: 'Pending' },
