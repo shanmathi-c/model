@@ -382,11 +382,16 @@
               <table class="min-w-full border-collapse">
                 <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
                 <tr>
+                  <th v-if="visibleColumns.serialId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 60px; min-width: 60px;">ID</th>
                   <th v-if="visibleColumns.ticketId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Ticket ID</th>
+                  <th v-if="visibleColumns.freshdeskId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Freshdesk ID</th>
+                  <th v-if="visibleColumns.callId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Call ID</th>
                   <th v-if="visibleColumns.customer" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 200px; min-width: 200px;">Customer</th>
                   <th v-if="visibleColumns.phone" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 140px; min-width: 140px;">Phone</th>
                   <th v-if="visibleColumns.agent" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 160px; min-width: 160px;">Agent</th>
                   <th v-if="visibleColumns.product" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Product</th>
+                  <th v-if="visibleColumns.mergeId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Merge ID</th>
+                  <th v-if="visibleColumns.communicationWay" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 150px; min-width: 150px;">Way of Communication</th>
                   <th v-if="visibleColumns.type" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Type</th>
                   <th v-if="visibleColumns.status" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Status</th>
                   <th v-if="visibleColumns.created" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 130px; min-width: 130px;">Created</th>
@@ -395,6 +400,7 @@
                   <th v-if="visibleColumns.fcr" class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 90px; min-width: 90px;">FCR</th>
                   <th v-if="visibleColumns.notes" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 200px; min-width: 200px;">Notes</th>
                   <th v-if="visibleColumns.feedback" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 150px; min-width: 150px;">Feedback</th>
+                  <th v-if="visibleColumns.actions" class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 80px; min-width: 80px;">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -404,9 +410,26 @@
                   class="border-b border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
                   @click="openTicketDetails(ticket)"
                 >
+                  <!-- Serial ID (1, 2, 3...) -->
+                  <td v-if="visibleColumns.serialId" class="px-6 py-4 whitespace-nowrap align-middle">
+                    <span class="text-sm font-medium text-gray-600">{{ (currentPage - 1) * itemsPerPage + (filteredTickets.indexOf(ticket) % itemsPerPage) + 1 }}</span>
+                  </td>
+
                   <!-- Ticket ID -->
                   <td v-if="visibleColumns.ticketId" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span class="text-sm font-medium text-blue-600">{{ ticket.ticketId || '#' + ticket.id }}</span>
+                  </td>
+
+                  <!-- Freshdesk ID -->
+                  <td v-if="visibleColumns.freshdeskId" class="px-6 py-4 whitespace-nowrap align-middle">
+                    <span v-if="ticket.freshdeskId" class="text-sm font-medium text-green-600">{{ ticket.freshdeskId }}</span>
+                    <span v-else class="text-sm text-gray-400">-</span>
+                  </td>
+
+                  <!-- Call ID -->
+                  <td v-if="visibleColumns.callId" class="px-6 py-4 whitespace-nowrap align-middle">
+                    <span v-if="ticket.callId" class="text-sm font-medium text-blue-600">{{ ticket.callId }}</span>
+                    <span v-else class="text-sm text-gray-400">-</span>
                   </td>
 
                   <!-- Customer -->
@@ -453,6 +476,19 @@
                   <!-- Product -->
                   <td v-if="visibleColumns.product" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span class="text-sm text-gray-900">{{ ticket.productCategory }}</span>
+                  </td>
+
+                  <!-- Merge ID -->
+                  <td v-if="visibleColumns.mergeId" class="px-6 py-4 whitespace-nowrap align-middle">
+                    <span v-if="ticket.mergeId" class="text-sm font-medium text-purple-600">{{ ticket.mergeId }}</span>
+                    <span v-else class="text-sm text-gray-400">-</span>
+                  </td>
+
+                  <!-- Way of Communication -->
+                  <td v-if="visibleColumns.communicationWay" class="px-6 py-4 whitespace-nowrap align-middle">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize" :class="getCommunicationWayClass(ticket.communicationWay)">
+                      {{ ticket.communicationWay || 'phone' }}
+                    </span>
                   </td>
 
                   <!-- Type -->
@@ -559,6 +595,17 @@
                     <!-- Fallback: Show - if no feedback -->
                     <span v-else class="text-sm text-gray-400">-</span>
                   </td>
+
+                  <!-- Actions -->
+                  <td v-if="visibleColumns.actions" class="px-6 py-4 whitespace-nowrap text-center align-middle">
+                    <button
+                      @click.stop="toggleActionsMenu(ticket)"
+                      class="p-1 rounded hover:bg-gray-100 transition-colors"
+                      title="Actions"
+                    >
+                      <img src="/three-dots.svg" alt="Actions" class="w-5 h-5 cursor-pointer" />
+                    </button>
+                  </td>
                 </tr>
               </tbody>
               </table>
@@ -610,6 +657,33 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Actions Menu Modal -->
+    <div v-if="showActionsMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50" @click="closeActionsMenu">
+      <div class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[160px] py-2" @click.stop>
+        <!-- Create Ticket Option -->
+        <button
+          @click="handleCreateTicket"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-3"
+        >
+          <svg class="w-4 h-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Ticket
+        </button>
+
+        <!-- Merge Ticket Option -->
+        <button
+          @click="handleMergeTicket"
+          class="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-3"
+        >
+          <svg class="w-4 h-4 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Merge Ticket
+        </button>
       </div>
     </div>
 
@@ -1602,13 +1676,22 @@ export default {
       assignedAgent: null,
       uploadedRecording: null, // Store uploaded recording file
 
+      // Actions menu state
+      showActionsMenu: false,
+      selectedActionsTicket: null,
+
       // Compact column options
       columnOptions: [
-        { key: 'ticketId', label: 'ID' },
+        { key: 'serialId', label: 'ID' },
+        { key: 'ticketId', label: 'Ticket ID' },
+        { key: 'freshdeskId', label: 'Freshdesk ID' },
+        { key: 'callId', label: 'Call ID' },
         { key: 'customer', label: 'Customer' },
         { key: 'phone', label: 'Phone' },
         { key: 'agent', label: 'Agent' },
         { key: 'product', label: 'Product' },
+        { key: 'mergeId', label: 'Merge ID' },
+        { key: 'communicationWay', label: 'Way of Communication' },
         { key: 'type', label: 'Type' },
         { key: 'status', label: 'Status' },
         { key: 'created', label: 'Created' },
@@ -1616,7 +1699,8 @@ export default {
         { key: 'csat', label: 'CSAT' },
         { key: 'fcr', label: 'FCR' },
         { key: 'notes', label: 'Notes' },
-        { key: 'feedback', label: 'Feedback' }
+        { key: 'feedback', label: 'Feedback' },
+        { key: 'actions', label: 'Actions' }
       ],
 
       // Visible columns state
@@ -1957,6 +2041,36 @@ export default {
           this.showDisplayDropdown = false;
         }
       }
+
+      // Close actions menu if clicking outside
+      if (this.showActionsMenu) {
+        this.closeActionsMenu();
+      }
+    },
+
+    // Actions menu methods
+    toggleActionsMenu(ticket) {
+      this.selectedActionsTicket = ticket;
+      this.showActionsMenu = true;
+    },
+
+    closeActionsMenu() {
+      this.showActionsMenu = false;
+      this.selectedActionsTicket = null;
+    },
+
+    handleCreateTicket() {
+      this.closeActionsMenu();
+      // TODO: Implement create ticket logic
+      console.log('Create ticket for:', this.selectedActionsTicket);
+      alert(`Create new ticket functionality for ticket ID: ${this.selectedActionsTicket.ticketId}`);
+    },
+
+    handleMergeTicket() {
+      this.closeActionsMenu();
+      // TODO: Implement merge ticket logic
+      console.log('Merge ticket for:', this.selectedActionsTicket);
+      alert(`Merge ticket functionality for ticket ID: ${this.selectedActionsTicket.ticketId}`);
     },
 
     // Get status badge class
@@ -1971,6 +2085,20 @@ export default {
         'closed': 'bg-gray-100 text-gray-800'
       }
       return classes[status] || 'bg-gray-100 text-gray-800'
+    },
+
+    // Get communication way badge class
+    getCommunicationWayClass(way) {
+      const classes = {
+        'phone': 'bg-blue-100 text-blue-800',
+        'email': 'bg-green-100 text-green-800',
+        'chat': 'bg-purple-100 text-purple-800',
+        'whatsapp': 'bg-green-100 text-green-800',
+        'sms': 'bg-yellow-100 text-yellow-800',
+        'video': 'bg-indigo-100 text-indigo-800',
+        'walkin': 'bg-orange-100 text-orange-800'
+      }
+      return classes[way] || 'bg-gray-100 text-gray-800'
     },
 
     // Format date
