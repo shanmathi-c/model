@@ -1,15 +1,15 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col ">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 px-6 py-4">
+    <div class="flex-shrink-0 px-6">
       <!-- Header Title -->
-      <div class="mb-4">
+      <div class="mb-1">
         <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
         <p class="text-gray-600 mt-1">View and manage support tickets</p>
       </div>
 
       <!-- Search and Filter Bar -->
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
           <!-- Search Bar -->
           <div class="relative w-96 max-w-full">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -358,13 +358,29 @@
           </button>
         </span>
       </div>
+    </div>
 
-    <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-x-auto  flex flex-col pt-5" style="min-height: calc(100vh - 250px); ">
-        <!-- Table View -->
-        <div class="overflow-x-auto" style="min-height: calc(40vh - 300px);">
-          <table class="w-full border-collapse" style="min-width: 1200px;">
-              <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
+    <!-- Table Container - Takes full remaining height with fixed pagination -->
+    <div class="flex-1 overflow-hidden flex flex-col">
+      <!-- Table Wrapper with scrollable content -->
+      <div class="flex-1 overflow-auto" style="min-height: calc(100vh - 250px);">
+        <!-- Empty State -->
+        <div v-if="filteredTickets.length === 0" class="flex items-center justify-center" style="min-height: 400px;">
+          <div class="text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
+            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div v-else class="overflow-x-auto" style="min-height: calc(100vh - 300px);">
+          <div class="inline-block min-w-full align-middle h-full">
+            <div class="overflow-hidden h-full">
+              <table class="min-w-full border-collapse">
+                <thead class="bg-gray-50 border-b-2 border-gray-300 sticky top-0 z-10">
                 <tr>
                   <th v-if="visibleColumns.ticketId" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 110px; min-width: 110px;">Ticket ID</th>
                   <th v-if="visibleColumns.customer" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 200px; min-width: 200px;">Customer</th>
@@ -545,20 +561,56 @@
                   </td>
                 </tr>
               </tbody>
-            </table>
-          </div>
-
-  
-          <!-- Empty State -->
-          <div v-if="filteredTickets.length === 0" class="flex items-center justify-center" style="min-height: 400px;">
-            <div class="text-center">
-              <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
-              <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
+              </table>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Pagination Controls - Fixed at the bottom of the table container -->
+      <div class="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
+        <div class="flex flex-col gap-2">
+          <!-- Controls row -->
+          <div class="flex items-center justify-center">
+            <!-- Previous Button -->
+            <button
+              @click="previousPage"
+              :disabled="currentPage === 1"
+              class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
+              :class="currentPage === 1
+                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              Previous
+            </button>
+
+            <!-- Page Numbers -->
+            <template v-for="page in pageNumbers" :key="page">
+              <button
+                @click="goToPage(page)"
+                class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
+                :class="page === currentPage
+                  ? 'border-blue-500 bg-blue-500 text-white'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+              >
+                {{ page }}
+              </button>
+            </template>
+
+            <!-- Next Button -->
+            <button
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
+              :class="currentPage === totalPages
+                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Call Modal -->
@@ -1453,59 +1505,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Pagination Controls - Fixed at Bottom -->
-    <div class="px-4 py-3 bg-white border-t border-gray-200 mt-auto">
-      <div class="flex flex-col gap-2">
-        <!-- Info row -->
-        <!-- <div class="text-sm text-gray-700">
-          Showing <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span> to
-          <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredTickets.length) }}</span> of
-          <span class="font-medium">{{ filteredTickets.length }}</span> tickets (Page {{ currentPage }} of {{ totalPages }})
-        </div> -->
-
-        <!-- Controls row -->
-        <div class="flex items-center justify-center pt-3">
-          <!-- Previous Button -->
-          <button
-            @click="previousPage"
-            :disabled="currentPage === 1"
-            class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
-            :class="currentPage === 1
-              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-          >
-            Previous
-          </button>
-
-          <!-- Page Numbers -->
-          <template v-for="page in pageNumbers" :key="page">
-            <button
-              @click="goToPage(page)"
-              class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
-              :class="page === currentPage
-                ? 'border-blue-500 bg-blue-500 text-white'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-            >
-              {{ page }}
-            </button>
-          </template>
-
-          <!-- Next Button -->
-          <button
-            @click="nextPage"
-            :disabled="currentPage === totalPages"
-            class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
-            :class="currentPage === totalPages
-              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
   </div>
 </template>
 
@@ -1625,7 +1624,7 @@ export default {
 
       // Pagination
       currentPage: 1,
-      itemsPerPage: 3,
+      itemsPerPage: 10,
 
       // Data from backend
       tickets: [],
