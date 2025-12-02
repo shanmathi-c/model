@@ -1384,7 +1384,12 @@ export class ticketController {
                             -- All inbound calls (both with and without ticketId)
                             SELECT
                                 COALESCE(c.ticketId, c.callId) as ticketId,
-                                c.userPhone as customerName,
+                                COALESCE(
+                                    (SELECT t.name FROM tickets t WHERE t.ticketId = c.ticketId LIMIT 1),
+                                    (SELECT cb.name FROM callback cb WHERE cb.callbackId = c.callId LIMIT 1),
+                                    c.userPhone,
+                                    '-'
+                                ) as customerName,
                                 NULL as customerEmail,
                                 c.userPhone as customerPhone,
                                 c.productId,

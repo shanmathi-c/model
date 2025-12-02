@@ -406,7 +406,7 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr
                   v-for="ticket in paginatedTickets"
-                  :key="ticket.id"
+                  :key="ticket.ticketId || ticket.callId || ticket.id"
                   class="border-b border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
                   @click="openTicketDetails(ticket)"
                 >
@@ -417,7 +417,9 @@
 
                   <!-- Ticket ID -->
                   <td v-if="visibleColumns.ticketId" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span class="text-sm font-medium text-gray-600">{{ ticket.ticketId || '#' + ticket.id }}</span>
+                    <span class="text-sm font-medium text-gray-600">
+                      {{ ticket.ticketId === '0' || ticket.ticketId === '-' ? '-' : ticket.ticketId || ticket.callId || '#' + ticket.id }}
+                    </span>
                   </td>
 
                   <!-- Freshdesk ID -->
@@ -1833,9 +1835,9 @@ export default {
             return {
               id: ticket.id,  // Numeric ID for backend operations
               ticketId: ticket.ticketId,  // Formatted ID for display
-              customerName: ticket.name || '-',
-              customerContact: ticket.email || '-',
-              phone: ticket.phone || '-',
+              customerName: ticket.customerName || '-',
+              customerContact: ticket.customerEmail || '-',
+              phone: ticket.customerPhone || '-',
               subject: ticket.subject || null,
               description: ticket.description || null,
               priority: ticket.priority || 'medium',
@@ -1861,6 +1863,7 @@ export default {
               freshdeskId: ticket.freshdeskId || null,
               callId: ticket.callId || null,
               wayOfCommunication: ticket.wayOfCommunication || null,
+              dataSource: ticket.dataSource || 'ticket', // Track if data is from ticket or call
               feedbackLink: null,
               feedbackLinkCopied: false
             }
