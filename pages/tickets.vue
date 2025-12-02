@@ -1591,6 +1591,123 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Ticket Modal -->
+    <div v-if="showCreateTicketModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900">Create New Ticket</h3>
+          <button
+            @click="closeCreateTicketModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <form @submit.prevent="submitCreateTicket" class="space-y-4">
+            <!-- Reference Ticket Display -->
+            <div v-if="selectedActionsTicket" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-semibold text-blue-900 text-sm">Reference Ticket</h4>
+                  <p class="text-blue-700 text-sm mt-1">Ticket ID: <span class="font-mono font-bold">{{ selectedActionsTicket.ticketId }}</span></p>
+                </div>
+                <svg class="w-8 h-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Product Selection -->
+            <div>
+              <label for="create-product" class="block text-sm font-medium text-gray-700 mb-1">
+                Product <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="create-product"
+                v-model="createTicketForm.productId"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Product</option>
+                <option v-for="product in products" :key="product.productId" :value="product.productId">
+                  {{ product.name || product.productName || 'Product ' + product.productId }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Subject -->
+            <div>
+              <label for="create-subject" class="block text-sm font-medium text-gray-700 mb-1">
+                Subject <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="create-subject"
+                v-model="createTicketForm.subject"
+                type="text"
+                required
+                placeholder="Enter ticket subject"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="create-description" class="block text-sm font-medium text-gray-700 mb-1">
+                Description <span class="text-red-500">*</span>
+              </label>
+              <textarea
+                id="create-description"
+                v-model="createTicketForm.description"
+                required
+                rows="4"
+                placeholder="Describe the issue or request..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label for="create-email" class="block text-sm font-medium text-gray-700 mb-1">
+                Email (Optional)
+              </label>
+              <input
+                id="create-email"
+                v-model="createTicketForm.customerEmail"
+                type="email"
+                placeholder="customer@example.com"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                @click="closeCreateTicketModal"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="isCreatingTicket"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="!isCreatingTicket">Create Ticket</span>
+                <span v-else>Creating...</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1691,6 +1808,16 @@ export default {
       // Actions menu state
       showActionsMenu: false,
       selectedActionsTicket: null,
+
+      // Create Ticket Modal
+      showCreateTicketModal: false,
+      isCreatingTicket: false,
+      createTicketForm: {
+        productId: '',
+        subject: '',
+        description: '',
+        customerEmail: ''
+      },
 
       // Compact column options
       columnOptions: [
@@ -2077,9 +2204,61 @@ export default {
 
     handleCreateTicket() {
       this.closeActionsMenu();
-      // TODO: Implement create ticket logic
-      console.log('Create ticket for:', this.selectedActionsTicket);
-      alert(`Create new ticket functionality for ticket ID: ${this.selectedActionsTicket.ticketId}`);
+      // Reset form
+      this.createTicketForm = {
+        productId: '',
+        subject: '',
+        description: '',
+        customerEmail: ''
+      };
+      // Open create ticket modal
+      this.showCreateTicketModal = true;
+    },
+
+    closeCreateTicketModal() {
+      this.showCreateTicketModal = false;
+      this.createTicketForm = {
+        productId: '',
+        subject: '',
+        description: '',
+        customerEmail: ''
+      };
+    },
+
+    async submitCreateTicket() {
+      this.isCreatingTicket = true;
+      try {
+        const ticketData = {
+          productId: this.createTicketForm.productId,
+          subject: this.createTicketForm.subject,
+          description: this.createTicketForm.description,
+          customerEmail: this.createTicketForm.customerEmail,
+          status: 'created'
+        };
+
+        const response = await $fetch('http://localhost:5001/new-tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: ticketData
+        });
+
+        if (response.success) {
+          // Show success message
+          alert('Ticket created successfully!');
+          this.closeCreateTicketModal();
+          // Refresh tickets list
+          await this.fetchTickets();
+        } else {
+          alert('Failed to create ticket: ' + (response.message || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error creating ticket:', error);
+        alert('Failed to create ticket. Please try again.');
+      } finally {
+        this.isCreatingTicket = false;
+      }
     },
 
     handleMergeTicket() {
