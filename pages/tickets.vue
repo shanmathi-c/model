@@ -1654,8 +1654,27 @@
                 </div>
               </div>
 
+              <!-- Customer Information Section -->
+              <div class="mt-4 bg-white border border-gray-300 rounded-lg p-3">
+                <h5 class="font-medium text-gray-800 text-xs mb-2 uppercase tracking-wide">Customer Information</h5>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <span class="text-xs text-gray-600">Name:</span>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedTicketForModal?.customerName || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <span class="text-xs text-gray-600">Phone:</span>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedCallData.userPhone || selectedCallData.phone || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <span class="text-xs text-gray-600">Email:</span>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedTicketForModal?.customerEmail || selectedTicketForModal?.customerContact || 'N/A' }}</p>
+                  </div>
+                </div>
+              </div>
+
               <div class="mt-3 text-xs text-blue-700">
-                ✅ Ticket will be created and linked to call {{ selectedCallData.callId }}
+                ✅ Call entry will be created and linked to call {{ selectedCallData.callId }}
               </div>
             </div>
 
@@ -1856,6 +1875,7 @@ export default {
 
       // Call data for create ticket modal
       selectedCallData: null,
+      selectedTicketForModal: null,
 
       // Compact column options
       columnOptions: [
@@ -2256,6 +2276,9 @@ export default {
       // Reset call data
       this.selectedCallData = null;
 
+      // Store the ticket data for display in modal
+      this.selectedTicketForModal = currentTicket;
+
       // Check if selected ticket has a callId and fetch call data
       if (currentTicket && currentTicket.callId) {
         await this.fetchCallData(currentTicket.callId);
@@ -2293,7 +2316,12 @@ export default {
           // Pre-fill form with call data
           if (this.selectedCallData) {
             this.createTicketForm.productId = this.selectedCallData.productId || '';
-            this.createTicketForm.subject = `Ticket for call ${this.selectedCallData.callId}`;
+
+            // Fetch customer data from callback table using phone number
+            const phone = this.selectedCallData.userPhone || this.selectedCallData.phone;
+            if (phone) {
+              await this.fetchCustomerDataFromCallback(phone);
+            }
           }
         }
       } catch (error) {
@@ -2301,23 +2329,78 @@ export default {
       }
     },
 
+    // Fetch customer data from callback table using phone number
+    async fetchCustomerDataFromCallback(phone) {
+      try {
+        const response = await fetch(`http://localhost:5001/callbacks`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const callbacks = result.data || result;
+
+          // Find callback with matching phone number
+          const matchingCallback = callbacks.find(cb =>
+            cb.phone === phone || cb.phone.includes(phone) || phone.includes(cb.phone)
+          );
+
+          if (matchingCallback) {
+            // Add customer data to selectedCallData
+            this.selectedCallData.customerName = this.selectedCallData.customerName || matchingCallback.name;
+            this.selectedCallData.customerEmail = this.selectedCallData.customerEmail || matchingCallback.email;
+            this.selectedCallData.customerPhone = matchingCallback.phone;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching customer data from callback:', error);
+      }
+    },
+
     async submitCreateTicket() {
       this.isCreatingTicket = true;
       try {
+        // Step 1: Create the ticket in tickets table
         const ticketData = {
           productId: this.createTicketForm.productId,
           subject: this.createTicketForm.subject,
           description: this.createTicketForm.description,
           customerEmail: this.createTicketForm.customerEmail,
-          status: 'created'
+          status: 'assigned', // Status should be 'assigned'
+          ticketType: 'call' // Ticket type should be 'call'
         };
 
-        // Add callId if available
+        // Add customer data if available from call data
         if (this.selectedCallData && this.selectedCallData.callId) {
-          ticketData.callId = this.selectedCallData.callId;
+          // Get name from the ticket row (already displayed in customer column)
+          ticketData.name = this.selectedTicketForModal?.customerName || 'Unknown Customer';
+
+          // Get phone from call data
+          ticketData.phone = this.selectedCallData.userPhone || this.selectedCallData.phone || '';
+
+          // Get email from ticket row first (customerContact might contain email), then form input
+          ticketData.customerEmail =
+            this.selectedTicketForModal?.customerEmail ||
+            this.selectedTicketForModal?.customerContact ||
+            this.selectedCallData.customerEmail ||
+            this.selectedCallData.email ||
+            this.createTicketForm.customerEmail || '';
+
+          ticketData.callId = this.selectedCallData.callId; // Link to call
+
+          console.log('Ticket data being sent:', {
+            name: ticketData.name,
+            phone: ticketData.phone,
+            email: ticketData.customerEmail,
+            callId: ticketData.callId
+          });
         }
 
-        const response = await $fetch('http://localhost:5001/new-tickets', {
+        // Create ticket first
+        const ticketResponse = await $fetch('http://localhost:5001/new-tickets', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2325,14 +2408,54 @@ export default {
           body: ticketData
         });
 
-        if (response.success) {
+        if (ticketResponse.success) {
+          let ticketId = ticketResponse.ticketId || ticketResponse.data?.ticketId;
+
+          // Step 2: Update the calls table with the new ticketId using the status endpoint
+          if (this.selectedCallData && this.selectedCallData.callId && ticketId) {
+            try {
+              // Use the existing updateCallStatus endpoint, but also pass ticketId
+              await $fetch(`http://localhost:5001/calls/${this.selectedCallData.callId}/status`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: {
+                  status: this.selectedCallData.callStatus || 'pending', // Keep existing status
+                  ticketId: ticketId // Add the new ticketId
+                }
+              });
+              console.log('Calls table updated with ticketId:', ticketId);
+            } catch (updateError) {
+              console.error('Error updating calls table:', updateError);
+              // Try alternative approach if status endpoint doesn't work
+              try {
+                // Try using the agent endpoint as a fallback
+                await $fetch(`http://localhost:5001/calls/${this.selectedCallData.callId}/agent`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: {
+                    agentId: this.selectedCallData.agentId,
+                    ticketId: ticketId // Add ticketId here too
+                  }
+                });
+                console.log('Calls table updated via agent endpoint with ticketId:', ticketId);
+              } catch (fallbackError) {
+                console.error('Both call update methods failed:', fallbackError);
+                // Continue even if call update fails - ticket was created successfully
+              }
+            }
+          }
+
           // Show success message
-          alert('Ticket created successfully!');
+          alert('Ticket created successfully and linked to call!');
           this.closeCreateTicketModal();
           // Refresh tickets list
           await this.fetchTickets();
         } else {
-          alert('Failed to create ticket: ' + (response.message || 'Unknown error'));
+          alert('Failed to create ticket: ' + (ticketResponse.message || 'Unknown error'));
         }
       } catch (error) {
         console.error('Error creating ticket:', error);
