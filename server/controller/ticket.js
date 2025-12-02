@@ -1422,6 +1422,7 @@ export class ticketController {
                                 COALESCE((SELECT c.notes FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1), NULL) as notes,
                                 COALESCE((SELECT CASE WHEN c.firstCall = 1 THEN 1 ELSE NULL END FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1), NULL) as fcr,
                                 (SELECT c.wayOfCommunication FROM calls c WHERE c.ticketId = t.ticketId ORDER BY c.id DESC LIMIT 1) as wayOfCommunication,
+                                (SELECT mc.mergeId FROM \`merge-ticketcalls\` mc WHERE mc.ticketId = t.ticketId LIMIT 1) as mergeId,
                                 'ticket' as dataSource
                             FROM tickets t
                             ${ticketsWhereClause}
@@ -1467,6 +1468,7 @@ export class ticketController {
                                 c.notes,
                                 CASE WHEN c.firstCall = 1 THEN 1 ELSE NULL END as fcr,
                                 c.wayOfCommunication,
+                                (SELECT mc.mergeId FROM \`merge-ticketcalls\` mc WHERE mc.callId = c.callId LIMIT 1) as mergeId,
                                 'call' as dataSource
                             FROM calls c
                             WHERE c.callType = 'inbound'

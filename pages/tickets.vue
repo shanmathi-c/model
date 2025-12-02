@@ -482,7 +482,7 @@
 
                   <!-- Merge ID -->
                   <td v-if="visibleColumns.mergeId" class="px-6 py-4 whitespace-nowrap align-middle">
-                    <span v-if="ticket.mergeId" class="text-sm font-medium text-purple-600">{{ ticket.mergeId }}</span>
+                    <span v-if="ticket.mergeId" class="text-sm font-medium text-gray-600">{{ ticket.mergeId }}</span>
                     <span v-else class="text-sm text-gray-400">-</span>
                   </td>
 
@@ -2129,6 +2129,7 @@ export default {
               followupStatus: ticket.followupStatus || ticket.followup_status || null,
               freshdeskId: ticket.freshdeskId || null,
               callId: ticket.callId || null,
+              mergeId: ticket.mergeId || null,
               wayOfCommunication: ticket.wayOfCommunication || null,
               dataSource: ticket.dataSource || 'ticket', // Track if data is from ticket or call
               feedbackLink: null,
