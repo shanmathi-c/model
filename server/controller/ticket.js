@@ -1387,10 +1387,16 @@ export class ticketController {
                                 COALESCE(
                                     (SELECT t.name FROM tickets t WHERE t.ticketId = c.ticketId LIMIT 1),
                                     (SELECT cb.name FROM callback cb WHERE cb.callbackId = c.callId LIMIT 1),
+                                    (SELECT cb.name FROM callback cb WHERE cb.phone = c.userPhone LIMIT 1),
                                     c.userPhone,
                                     '-'
                                 ) as customerName,
-                                NULL as customerEmail,
+                                COALESCE(
+                                    (SELECT t.email FROM tickets t WHERE t.ticketId = c.ticketId LIMIT 1),
+                                    (SELECT cb.email FROM callback cb WHERE cb.callbackId = c.callId AND cb.email IS NOT NULL LIMIT 1),
+                                    (SELECT cb.email FROM callback cb WHERE cb.phone = c.userPhone AND cb.email IS NOT NULL LIMIT 1),
+                                    NULL
+                                ) as customerEmail,
                                 c.userPhone as customerPhone,
                                 c.productId,
                                 COALESCE(c.ticketStatus, 'pending') as status,
