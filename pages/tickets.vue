@@ -1624,6 +1624,41 @@
               </div>
             </div>
 
+            
+          <!-- Call Data Display (if available) -->
+            <div v-if="selectedCallData" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h4 class="font-semibold text-blue-900 text-sm mb-4 flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Call Data Information
+              </h4>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Call ID -->
+                <div class="bg-white border border-gray-300 rounded-lg p-3">
+                  <h5 class="font-medium text-gray-800 text-xs mb-2 uppercase tracking-wide">Call ID</h5>
+                  <p class="text-lg font-bold text-blue-600">{{ selectedCallData.callId || 'N/A' }}</p>
+                </div>
+
+                <!-- Agent ID -->
+                <div class="bg-white border border-gray-300 rounded-lg p-3">
+                  <h5 class="font-medium text-gray-800 text-xs mb-2 uppercase tracking-wide">Agent ID</h5>
+                  <p class="text-lg font-bold text-green-600">{{ selectedCallData.agentId || 'N/A' }}</p>
+                </div>
+
+                <!-- Product ID -->
+                <div class="bg-white border border-gray-300 rounded-lg p-3">
+                  <h5 class="font-medium text-gray-800 text-xs mb-2 uppercase tracking-wide">Product ID</h5>
+                  <p class="text-lg font-bold text-purple-600">{{ selectedCallData.productId || 'N/A' }}</p>
+                </div>
+              </div>
+
+              <div class="mt-3 text-xs text-blue-700">
+                ✅ Ticket will be created and linked to call {{ selectedCallData.callId }}
+              </div>
+            </div>
+
             <!-- Product Selection -->
             <div>
               <label for="create-product" class="block text-sm font-medium text-gray-700 mb-1">
@@ -1636,7 +1671,7 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Product</option>
-                <option v-for="product in products" :key="product.productId" :value="product.productId">
+                <option v-for="product in allProducts" :key="product.productId" :value="product.productId">
                   {{ product.name || product.productName || 'Product ' + product.productId }}
                 </option>
               </select>
@@ -1818,6 +1853,9 @@ export default {
         description: '',
         customerEmail: ''
       },
+
+      // Call data for create ticket modal
+      selectedCallData: null,
 
       // Compact column options
       columnOptions: [
@@ -2202,7 +2240,10 @@ export default {
       this.selectedActionsTicket = null;
     },
 
-    handleCreateTicket() {
+    async handleCreateTicket() {
+      // Store the selected ticket data before closing menu
+      const currentTicket = this.selectedActionsTicket;
+
       this.closeActionsMenu();
       // Reset form
       this.createTicketForm = {
@@ -2211,6 +2252,15 @@ export default {
         description: '',
         customerEmail: ''
       };
+
+      // Reset call data
+      this.selectedCallData = null;
+
+      // Check if selected ticket has a callId and fetch call data
+      if (currentTicket && currentTicket.callId) {
+        await this.fetchCallData(currentTicket.callId);
+      }
+
       // Open create ticket modal
       this.showCreateTicketModal = true;
     },
@@ -2223,6 +2273,32 @@ export default {
         description: '',
         customerEmail: ''
       };
+      this.selectedCallData = null;
+    },
+
+    // Fetch call data by callId
+    async fetchCallData(callId) {
+      try {
+        const response = await fetch(`http://localhost:5001/calls/details/${callId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          this.selectedCallData = result.data;
+
+          // Pre-fill form with call data
+          if (this.selectedCallData) {
+            this.createTicketForm.productId = this.selectedCallData.productId || '';
+            this.createTicketForm.subject = `Ticket for call ${this.selectedCallData.callId}`;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching call data:', error);
+      }
     },
 
     async submitCreateTicket() {
@@ -2235,6 +2311,11 @@ export default {
           customerEmail: this.createTicketForm.customerEmail,
           status: 'created'
         };
+
+        // Add callId if available
+        if (this.selectedCallData && this.selectedCallData.callId) {
+          ticketData.callId = this.selectedCallData.callId;
+        }
 
         const response = await $fetch('http://localhost:5001/new-tickets', {
           method: 'POST',

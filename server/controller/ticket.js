@@ -3094,21 +3094,11 @@ export class ticketController {
     static getCallDetails(req, res) {
         const { callId } = req.params;
 
+        // Start with just the call data to avoid schema issues
         const query = `
             SELECT
-                c.*,
-                a.agentName,
-                a.email as agentEmail,
-                a.phone as agentPhoneNumber,
-                p.name as productName,
-                t.name as customerName,
-                t.email as customerEmail,
-                t.subject as ticketSubject,
-                t.description as ticketDescription
+                c.*
             FROM calls c
-            LEFT JOIN agents a ON c.agentId = a.id
-            LEFT JOIN product p ON c.productId = p.productId
-            LEFT JOIN tickets t ON c.ticketId = t.ticketId
             WHERE c.callId = ?
         `;
 
