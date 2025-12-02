@@ -1383,7 +1383,34 @@ export class ticketController {
 
                             -- All inbound calls (both with and without ticketId)
                             SELECT
-                                COALESCE(c.ticketId, c.callId) as ticketId,
+                                COALESCE(
+                      -- If call already has a valid ticketId, use it
+                      CASE WHEN c.ticketId IS NOT NULL AND c.ticketId LIKE 'T%' THEN c.ticketId ELSE NULL END,
+                      -- Try to construct ticketId from freshdeskId (if freshdeskId exists in assign-ticket table)
+                      CASE
+                          WHEN EXISTS (
+                              SELECT 1 FROM \`assign-ticket\` at
+                              WHERE at.freshdeskId IS NOT NULL
+                              AND (
+                                  at.ticketId = c.ticketId
+                                  OR at.callId = c.callId
+                              )
+                              LIMIT 1
+                          ) THEN (
+                              SELECT CONCAT('T', LPAD(at.freshdeskId, 3, '0'))
+                              FROM \`assign-ticket\` at
+                              WHERE (
+                                  at.ticketId = c.ticketId
+                                  OR at.callId = c.callId
+                              )
+                              AND at.freshdeskId IS NOT NULL
+                              ORDER BY at.id DESC
+                              LIMIT 1
+                          )
+                          ELSE NULL
+                      END,
+                      '--'
+                  ) as ticketId,
                                 COALESCE(
                                     (SELECT t.name FROM tickets t WHERE t.ticketId = c.ticketId LIMIT 1),
                                     (SELECT cb.name FROM callback cb WHERE cb.callbackId = c.callId LIMIT 1),

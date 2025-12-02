@@ -418,7 +418,7 @@
                   <!-- Ticket ID -->
                   <td v-if="visibleColumns.ticketId" class="px-6 py-4 whitespace-nowrap align-middle">
                     <span class="text-sm font-medium text-gray-600">
-                      {{ ticket.ticketId === '0' || ticket.ticketId === '-' ? '-' : ticket.ticketId || ticket.callId || '#' + ticket.id }}
+                      {{ ticket.ticketId === '0' || ticket.ticketId === '-' || ticket.ticketId === null || ticket.ticketId === undefined ? '-' : ticket.ticketId || '#' + ticket.id }}
                     </span>
                   </td>
 
