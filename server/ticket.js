@@ -46,6 +46,7 @@ router.put("/calls/:callId/end", ticketController.endCall);
 router.put("/calls/:callId/missed", ticketController.missedCall);
 router.put("/calls/:callId/status", ticketController.updateCallStatus);
 router.put("/calls/:callId/agent", ticketController.updateCallAgent);
+router.put("/calls/:callId/ticket", ticketController.updateCallTicketId);
 router.get("/calls", ticketController.getCallLogs);
 router.get("/calls/details/:callId", ticketController.getCallDetails);
 router.get("/calls/agent/:agentId", ticketController.getCallLogsByAgent);

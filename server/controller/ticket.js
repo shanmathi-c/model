@@ -276,7 +276,7 @@ export class ticketController {
     }
 
     static async createTicket(req, res) {
-       const { productId, userId, name, email, countryCode, phone, subject, description, ticketType } = req.body;
+       const { productId, userId, name, email, countryCode, phone, subject, description, ticketType, callId } = req.body;
 
        // Validate required fields (productId and email not required for call tickets)
        if (!name || !phone || !subject || !description) {
@@ -324,6 +324,23 @@ export class ticketController {
                 error: err
             })
            } else {
+              // Update calls table if callId is provided
+              if (callId) {
+                  console.log('Updating calls table with ticketId:', ticketId, 'for callId:', callId);
+
+                  connection.query(
+                      "UPDATE calls SET ticketId = ? WHERE callId = ?",
+                      [ticketId, callId],
+                      (callUpdateErr, callUpdateResult) => {
+                          if (callUpdateErr) {
+                              console.error('Error updating calls table with ticketId:', callUpdateErr);
+                          } else {
+                              console.log('Successfully updated calls table with ticketId:', callUpdateResult.affectedRows, 'rows affected');
+                          }
+                      }
+                  );
+              }
+
               // Log activity for ticket creation
               try {
                   await ticketController.logActivity(
@@ -335,7 +352,8 @@ export class ticketController {
                           ticketType: ticketType || 'freshdesk',
                           productId: productId,
                           additionalInfo: {
-                              subject: subject
+                              subject: subject,
+                              callId: callId
                           }
                       }
                   );
@@ -2783,10 +2801,10 @@ export class ticketController {
     // Update call status
     static updateCallStatus(req, res) {
         const { callId } = req.params;
-        const { callStatus, status } = req.body;
+        const { callStatus, status, ticketId } = req.body;
         const newStatus = callStatus || status;
 
-        console.log('Received updateCallStatus request for callId:', callId, 'status:', newStatus);
+        console.log('Received updateCallStatus request for callId:', callId, 'status:', newStatus, 'ticketId:', ticketId);
 
         if (!newStatus) {
             return res.status(400).json({
@@ -2815,12 +2833,28 @@ export class ticketController {
                     const ticketId = callData && callData.length > 0 ? callData[0].ticketId : null;
                     const previousCallStatus = callData && callData.length > 0 ? callData[0].callStatus : null;
 
-                    // Update the callStatus in calls table
+                    // Update the callStatus in calls table (and ticketId if provided)
                     // If status is resolved, set firstCall to 1, otherwise set to 0
                     const firstCallValue = newStatus === 'resolved' ? 1 : 0;
+
+                    let updateQuery = "UPDATE calls SET callStatus = ?, firstCall = ?";
+                    let updateParams = [newStatus, firstCallValue];
+
+                    // If ticketId is provided, also update it
+                    if (ticketId) {
+                        updateQuery += ", ticketId = ?";
+                        updateParams.push(ticketId);
+                    }
+
+                    updateQuery += " WHERE callId = ?";
+                    updateParams.push(callId);
+
+                    console.log('Update query:', updateQuery);
+                    console.log('Update params:', updateParams);
+
                     connection.query(
-                        "UPDATE calls SET callStatus = ?, firstCall = ? WHERE callId = ?",
-                        [newStatus, firstCallValue, callId],
+                        updateQuery,
+                        updateParams,
                         async (err, result) => {
                             if (err) {
                                 return res.status(500).json({
@@ -2878,10 +2912,10 @@ export class ticketController {
         }
     }
 
-    // Update call agent - updates agentId in calls table
+    // Update call agent - updates agentId in calls table (and optionally ticketId)
     static updateCallAgent(req, res) {
         const { callId } = req.params;
-        const { agentId } = req.body;
+        const { agentId, ticketId } = req.body;
 
         console.log('Received updateCallAgent request for callId:', callId, 'agentId:', agentId);
 
@@ -2922,10 +2956,25 @@ export class ticketController {
                                 ? agentResult[0].agentName
                                 : 'Unknown Agent';
 
-                            // Update the agentId in calls table
+                            // Update the agentId (and optionally ticketId) in calls table
+                            let updateQuery = "UPDATE calls SET agentId = ?";
+                            let updateParams = [agentId];
+
+                            // If ticketId is provided, also update it
+                            if (ticketId) {
+                                updateQuery += ", ticketId = ?";
+                                updateParams.push(ticketId);
+                            }
+
+                            updateQuery += " WHERE callId = ?";
+                            updateParams.push(callId);
+
+                            console.log('updateCallAgent - Update query:', updateQuery);
+                            console.log('updateCallAgent - Update params:', updateParams);
+
                             connection.query(
-                                "UPDATE calls SET agentId = ? WHERE callId = ?",
-                                [agentId, callId],
+                                updateQuery,
+                                updateParams,
                                 async (updateErr, updateResult) => {
                                     if (updateErr) {
                                         return res.status(500).json({
@@ -3086,6 +3135,58 @@ export class ticketController {
                         data: result
                     });
                 }
+            }
+        );
+    }
+
+    // Update call ticketId - updates ticketId in calls table
+    static updateCallTicketId(req, res) {
+        const { callId } = req.params;
+        const { ticketId } = req.body;
+
+        console.log('Received updateCallTicketId request for callId:', callId, 'ticketId:', ticketId);
+
+        // First check if call exists
+        connection.query(
+            "SELECT * FROM calls WHERE callId = ?",
+            [callId],
+            (err, callResult) => {
+                if (err) {
+                    console.error('Error fetching call log:', err);
+                    return res.status(500).json({
+                        message: "Error fetching call log",
+                        error: err
+                    });
+                }
+
+                if (callResult.length === 0) {
+                    return res.status(404).json({
+                        message: "Call log not found"
+                    });
+                }
+
+                // Update the ticketId in calls table
+                connection.query(
+                    "UPDATE calls SET ticketId = ? WHERE callId = ?",
+                    [ticketId, callId],
+                    (updateErr, updateResult) => {
+                        if (updateErr) {
+                            console.error('Error updating call ticketId:', updateErr);
+                            return res.status(500).json({
+                                message: "Error updating call ticketId",
+                                error: updateErr
+                            });
+                        }
+
+                        console.log('Successfully updated call ticketId');
+                        return res.json({
+                            message: "Call ticketId updated successfully",
+                            callId: callId,
+                            ticketId: ticketId,
+                            affectedRows: updateResult.affectedRows
+                        });
+                    }
+                );
             }
         );
     }

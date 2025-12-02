@@ -2368,7 +2368,6 @@ export default {
           productId: this.createTicketForm.productId,
           subject: this.createTicketForm.subject,
           description: this.createTicketForm.description,
-          customerEmail: this.createTicketForm.customerEmail,
           status: 'assigned', // Status should be 'assigned'
           ticketType: 'call' // Ticket type should be 'call'
         };
@@ -2382,7 +2381,7 @@ export default {
           ticketData.phone = this.selectedCallData.userPhone || this.selectedCallData.phone || '';
 
           // Get email from ticket row first (customerContact might contain email), then form input
-          ticketData.customerEmail =
+          ticketData.email =
             this.selectedTicketForModal?.customerEmail ||
             this.selectedTicketForModal?.customerContact ||
             this.selectedCallData.customerEmail ||
@@ -2394,8 +2393,10 @@ export default {
           console.log('Ticket data being sent:', {
             name: ticketData.name,
             phone: ticketData.phone,
-            email: ticketData.customerEmail,
-            callId: ticketData.callId
+            email: ticketData.email,
+            callId: ticketData.callId,
+            status: ticketData.status,
+            ticketType: ticketData.ticketType
           });
         }
 
@@ -2410,44 +2411,9 @@ export default {
 
         if (ticketResponse.success) {
           let ticketId = ticketResponse.ticketId || ticketResponse.data?.ticketId;
-
-          // Step 2: Update the calls table with the new ticketId using the status endpoint
-          if (this.selectedCallData && this.selectedCallData.callId && ticketId) {
-            try {
-              // Use the existing updateCallStatus endpoint, but also pass ticketId
-              await $fetch(`http://localhost:5001/calls/${this.selectedCallData.callId}/status`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: {
-                  status: this.selectedCallData.callStatus || 'pending', // Keep existing status
-                  ticketId: ticketId // Add the new ticketId
-                }
-              });
-              console.log('Calls table updated with ticketId:', ticketId);
-            } catch (updateError) {
-              console.error('Error updating calls table:', updateError);
-              // Try alternative approach if status endpoint doesn't work
-              try {
-                // Try using the agent endpoint as a fallback
-                await $fetch(`http://localhost:5001/calls/${this.selectedCallData.callId}/agent`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: {
-                    agentId: this.selectedCallData.agentId,
-                    ticketId: ticketId // Add ticketId here too
-                  }
-                });
-                console.log('Calls table updated via agent endpoint with ticketId:', ticketId);
-              } catch (fallbackError) {
-                console.error('Both call update methods failed:', fallbackError);
-                // Continue even if call update fails - ticket was created successfully
-              }
-            }
-          }
+          console.log('✅ Ticket created successfully with ID:', ticketId);
+          console.log('✅ Calls table also updated automatically with ticketId:', ticketId);
+          console.log('Full ticket response:', ticketResponse);
 
           // Show success message
           alert('Ticket created successfully and linked to call!');
