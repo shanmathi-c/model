@@ -2471,7 +2471,7 @@ export default {
     // Update communication way
     async updateCommunicationWay(ticket) {
       try {
-        const response = await $fetch(`http://localhost:5001/tickets/${ticket.id}/details`, {
+        const response = await $fetch(`http://localhost:5001/tickets/${ticket.ticketId}/details`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
