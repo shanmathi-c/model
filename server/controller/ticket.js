@@ -4570,6 +4570,217 @@ export class ticketController {
         }
     }
 
+    // Get Freshdesk ticket trends data for line chart (created vs resolved over time, Freshdesk only)
+    static async getFreshdeskTicketTrends(req, res) {
+        try {
+            const { dateRange, startDate, endDate, agents, products, status, teams } = req.query;
+
+            // Calculate date range filter
+            let days = 30; // default
+            let customDateFilter = '';
+            if (dateRange === 'custom' && startDate && endDate) {
+                customDateFilter = `AND t.createdAt BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+            } else if (dateRange && dateRange !== 'custom') {
+                days = parseInt(dateRange);
+            }
+
+            // Build filter conditions - always filter for Freshdesk tickets
+            let agentFilter = '';
+            let productFilter = '';
+            let statusFilter = '';
+            const queryParams = customDateFilter ? [] : [days];
+
+            if (agents && agents.length > 0) {
+                const agentList = Array.isArray(agents) ? agents : [agents];
+                const agentPlaceholders = agentList.map(() => '?').join(',');
+                agentFilter = `AND EXISTS (
+                    SELECT 1 FROM \`assign-ticket\` at
+                    JOIN agents a ON at.agentId = a.id
+                    WHERE at.ticketId = t.ticketId
+                    AND a.agentName IN (${agentPlaceholders})
+                )`;
+                queryParams.push(...agentList);
+            }
+
+            if (products && products.length > 0) {
+                const productList = Array.isArray(products) ? products : [products];
+                const productPlaceholders = productList.map(() => '?').join(',');
+                productFilter = `AND t.productId IN (${productPlaceholders})`;
+                queryParams.push(...productList);
+            }
+
+            if (status && status.length > 0) {
+                const statusList = Array.isArray(status) ? status : [status];
+                const statusPlaceholders = statusList.map(() => '?').join(',');
+                statusFilter = `AND t.status IN (${statusPlaceholders})`;
+                queryParams.push(...statusList);
+            }
+
+            let teamFilter = '';
+            if (teams && teams.length > 0) {
+                const teamList = Array.isArray(teams) ? teams : [teams];
+                const teamPlaceholders = teamList.map(() => '?').join(',');
+                teamFilter = `AND EXISTS (
+                    SELECT 1 FROM \`assign-ticket\` at
+                    JOIN agents a ON at.agentId = a.id
+                    WHERE at.ticketId = t.ticketId
+                    AND a.team IN (${teamPlaceholders})
+                )`;
+                queryParams.push(...teamList);
+            }
+
+            // Query to get Freshdesk tickets created per day
+            const createdQuery = customDateFilter ? `
+                SELECT
+                    DATE(t.createdAt) as date,
+                    COUNT(*) as count
+                FROM tickets t
+                WHERE t.ticketType = 'freshdesk'
+                ${customDateFilter}
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${teamFilter}
+                GROUP BY DATE(t.createdAt)
+                ORDER BY date ASC
+            ` : `
+                SELECT
+                    DATE(t.createdAt) as date,
+                    COUNT(*) as count
+                FROM tickets t
+                WHERE t.ticketType = 'freshdesk'
+                AND t.createdAt >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${teamFilter}
+                GROUP BY DATE(t.createdAt)
+                ORDER BY date ASC
+            `;
+
+            // Query to get Freshdesk tickets resolved per day (from calls table)
+            const resolvedQuery = customDateFilter ? `
+                SELECT
+                    DATE(c.resolvedOn) as date,
+                    COUNT(DISTINCT t.ticketId) as count
+                FROM tickets t
+                LEFT JOIN calls c ON t.ticketId = c.ticketId
+                WHERE t.ticketType = 'freshdesk'
+                ${customDateFilter.replace('t.createdAt', 'c.resolvedOn')}
+                AND c.resolvedOn IS NOT NULL
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${teamFilter}
+                GROUP BY DATE(c.resolvedOn)
+                ORDER BY date ASC
+            ` : `
+                SELECT
+                    DATE(c.resolvedOn) as date,
+                    COUNT(DISTINCT t.ticketId) as count
+                FROM tickets t
+                LEFT JOIN calls c ON t.ticketId = c.ticketId
+                WHERE t.ticketType = 'freshdesk'
+                AND c.resolvedOn >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                AND c.resolvedOn IS NOT NULL
+                ${agentFilter}
+                ${productFilter}
+                ${statusFilter}
+                ${teamFilter}
+                GROUP BY DATE(c.resolvedOn)
+                ORDER BY date ASC
+            `;
+
+            // Execute both queries
+            const [createdResults, resolvedResults] = await Promise.all([
+                new Promise((resolve, reject) => {
+                    connection.query(createdQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    connection.query(resolvedQuery, queryParams, (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                })
+            ]);
+
+            // Generate date labels
+            const labels = [];
+            const createdData = [];
+            const resolvedData = [];
+
+            // Create maps for quick lookup
+            const createdMap = new Map(createdResults.map(r => [r.date.toISOString().split('T')[0], r.count]));
+            const resolvedMap = new Map(resolvedResults.map(r => [r.date.toISOString().split('T')[0], r.count]));
+
+            // Generate data for each day
+            if (customDateFilter && startDate && endDate) {
+                // For custom date range, iterate from startDate to endDate
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+                for (let i = 0; i < daysDiff; i++) {
+                    const date = new Date(start);
+                    date.setDate(start.getDate() + i);
+                    const dateStr = date.toISOString().split('T')[0];
+
+                    // Format label based on range
+                    let label;
+                    if (daysDiff <= 7) {
+                        label = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    } else {
+                        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+
+                    labels.push(label);
+                    createdData.push(createdMap.get(dateStr) || 0);
+                    resolvedData.push(resolvedMap.get(dateStr) || 0);
+                }
+            } else {
+                // For relative date range (last N days)
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+
+                    // Format label based on days
+                    let label;
+                    if (days <= 7) {
+                        // For 7 days, show day names
+                        label = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    } else {
+                        // For longer periods, show month/day
+                        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+
+                    labels.push(label);
+                    createdData.push(createdMap.get(dateStr) || 0);
+                    resolvedData.push(resolvedMap.get(dateStr) || 0);
+                }
+            }
+
+            return res.json({
+                message: "Freshdesk ticket trends data fetched successfully",
+                data: {
+                    labels,
+                    created: createdData,
+                    resolved: resolvedData
+                }
+            });
+
+        } catch (error) {
+            console.error('Error in getFreshdeskTicketTrends:', error);
+            return res.status(500).json({
+                message: "Error fetching Freshdesk ticket trends data",
+                error: error.message
+            });
+        }
+    }
+
     // Get resolution time distribution data
     static async getResolutionTimeDistribution(req, res) {
         try {

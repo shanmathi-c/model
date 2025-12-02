@@ -931,6 +931,17 @@
         />
       </div>
 
+      <!-- Freshdesk Tickets Line Chart Section -->
+      <div class="mb-6">
+        <!-- Freshdesk Tickets Created vs Resolved Over Time -->
+        <LineChart
+          title="Freshdesk Tickets Created vs Resolved Over Time"
+          :created-data="freshdeskTicketTrends.created"
+          :resolved-data="freshdeskTicketTrends.resolved"
+          :x-labels="freshdeskTicketTrends.labels"
+        />
+      </div>
+
       <!-- Resolution Time Distribution Chart Section -->
       <div class="mb-6">
         <!-- Resolution Time Distribution -->
@@ -1073,6 +1084,11 @@ export default {
         created: [45, 52, 38, 65, 48, 59, 67, 72, 58, 81, 69, 74, 62, 88, 76, 92, 85, 98, 103, 95, 108, 112, 105, 118, 125, 119, 132, 128, 135, 142],
         resolved: [42, 48, 45, 58, 52, 61, 63, 68, 65, 74, 71, 78, 75, 82, 79, 85, 88, 91, 95, 98, 102, 105, 108, 112, 115, 118, 122, 125, 128, 130],
         labels: this.generateDateLabels(30)
+      },
+      freshdeskTicketTrends: {
+        created: [],
+        resolved: [],
+        labels: []
       },
       timeDistributionPeriod: '30',
       timeDistributionData: [
@@ -1307,6 +1323,7 @@ export default {
       this.ticketTrendsPeriod = period;
       // Fetch real data from backend
       this.fetchTicketTrends(period);
+      this.fetchFreshdeskTicketTrends(period);
     },
 
     updateTimeDistributionPeriod(period) {
@@ -1482,6 +1499,7 @@ export default {
       } else {
         // Refresh with current period if filters changed but period didn't
         this.fetchTicketTrends()
+        this.fetchFreshdeskTicketTrends()
       }
 
       // Update resolution time distribution
@@ -1765,6 +1783,87 @@ export default {
 
       } catch (error) {
         console.error('Error fetching ticket trends data:', error);
+        // Keep existing data if API fails
+      }
+    },
+
+    // Fetch Freshdesk ticket trends data
+    async fetchFreshdeskTicketTrends(period = null) {
+      try {
+        console.log('Fetching Freshdesk ticket trends data...');
+
+        // Use current period if not specified
+        const dateRange = period || this.ticketTrendsPeriod;
+
+        // Build query parameters from current filters
+        const queryParams = new URLSearchParams();
+
+        // Handle custom date range
+        if (this.analyticsFilters.dateRange === 'custom') {
+          queryParams.append('dateRange', 'custom');
+          if (this.customDateRange.start) {
+            queryParams.append('startDate', this.customDateRange.start);
+          }
+          if (this.customDateRange.end) {
+            queryParams.append('endDate', this.customDateRange.end);
+          }
+        } else {
+          queryParams.append('dateRange', dateRange);
+        }
+
+        // Add agent filters
+        if (this.analyticsFilters.agents && this.analyticsFilters.agents.length > 0) {
+          this.analyticsFilters.agents.forEach(agent => {
+            queryParams.append('agents', agent);
+          });
+        }
+
+        // Add product filters
+        if (this.analyticsFilters.products && this.analyticsFilters.products.length > 0) {
+          this.analyticsFilters.products.forEach(product => {
+            queryParams.append('products', product);
+          });
+        }
+
+        // Add status filters
+        if (this.analyticsFilters.status && this.analyticsFilters.status.length > 0) {
+          this.analyticsFilters.status.forEach(status => {
+            queryParams.append('status', status);
+          });
+        }
+
+        // Add team filters
+        if (this.analyticsFilters.teams && this.analyticsFilters.teams.length > 0) {
+          this.analyticsFilters.teams.forEach(team => {
+            queryParams.append('teams', team);
+          });
+        }
+
+        const queryString = queryParams.toString();
+        const url = `http://localhost:5001/analytics/freshdesk-ticket-trends${queryString ? '?' + queryString : ''}`;
+
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response && response.data) {
+          // Update Freshdesk ticket trends with real data
+          this.freshdeskTicketTrends.labels = response.data.labels;
+          this.freshdeskTicketTrends.created = response.data.created;
+          this.freshdeskTicketTrends.resolved = response.data.resolved;
+
+          console.log('Freshdesk ticket trends data updated:', {
+            labels: this.freshdeskTicketTrends.labels.length,
+            created: this.freshdeskTicketTrends.created,
+            resolved: this.freshdeskTicketTrends.resolved
+          });
+        }
+
+      } catch (error) {
+        console.error('Error fetching Freshdesk ticket trends data:', error);
         // Keep existing data if API fails
       }
     },
@@ -2451,6 +2550,7 @@ export default {
           await Promise.all([
             this.fetchAnalyticsData(),
             this.fetchTicketTrends(dateRangeToUse),
+            this.fetchFreshdeskTicketTrends(dateRangeToUse),
             this.fetchResolutionTimeDistribution(dateRangeToUse),
             this.fetchCustomerSatisfactionDistribution(dateRangeToUse),
             this.fetchAgentPerformance(dateRangeToUse),
@@ -2738,6 +2838,7 @@ export default {
     // Fetch initial data from backend
     this.fetchAnalyticsData();
     this.fetchTicketTrends();
+    this.fetchFreshdeskTicketTrends();
     this.fetchResolutionTimeDistribution();
     this.fetchCustomerSatisfactionDistribution();
     this.fetchAgentPerformance();

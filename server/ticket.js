@@ -75,6 +75,7 @@ router.put("/feedback/:id/response", ticketController.updateFeedbackResponse);
 // Analytics routes
 router.get("/analytics/cards", ticketController.getAnalyticsCards);
 router.get("/analytics/ticket-trends", ticketController.getTicketTrends);
+router.get("/analytics/freshdesk-ticket-trends", ticketController.getFreshdeskTicketTrends);
 router.get("/analytics/resolution-time-distribution", ticketController.getResolutionTimeDistribution);
 router.get("/analytics/customer-satisfaction-distribution", ticketController.getCustomerSatisfactionDistribution);
 router.get("/analytics/agent-performance", ticketController.getAgentPerformance);
