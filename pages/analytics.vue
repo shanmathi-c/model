@@ -737,10 +737,14 @@
     <!-- Main Content Area -->
     <div class="flex-1 overflow-auto p-6 analytics-content">
       <!-- Summary Cards -->
-      <!-- First Row - 5 cards -->
-      <div class="grid grid-cols-5 gap-1 mb-1">
+      <!-- Main Cards Container -->
+      <div class="space-y-6 mb-6">
+        <!-- Main Card 1: Ticket Status Metrics -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-300 p-4">
+          <h2 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Ticket Status</h2>
+          <div class="grid grid-cols-3 gap-3">
         <!-- Total Tickets -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-blue-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -755,7 +759,7 @@
         </div>
 
         <!-- Assigned -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-indigo-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -770,7 +774,7 @@
         </div>
 
         <!-- Pending -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -785,7 +789,7 @@
         </div>
 
         <!-- In Progress -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-cyan-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -800,7 +804,7 @@
         </div>
 
         <!-- Resolved -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-green-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -813,12 +817,10 @@
             <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Resolved</p>
           </div>
         </div>
-      </div>
 
-      <!-- Second Row - 6 cards -->
-      <div class="grid grid-cols-6 gap-1 mb-6">
         <!-- Closed -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-gray-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -831,9 +833,16 @@
             <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Closed</p>
           </div>
         </div>
+          </div>
+        </div>
+
+        <!-- Main Card 2: Performance Metrics -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-300 p-4">
+          <h2 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Performance Metrics</h2>
+          <div class="grid grid-cols-3 gap-3">
 
         <!-- Avg Resolution Time -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-yellow-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -848,7 +857,7 @@
         </div>
 
         <!-- Avg Reconnection Time -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-pink-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -863,7 +872,7 @@
         </div>
 
         <!-- First Call Resolution Rate -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-teal-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -878,7 +887,7 @@
         </div>
 
         <!-- Avg Customer Satisfaction -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-purple-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -893,7 +902,7 @@
         </div>
 
         <!-- Callback Completion Rate -->
-        <div class="bg-white rounded shadow-sm border border-gray-200 min-w-0 flex flex-col items-stretch">
+        <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -904,6 +913,8 @@
               {{ metrics.isLoading ? '...' : `${metrics.callbackCompletionRate}%(${formatNumber(metrics.callbackCount)})` }}
             </p>
             <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Callback Completion Rate (%)</p>
+          </div>
+        </div>
           </div>
         </div>
       </div>
