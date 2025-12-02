@@ -1384,31 +1384,8 @@ export class ticketController {
                             -- All inbound calls (both with and without ticketId)
                             SELECT
                                 COALESCE(
-                      -- If call already has a valid ticketId, use it
-                      CASE WHEN c.ticketId IS NOT NULL AND c.ticketId LIKE 'T%' THEN c.ticketId ELSE NULL END,
-                      -- Try to construct ticketId from freshdeskId (if freshdeskId exists in assign-ticket table)
-                      CASE
-                          WHEN EXISTS (
-                              SELECT 1 FROM \`assign-ticket\` at
-                              WHERE at.freshdeskId IS NOT NULL
-                              AND (
-                                  at.ticketId = c.ticketId
-                                  OR at.callId = c.callId
-                              )
-                              LIMIT 1
-                          ) THEN (
-                              SELECT CONCAT('T', LPAD(at.freshdeskId, 3, '0'))
-                              FROM \`assign-ticket\` at
-                              WHERE (
-                                  at.ticketId = c.ticketId
-                                  OR at.callId = c.callId
-                              )
-                              AND at.freshdeskId IS NOT NULL
-                              ORDER BY at.id DESC
-                              LIMIT 1
-                          )
-                          ELSE NULL
-                      END,
+                      -- If call already has a valid ticketId in calls table, use it
+                      CASE WHEN c.ticketId IS NOT NULL AND c.ticketId != '' THEN c.ticketId ELSE NULL END,
                       '--'
                   ) as ticketId,
                                 COALESCE(
@@ -1438,7 +1415,7 @@ export class ticketController {
                                 COALESCE((SELECT p.productName FROM product p WHERE p.productId = c.productId LIMIT 1), 'No Product') as productName,
                                 COALESCE((SELECT a.agentName FROM agents a WHERE a.id = c.agentId LIMIT 1), NULL) as assignedAgentName,
                                 NULL as importAction,
-                                (SELECT at.id FROM \`assign-ticket\` at WHERE at.ticketId = c.ticketId ORDER BY at.id DESC LIMIT 1) as freshdeskId,
+                                NULL as freshdeskId,
                                 c.callId as callId,
                                 NULL as feedbackStatus,
                                 NULL as feedbackRating,
