@@ -1763,6 +1763,79 @@
       </div>
     </div>
   </div>
+
+    <!-- Merge Ticket Modal -->
+    <div v-if="showMergeTicketModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900">Merge Ticket</h3>
+          <button
+            @click="closeMergeTicketModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <form @submit.prevent="submitMergeTicket" class="space-y-4">
+            <!-- Two Columns: Ticket ID and Call ID -->
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Ticket ID (Readonly) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Ticket ID
+                </label>
+                <input
+                  type="text"
+                  v-model="mergeTicketForm.primaryTicketId"
+                  readonly
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900"
+                >
+              </div>
+
+              <!-- Current Call ID (Readonly) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Call ID
+                </label>
+                <input
+                  type="text"
+                  :value="selectedTicketForMerge?.callId || 'No Call'"
+                  readonly
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900"
+                >
+              </div>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="flex gap-3 pt-4">
+              <button
+                type="button"
+                @click="closeMergeTicketModal"
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="isMergingTicket"
+                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                <svg v-if="isMergingTicket" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {{ isMergingTicket ? 'Merging...' : 'Merge' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script>
@@ -1876,6 +1949,15 @@ export default {
       // Call data for create ticket modal
       selectedCallData: null,
       selectedTicketForModal: null,
+
+      // Merge Ticket Modal
+      showMergeTicketModal: false,
+      isMergingTicket: false,
+      mergeTicketForm: {
+        primaryTicketId: '',
+        targetCallId: ''
+      },
+      selectedTicketForMerge: null,
 
       // Compact column options
       columnOptions: [
@@ -2434,10 +2516,67 @@ export default {
     },
 
     handleMergeTicket() {
+      // Store the selected ticket data before closing menu
+      const currentTicket = this.selectedActionsTicket;
+
       this.closeActionsMenu();
-      // TODO: Implement merge ticket logic
-      console.log('Merge ticket for:', this.selectedActionsTicket);
-      alert(`Merge ticket functionality for ticket ID: ${this.selectedActionsTicket.ticketId}`);
+
+      // Reset merge form
+      this.mergeTicketForm = {
+        primaryTicketId: currentTicket?.ticketId || '',
+        targetCallId: ''
+      };
+
+      // Store the selected ticket for merge
+      this.selectedTicketForMerge = currentTicket;
+
+      // Open merge ticket modal
+      this.showMergeTicketModal = true;
+    },
+
+    // Close merge ticket modal
+    closeMergeTicketModal() {
+      this.showMergeTicketModal = false;
+      this.mergeTicketForm = {
+        primaryTicketId: '',
+        targetCallId: ''
+      };
+      this.selectedTicketForMerge = null;
+    },
+
+    // Submit merge ticket
+    async submitMergeTicket() {
+      this.isMergingTicket = true;
+      try {
+        const mergeData = {
+          primaryTicketId: this.mergeTicketForm.primaryTicketId,
+          callId: this.selectedTicketForMerge?.callId,
+          status: 'merged'
+        };
+
+        console.log('Merging ticket with data:', mergeData);
+
+        // TODO: Add actual merge API call here
+        // const response = await $fetch('http://localhost:5001/tickets/merge', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: mergeData
+        // });
+
+        // For now, just show success message
+        alert(`Ticket merged successfully!\nTicket ID: ${mergeData.primaryTicketId}\nCall ID: ${mergeData.callId || 'No Call'}`);
+
+        this.closeMergeTicketModal();
+        // Refresh tickets list
+        await this.fetchTickets();
+      } catch (error) {
+        console.error('Error merging ticket:', error);
+        alert('Failed to merge ticket. Please try again.');
+      } finally {
+        this.isMergingTicket = false;
+      }
     },
 
     // Get status badge class
