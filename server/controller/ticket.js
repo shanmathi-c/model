@@ -1311,7 +1311,7 @@ export class ticketController {
 
             if (status) {
                 ticketsWhereClause = `WHERE t.status = '${status}'`;
-                callsWhereClause = `WHERE c.ticketStatus = '${status}'`;
+                callsWhereClause = `AND c.ticketStatus = '${status}'`;
             }
 
             // Get total count for tickets
@@ -1319,10 +1319,10 @@ export class ticketController {
                 ? `SELECT COUNT(*) as total FROM tickets t WHERE t.status = '${status}'`
                 : "SELECT COUNT(*) as total FROM tickets";
 
-            // Get total count for all inbound calls
+            // Get total count for inbound calls without ticketIds (0, NULL, or empty)
             const callsCountQuery = status
-                ? `SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound' AND c.ticketStatus = '${status}'`
-                : "SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound'";
+                ? `SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound' AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0') AND c.ticketStatus = '${status}'`
+                : "SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound' AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0')";
 
             connection.query(ticketsCountQuery, (err, ticketsCountResult) => {
                 if (err) {
@@ -1344,10 +1344,10 @@ export class ticketController {
                     const totalCalls = callsCountResult[0].total;
                     const total = totalTickets + totalCalls;
 
-                    // Combined query to fetch both tickets and standalone inbound calls
+                    // Query to fetch tickets and standalone calls without duplication
                     const combinedQuery = `
                         SELECT * FROM (
-                            -- Tickets from create page
+                            -- Tickets from create page (each ticket appears once)
                             SELECT
                                 t.ticketId,
                                 t.name as customerName,
@@ -1381,22 +1381,16 @@ export class ticketController {
 
                             UNION ALL
 
-                            -- All inbound calls (both with and without ticketId)
+                            -- Only standalone inbound calls (calls without ticketIds to avoid duplication)
                             SELECT
+                                '--' as ticketId,
                                 COALESCE(
-                      -- If call already has a valid ticketId in calls table, use it
-                      CASE WHEN c.ticketId IS NOT NULL AND c.ticketId != '' THEN c.ticketId ELSE NULL END,
-                      '--'
-                  ) as ticketId,
-                                COALESCE(
-                                    (SELECT t.name FROM tickets t WHERE t.ticketId = c.ticketId LIMIT 1),
                                     (SELECT cb.name FROM callback cb WHERE cb.callbackId = c.callId LIMIT 1),
                                     (SELECT cb.name FROM callback cb WHERE cb.phone = c.userPhone LIMIT 1),
                                     c.userPhone,
                                     '-'
                                 ) as customerName,
                                 COALESCE(
-                                    (SELECT t.email FROM tickets t WHERE t.ticketId = c.ticketId LIMIT 1),
                                     (SELECT cb.email FROM callback cb WHERE cb.callbackId = c.callId AND cb.email IS NOT NULL LIMIT 1),
                                     (SELECT cb.email FROM callback cb WHERE cb.phone = c.userPhone AND cb.email IS NOT NULL LIMIT 1),
                                     NULL
@@ -1427,7 +1421,8 @@ export class ticketController {
                                 'call' as dataSource
                             FROM calls c
                             WHERE c.callType = 'inbound'
-                            ${callsWhereClause}
+                            AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0')
+                            ${status ? `AND c.ticketStatus = '${status}'` : ''}
                         ) combined_data
                         ORDER BY createdAt DESC
                         LIMIT ${limit} OFFSET ${offset}
