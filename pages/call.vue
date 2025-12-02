@@ -418,9 +418,6 @@
                     <th v-if="visibleColumns.relatedTicketId" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 140px; min-width: 140px;">
                       Related Ticket ID
                     </th>
-                    <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200" style="width: 100px; min-width: 100px;">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
 
@@ -506,16 +503,6 @@
                         {{ formatTicketId(call.ticketId) }}
                       </span>
                       <span v-else class="text-gray-400 text-xs">No Ticket</span>
-                    </td>
-
-                    <!-- Actions -->
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium align-middle">
-                      <button @click.stop="viewCallDetails(call)" class="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50 transition-colors" title="Create Ticket">
-                        <!-- Plus Circle Icon -->
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
                     </td>
                   </tr>
                 </tbody>
