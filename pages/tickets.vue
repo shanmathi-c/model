@@ -2550,30 +2550,34 @@ export default {
       try {
         const mergeData = {
           primaryTicketId: this.mergeTicketForm.primaryTicketId,
-          callId: this.selectedTicketForMerge?.callId,
-          status: 'merged'
+          callId: this.selectedTicketForMerge?.callId
         };
 
-        console.log('Merging ticket with data:', mergeData);
+        console.log('Merging ticket and inserting into merge-ticketcalls table with data:', mergeData);
 
-        // TODO: Add actual merge API call here
-        // const response = await $fetch('http://localhost:5001/tickets/merge', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: mergeData
-        // });
+        // Call the new merge-ticketcalls API endpoint
+        const response = await $fetch('http://localhost:5001/merge-ticketcalls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: mergeData
+        });
 
-        // For now, just show success message
-        alert(`Ticket merged successfully!\nTicket ID: ${mergeData.primaryTicketId}\nCall ID: ${mergeData.callId || 'No Call'}`);
+        if (response.data && response.data.affectedRows > 0) {
+          console.log('Successfully inserted into merge-ticketcalls table:', response.data);
+
+          alert(`Ticket merged successfully!\nMerge ID: ${response.data.mergeId}\nTicket ID: ${mergeData.primaryTicketId}\nCall ID: ${mergeData.callId || 'No Call'}`);
+        } else {
+          throw new Error('No data inserted');
+        }
 
         this.closeMergeTicketModal();
         // Refresh tickets list
         await this.fetchTickets();
       } catch (error) {
         console.error('Error merging ticket:', error);
-        alert('Failed to merge ticket. Please try again.');
+        alert(`Failed to merge ticket. Error: ${error.message}`);
       } finally {
         this.isMergingTicket = false;
       }

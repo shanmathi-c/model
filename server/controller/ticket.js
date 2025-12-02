@@ -5921,4 +5921,76 @@ export class ticketController {
             });
         }
     }
+
+    // Insert merge ticket call into merge-ticketcalls table
+    static mergeTicketCalls(req, res) {
+        const { primaryTicketId, callId } = req.body;
+
+        // Validate required fields
+        if (!primaryTicketId || !callId) {
+            return res.status(400).json({
+                message: "Missing required fields",
+                required: ['primaryTicketId', 'callId']
+            });
+        }
+
+        try {
+            // Get the next merge ID sequence
+            const getSequenceQuery = "SELECT COALESCE(MAX(CAST(SUBSTRING(mergeId, 2) AS UNSIGNED)), 0) + 1 as nextId FROM `merge-ticketcalls` WHERE mergeId LIKE 'm%'";
+
+            connection.query(getSequenceQuery, (err, result) => {
+                if (err) {
+                    console.error('Error getting next merge ID:', err);
+                    return res.status(500).json({
+                        message: "Error getting next merge ID",
+                        error: err
+                    });
+                }
+
+                const nextId = result[0].nextId;
+                const mergeId = `m${String(nextId).padStart(3, '0')}`;
+
+                // Insert into merge-ticketcalls table with minimal columns
+                const query = `
+                    INSERT INTO \`merge-ticketcalls\`
+                    (mergeId, ticketId, callId)
+                    VALUES (?, ?, ?)
+                `;
+
+                const values = [
+                    mergeId,
+                    primaryTicketId,
+                    callId
+                ];
+
+                connection.query(query, values, (err, result) => {
+                    if (err) {
+                        console.error('Error inserting into merge-ticketcalls table:', err);
+                        return res.status(500).json({
+                            message: "Error inserting merge data",
+                            error: err
+                        });
+                    }
+
+                    console.log('Successfully inserted into merge-ticketcalls table with mergeId:', mergeId);
+
+                    return res.json({
+                        message: "Ticket merged successfully",
+                        data: {
+                            mergeId: mergeId,
+                            ticketId: primaryTicketId,
+                            callId: callId,
+                            affectedRows: result.affectedRows
+                        }
+                    });
+                });
+            });
+        } catch (error) {
+            console.error('Error in mergeTicketCalls:', error);
+            return res.status(500).json({
+                message: "Server error",
+                error: error.message
+            });
+        }
+    }
 }
