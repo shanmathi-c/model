@@ -151,24 +151,26 @@
       </div>
     </div>
 
-    <!-- Line Chart Section -->
-    <div v-if="trendsData && trendsData.labels && trendsData.labels.length > 0" class="mt-6 pt-6 border-t border-gray-200">
-      <h4 class="text-sm font-semibold text-gray-700 mb-4">Call Trends Over Time</h4>
-      <div class="h-80 relative">
+    <!-- Line Charts Section - Two Separate Charts -->
+    <div v-if="trendsData && trendsData.labels && trendsData.labels.length > 0" class="mt-6 pt-6 border-t border-gray-200 space-y-8">
+      <!-- Inbound Calls Chart -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-4">Inbound Call Trends</h4>
+        <div class="h-80 relative">
         <svg :width="chartWidth" :height="chartHeight" class="w-full h-full">
           <!-- Grid Lines -->
-          <g v-for="tick in yTicks" :key="tick">
+          <g v-for="tick in inboundYTicks" :key="tick">
             <line
               :x1="padding.left"
-              :y1="getYPosition(tick)"
+              :y1="getInboundYPosition(tick)"
               :x2="chartWidth - padding.right"
-              :y2="getYPosition(tick)"
+              :y2="getInboundYPosition(tick)"
               stroke="#e5e7eb"
               stroke-width="1"
             />
             <text
               :x="padding.left - 10"
-              :y="getYPosition(tick) + 5"
+              :y="getInboundYPosition(tick) + 5"
               text-anchor="end"
               class="text-xs fill-gray-500"
             >
@@ -189,182 +191,144 @@
             </text>
           </g>
 
-          <!-- Line for each metric -->
+          <!-- Inbound Line -->
           <polyline
-            v-if="showInbound"
-            :points="getLinePoints(trendsData.inbound)"
+            :points="getInboundLinePoints(trendsData.inbound)"
             fill="none"
             :stroke="colors.inbound"
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-          <polyline
-            v-if="showOutbound"
-            :points="getLinePoints(trendsData.outbound)"
-            fill="none"
-            :stroke="colors.outbound"
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-          <polyline
-            v-if="showMissed"
-            :points="getLinePoints(trendsData.missed)"
-            fill="none"
-            :stroke="colors.missed"
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-          <polyline
-            v-if="showCompleted"
-            :points="getLinePoints(trendsData.completed)"
-            fill="none"
-            :stroke="colors.completed"
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-          <polyline
-            v-if="showPending"
-            :points="getLinePoints(trendsData.pending)"
-            fill="none"
-            :stroke="colors.pending"
-            stroke-width="2"
+            stroke-width="3"
             stroke-linejoin="round"
             stroke-linecap="round"
           />
 
-          <!-- Data Points -->
-          <g v-if="showInbound" v-for="(point, index) in trendsData.inbound" :key="`inbound-${index}`">
+          <!-- Inbound Data Points -->
+          <g v-for="(point, index) in trendsData.inbound" :key="`inbound-${index}`">
             <circle
               :cx="getXPosition(index)"
-              :cy="getYPosition(point)"
-              r="3"
+              :cy="getInboundYPosition(point)"
+              r="4"
               :fill="colors.inbound"
               class="cursor-pointer"
               @mouseover="showTooltip($event, 'Inbound', index, point)"
-              @mouseout="hideTooltip"
+              @mouseout="hideTooltip('Inbound')"
             />
-          </g>
-          <g v-if="showOutbound" v-for="(point, index) in trendsData.outbound" :key="`outbound-${index}`">
-            <circle
-              :cx="getXPosition(index)"
-              :cy="getYPosition(point)"
-              r="3"
-              :fill="colors.outbound"
-              class="cursor-pointer"
-              @mouseover="showTooltip($event, 'Outbound', index, point)"
-              @mouseout="hideTooltip"
-            />
-          </g>
-          <g v-if="showMissed" v-for="(point, index) in trendsData.missed" :key="`missed-${index}`">
-            <circle
-              :cx="getXPosition(index)"
-              :cy="getYPosition(point)"
-              r="3"
-              :fill="colors.missed"
-              class="cursor-pointer"
-              @mouseover="showTooltip($event, 'Missed', index, point)"
-              @mouseout="hideTooltip"
-            />
-          </g>
-          <g v-if="showCompleted" v-for="(point, index) in trendsData.completed" :key="`completed-${index}`">
-            <circle
-              :cx="getXPosition(index)"
-              :cy="getYPosition(point)"
-              r="3"
-              :fill="colors.completed"
-              class="cursor-pointer"
-              @mouseover="showTooltip($event, 'Completed', index, point)"
-              @mouseout="hideTooltip"
-            />
-          </g>
-          <g v-if="showPending" v-for="(point, index) in trendsData.pending" :key="`pending-${index}`">
-            <circle
-              :cx="getXPosition(index)"
-              :cy="getYPosition(point)"
-              r="3"
-              :fill="colors.pending"
-              class="cursor-pointer"
-              @mouseover="showTooltip($event, 'Pending', index, point)"
-              @mouseout="hideTooltip"
-            />
-          </g>
-
-          <!-- Legend with toggle functionality - Bottom Center -->
-          <g :transform="`translate(${legendStartX}, ${chartHeight - 25})`">
-            <!-- Inbound Legend -->
-            <g @click="toggleLine('inbound')" class="cursor-pointer">
-              <rect x="0" y="0" width="12" height="12" :fill="showInbound ? colors.inbound : '#e5e7eb'" :stroke="colors.inbound" stroke-width="2" rx="2" />
-              <text x="18" y="10" :class="['text-xs', showInbound ? 'fill-gray-700' : 'fill-gray-400']">Inbound</text>
-            </g>
-            <!-- Outbound Legend -->
-            <g @click="toggleLine('outbound')" class="cursor-pointer">
-              <rect x="90" y="0" width="12" height="12" :fill="showOutbound ? colors.outbound : '#e5e7eb'" :stroke="colors.outbound" stroke-width="2" rx="2" />
-              <text x="108" y="10" :class="['text-xs', showOutbound ? 'fill-gray-700' : 'fill-gray-400']">Outbound</text>
-            </g>
-            <!-- Missed Legend -->
-            <g @click="toggleLine('missed')" class="cursor-pointer">
-              <rect x="190" y="0" width="12" height="12" :fill="showMissed ? colors.missed : '#e5e7eb'" :stroke="colors.missed" stroke-width="2" rx="2" />
-              <text x="208" y="10" :class="['text-xs', showMissed ? 'fill-gray-700' : 'fill-gray-400']">Missed</text>
-            </g>
-            <!-- Completed Legend -->
-            <g @click="toggleLine('completed')" class="cursor-pointer">
-              <rect x="270" y="0" width="12" height="12" :fill="showCompleted ? colors.completed : '#e5e7eb'" :stroke="colors.completed" stroke-width="2" rx="2" />
-              <text x="288" y="10" :class="['text-xs', showCompleted ? 'fill-gray-700' : 'fill-gray-400']">Completed</text>
-            </g>
-            <!-- Pending Legend -->
-            <g @click="toggleLine('pending')" class="cursor-pointer">
-              <rect x="370" y="0" width="12" height="12" :fill="showPending ? colors.pending : '#e5e7eb'" :stroke="colors.pending" stroke-width="2" rx="2" />
-              <text x="388" y="10" :class="['text-xs', showPending ? 'fill-gray-700' : 'fill-gray-400']">Pending</text>
-            </g>
           </g>
         </svg>
 
-        <!-- Tooltip -->
+        <!-- Tooltip for Inbound -->
         <div
-          v-show="tooltip.visible"
+          v-show="tooltipInbound.visible"
           :class="[
             'absolute bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg border border-gray-700 pointer-events-none z-50',
             'transition-all duration-200 ease-in-out',
-            tooltip.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            tooltipInbound.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
           ]"
           :style="{
-            left: tooltip.x + 'px',
-            top: tooltip.y + 'px',
+            left: tooltipInbound.x + 'px',
+            top: tooltipInbound.y + 'px',
             transform: `translate(-50%, -100%)`,
             maxWidth: '220px'
           }"
         >
-          <div class="text-sm font-semibold mb-2">{{ tooltip.date }}</div>
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.inbound }"></div>
-              <span class="text-xs">Inbound: <strong>{{ tooltip.data.inbound }}</strong></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.outbound }"></div>
-              <span class="text-xs">Outbound: <strong>{{ tooltip.data.outbound }}</strong></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.missed }"></div>
-              <span class="text-xs">Missed: <strong>{{ tooltip.data.missed }}</strong></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.completed }"></div>
-              <span class="text-xs">Completed: <strong>{{ tooltip.data.completed }}</strong></span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.pending }"></div>
-              <span class="text-xs">Pending: <strong>{{ tooltip.data.pending }}</strong></span>
-            </div>
+          <div class="text-sm font-semibold mb-2">{{ tooltipInbound.date }}</div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.inbound }"></div>
+            <span class="text-xs">Inbound: <strong>{{ tooltipInbound.value }}</strong></span>
           </div>
           <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
             <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
           </div>
         </div>
+      </div>
+      </div>
+
+      <!-- Outbound Calls Chart -->
+      <div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-4">Outbound Call Trends</h4>
+        <div class="h-80 relative">
+        <svg :width="chartWidth" :height="chartHeight" class="w-full h-full">
+          <!-- Grid Lines -->
+          <g v-for="tick in outboundYTicks" :key="tick">
+            <line
+              :x1="padding.left"
+              :y1="getOutboundYPosition(tick)"
+              :x2="chartWidth - padding.right"
+              :y2="getOutboundYPosition(tick)"
+              stroke="#e5e7eb"
+              stroke-width="1"
+            />
+            <text
+              :x="padding.left - 10"
+              :y="getOutboundYPosition(tick) + 5"
+              text-anchor="end"
+              class="text-xs fill-gray-500"
+            >
+              {{ formatYTick(tick) }}
+            </text>
+          </g>
+
+          <!-- X-axis labels -->
+          <g v-for="(label, index) in visibleXLabels" :key="index">
+            <text
+              :x="getXPosition(label.originalIndex)"
+              :y="chartHeight - padding.bottom + (shouldRotateLabels ? 30 : 18)"
+              :text-anchor="shouldRotateLabels ? 'start' : 'middle'"
+              :transform="shouldRotateLabels ? `rotate(-45, ${getXPosition(label.originalIndex)}, ${chartHeight - padding.bottom + 30})` : ''"
+              class="text-xs fill-gray-500"
+            >
+              {{ label.text }}
+            </text>
+          </g>
+
+          <!-- Outbound Line -->
+          <polyline
+            :points="getOutboundLinePoints(trendsData.outbound)"
+            fill="none"
+            :stroke="colors.outbound"
+            stroke-width="3"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+
+          <!-- Outbound Data Points -->
+          <g v-for="(point, index) in trendsData.outbound" :key="`outbound-${index}`">
+            <circle
+              :cx="getXPosition(index)"
+              :cy="getOutboundYPosition(point)"
+              r="4"
+              :fill="colors.outbound"
+              class="cursor-pointer"
+              @mouseover="showTooltip($event, 'Outbound', index, point)"
+              @mouseout="hideTooltip('Outbound')"
+            />
+          </g>
+        </svg>
+
+        <!-- Tooltip for Outbound -->
+        <div
+          v-show="tooltipOutbound.visible"
+          :class="[
+            'absolute bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg border border-gray-700 pointer-events-none z-50',
+            'transition-all duration-200 ease-in-out',
+            tooltipOutbound.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          ]"
+          :style="{
+            left: tooltipOutbound.x + 'px',
+            top: tooltipOutbound.y + 'px',
+            transform: `translate(-50%, -100%)`,
+            maxWidth: '220px'
+          }"
+        >
+          <div class="text-sm font-semibold mb-2">{{ tooltipOutbound.date }}</div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: colors.outbound }"></div>
+            <span class="text-xs">Outbound: <strong>{{ tooltipOutbound.value }}</strong></span>
+          </div>
+          <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+            <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
 
@@ -418,18 +382,19 @@ export default {
       showMissed: true,
       showCompleted: true,
       showPending: true,
-      tooltip: {
+      tooltipInbound: {
         visible: false,
         x: 0,
         y: 0,
         date: '',
-        data: {
-          inbound: 0,
-          outbound: 0,
-          missed: 0,
-          completed: 0,
-          pending: 0
-        }
+        value: 0
+      },
+      tooltipOutbound: {
+        visible: false,
+        x: 0,
+        y: 0,
+        date: '',
+        value: 0
       },
       tooltipTimeout: null
     }
@@ -463,8 +428,48 @@ export default {
       return Math.max(...allValues.filter(v => v !== null && v !== undefined), 10)
     },
 
+    // Max value for inbound chart
+    inboundMaxValue() {
+      if (!this.trendsData || !this.trendsData.inbound) return 10
+      const maxVal = Math.max(...this.trendsData.inbound.filter(v => v !== null && v !== undefined))
+      return maxVal > 0 ? maxVal : 10
+    },
+
+    // Max value for outbound chart
+    outboundMaxValue() {
+      if (!this.trendsData || !this.trendsData.outbound) return 10
+      const maxVal = Math.max(...this.trendsData.outbound.filter(v => v !== null && v !== undefined))
+      return maxVal > 0 ? maxVal : 10
+    },
+
     yTicks() {
       const max = this.maxValue
+      const tickCount = 5
+      const step = Math.ceil(max / tickCount / 10) * 10 || 10
+
+      const ticks = []
+      for (let i = 0; i <= tickCount; i++) {
+        ticks.push(i * step)
+      }
+      return ticks
+    },
+
+    // Y-axis ticks for inbound chart
+    inboundYTicks() {
+      const max = this.inboundMaxValue
+      const tickCount = 5
+      const step = Math.ceil(max / tickCount / 10) * 10 || 10
+
+      const ticks = []
+      for (let i = 0; i <= tickCount; i++) {
+        ticks.push(i * step)
+      }
+      return ticks
+    },
+
+    // Y-axis ticks for outbound chart
+    outboundYTicks() {
+      const max = this.outboundMaxValue
       const tickCount = 5
       const step = Math.ceil(max / tickCount / 10) * 10 || 10
 
@@ -573,11 +578,43 @@ export default {
       return this.chartHeight - this.padding.bottom - (ratio * this.chartAreaHeight)
     },
 
+    // Inbound chart Y position
+    getInboundYPosition(value) {
+      const maxTick = Math.max(...this.inboundYTicks)
+      const ratio = value / maxTick
+      return this.chartHeight - this.padding.bottom - (ratio * this.chartAreaHeight)
+    },
+
+    // Outbound chart Y position
+    getOutboundYPosition(value) {
+      const maxTick = Math.max(...this.outboundYTicks)
+      const ratio = value / maxTick
+      return this.chartHeight - this.padding.bottom - (ratio * this.chartAreaHeight)
+    },
+
     getLinePoints(data) {
       if (!data || data.length === 0) return ''
       return data.map((point, index) => {
         if (point === null || point === undefined) return null
         return `${this.getXPosition(index)},${this.getYPosition(point)}`
+      }).filter(Boolean).join(' ')
+    },
+
+    // Inbound chart line points
+    getInboundLinePoints(data) {
+      if (!data || data.length === 0) return ''
+      return data.map((point, index) => {
+        if (point === null || point === undefined) return null
+        return `${this.getXPosition(index)},${this.getInboundYPosition(point)}`
+      }).filter(Boolean).join(' ')
+    },
+
+    // Outbound chart line points
+    getOutboundLinePoints(data) {
+      if (!data || data.length === 0) return ''
+      return data.map((point, index) => {
+        if (point === null || point === undefined) return null
+        return `${this.getXPosition(index)},${this.getOutboundYPosition(point)}`
       }).filter(Boolean).join(' ')
     },
 
@@ -608,13 +645,13 @@ export default {
       }
     },
 
-    showTooltip(event, label, index, value) {
+    showTooltip(event, chartType, index, value) {
       if (this.tooltipTimeout) {
         clearTimeout(this.tooltipTimeout)
         this.tooltipTimeout = null
       }
 
-      const chartContainer = this.$el.querySelector('.h-80')
+      const chartContainer = event.target.closest('.h-80')
       if (!chartContainer) return
 
       const rect = chartContainer.getBoundingClientRect()
@@ -623,7 +660,7 @@ export default {
       let y = event.clientY - rect.top
 
       const tooltipWidth = 220
-      const tooltipHeight = 150
+      const tooltipHeight = 100
       const padding = 10
 
       if (x + tooltipWidth/2 > rect.width) {
@@ -638,29 +675,32 @@ export default {
         y = tooltipHeight + padding
       }
 
-      this.tooltip.x = x
-      this.tooltip.y = y
-      this.tooltip.date = this.trendsData.labels[index] || ''
-
-      // Get all data for this index
-      this.tooltip.data = {
-        inbound: this.trendsData.inbound[index] || 0,
-        outbound: this.trendsData.outbound[index] || 0,
-        missed: this.trendsData.missed[index] || 0,
-        completed: this.trendsData.completed[index] || 0,
-        pending: this.trendsData.pending[index] || 0
+      if (chartType === 'Inbound') {
+        this.tooltipInbound.x = x
+        this.tooltipInbound.y = y
+        this.tooltipInbound.date = this.trendsData.labels[index] || ''
+        this.tooltipInbound.value = value
+        this.tooltipInbound.visible = true
+      } else if (chartType === 'Outbound') {
+        this.tooltipOutbound.x = x
+        this.tooltipOutbound.y = y
+        this.tooltipOutbound.date = this.trendsData.labels[index] || ''
+        this.tooltipOutbound.value = value
+        this.tooltipOutbound.visible = true
       }
-
-      this.tooltip.visible = true
     },
 
-    hideTooltip() {
+    hideTooltip(chartType) {
       if (this.tooltipTimeout) {
         clearTimeout(this.tooltipTimeout)
       }
 
       this.tooltipTimeout = setTimeout(() => {
-        this.tooltip.visible = false
+        if (chartType === 'Inbound') {
+          this.tooltipInbound.visible = false
+        } else if (chartType === 'Outbound') {
+          this.tooltipOutbound.visible = false
+        }
         this.tooltipTimeout = null
       }, 50)
     }
