@@ -2389,12 +2389,14 @@ export default {
             this.createTicketForm.customerEmail || '';
 
           ticketData.callId = this.selectedCallData.callId; // Link to call
+          ticketData.agentId = this.selectedCallData.agentId; // Add agentId for assign-ticket table
 
-          console.log('Ticket data being sent:', {
+          console.log('Ticket data being sent (3 tables):', {
             name: ticketData.name,
             phone: ticketData.phone,
             email: ticketData.email,
             callId: ticketData.callId,
+            agentId: ticketData.agentId,
             status: ticketData.status,
             ticketType: ticketData.ticketType
           });

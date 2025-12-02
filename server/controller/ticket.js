@@ -276,7 +276,7 @@ export class ticketController {
     }
 
     static async createTicket(req, res) {
-       const { productId, userId, name, email, countryCode, phone, subject, description, ticketType, callId } = req.body;
+       const { productId, userId, name, email, countryCode, phone, subject, description, ticketType, callId, agentId } = req.body;
 
        // Validate required fields (productId and email not required for call tickets)
        if (!name || !phone || !subject || !description) {
@@ -326,16 +326,43 @@ export class ticketController {
            } else {
               // Update calls table if callId is provided
               if (callId) {
-                  console.log('Updating calls table with ticketId:', ticketId, 'for callId:', callId);
+                  console.log('🔄 Step 1: Updating calls table with ticketId:', ticketId, 'for callId:', callId);
 
                   connection.query(
                       "UPDATE calls SET ticketId = ? WHERE callId = ?",
                       [ticketId, callId],
                       (callUpdateErr, callUpdateResult) => {
                           if (callUpdateErr) {
-                              console.error('Error updating calls table with ticketId:', callUpdateErr);
+                              console.error('❌ Error updating calls table with ticketId:', callUpdateErr);
                           } else {
-                              console.log('Successfully updated calls table with ticketId:', callUpdateResult.affectedRows, 'rows affected');
+                              console.log('✅ Successfully updated calls table with ticketId:', callUpdateResult.affectedRows, 'rows affected');
+
+                              // Step 2: Insert into assign-ticket table if agentId is available
+                              if (agentId) {
+                                  console.log('🔄 Step 2: Inserting into assign-ticket table for ticketId:', ticketId, 'agentId:', agentId);
+
+                                  const assignData = {
+                                      ticketId: ticketId,
+                                      agentId: agentId,
+                                      status: 'assigned',
+                                      importAction: 'call',
+                                      ticketType: ticketType || 'call'
+                                  };
+
+                                  connection.query(
+                                      "INSERT INTO `assign-ticket` SET ?",
+                                      assignData,
+                                      (assignErr, assignResult) => {
+                                          if (assignErr) {
+                                              console.error('❌ Error inserting into assign-ticket table:', assignErr);
+                                          } else {
+                                              console.log('✅ Successfully inserted into assign-ticket table for ticketId:', ticketId);
+                                          }
+                                      }
+                                  );
+                              } else {
+                                  console.log('⚠️ No agentId provided, skipping assign-ticket table insert');
+                              }
                           }
                       }
                   );
