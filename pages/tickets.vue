@@ -1009,7 +1009,7 @@
                   </div>
                   <div>
                     <p class="text-xs text-gray-500">Type</p>
-                    <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.type || 'General' }}</p>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedTicketDetails?.type || '-' }}</p>
                   </div>
                 </div>
               </div>
@@ -1845,7 +1845,7 @@ export default {
               agentId: ticket.agentId || ticket.agent_id || ticket.assignedAgentId || this.extractAgentIdFromName(ticket.agentName || ticket.assignedAgentName),
               productCategory: ticket.productName || 'No Product',
               productId: ticket.productId || ticket.product_id || null,
-              type: ticket.ticketType || 'general',
+              type: ticket.ticketType || '-',
               status: ticket.status || 'assigned',
               createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
               assignedDate: ticket.assignedAt || ticket.assigned_at || ticket.assignedDate || null,
