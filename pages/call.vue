@@ -546,7 +546,16 @@
 
             <!-- Page Numbers -->
             <template v-for="page in pageNumbers" :key="page">
+              <!-- Ellipsis -->
+              <span
+                v-if="page === '...'"
+                class="px-2 py-1 text-sm text-gray-400 mx-0.5"
+              >
+                ...
+              </span>
+              <!-- Page Number Button -->
               <button
+                v-else
                 @click="goToPage(page)"
                 class="px-2 py-1 text-sm border rounded-md transition-colors mx-0.5"
                 :class="page === currentPage
@@ -1721,18 +1730,62 @@ export default {
     // Page numbers to show in pagination
     pageNumbers() {
       const pages = []
-      const maxVisiblePages = 5
+      const total = this.totalPages
+      const current = this.currentPage
 
-      if (this.totalPages <= maxVisiblePages) {
-        for (let i = 1; i <= this.totalPages; i++) {
+      if (total <= 5) {
+        // Show all pages if total is 5 or less
+        for (let i = 1; i <= total; i++) {
           pages.push(i)
         }
       } else {
-        const startPage = Math.max(1, this.currentPage - 2)
-        const endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1)
+        // Determine the range of pages to show around current
+        let rangeStart, rangeEnd
 
-        for (let i = startPage; i <= endPage; i++) {
-          pages.push(i)
+        if (current <= 2) {
+          // Near start: show 1 2 3 ... last
+          rangeStart = 1
+          rangeEnd = 3
+        } else if (current >= total - 1) {
+          // Near end: show 1 ... last-2 last-1 last
+          rangeStart = total - 2
+          rangeEnd = total
+        } else {
+          // Middle: show 1 ... current-1 current current+1 ... last
+          rangeStart = current - 1
+          rangeEnd = current + 1
+        }
+
+        // Build the pagination array
+        if (rangeStart === 1) {
+          // Near start: 1 2 3 ... last
+          for (let i = 1; i <= 3; i++) {
+            pages.push(i)
+          }
+          if (total > 4) {
+            pages.push('...')
+          }
+          if (total > 3) {
+            pages.push(total)
+          }
+        } else if (rangeEnd === total) {
+          // Near end: 1 ... last-2 last-1 last
+          pages.push(1)
+          if (total > 4) {
+            pages.push('...')
+          }
+          for (let i = total - 2; i <= total; i++) {
+            pages.push(i)
+          }
+        } else {
+          // Middle: 1 ... current-1 current current+1 ... last
+          pages.push(1)
+          pages.push('...')
+          for (let i = rangeStart; i <= rangeEnd; i++) {
+            pages.push(i)
+          }
+          pages.push('...')
+          pages.push(total)
         }
       }
 
