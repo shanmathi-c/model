@@ -2863,76 +2863,120 @@ export class ticketController {
                         console.error('Error fetching call data:', getErr);
                     }
 
-                    const ticketId = callData && callData.length > 0 ? callData[0].ticketId : null;
+                    const ticketIdFromCall = callData && callData.length > 0 ? callData[0].ticketId : null;
                     const previousCallStatus = callData && callData.length > 0 ? callData[0].callStatus : null;
 
-                    // Update the callStatus in calls table (and ticketId if provided)
-                    // If status is resolved, set firstCall to 1, otherwise set to 0
-                    const firstCallValue = newStatus === 'resolved' ? 1 : 0;
-
-                    let updateQuery = "UPDATE calls SET callStatus = ?, firstCall = ?";
-                    let updateParams = [newStatus, firstCallValue];
-
-                    // If ticketId is provided, also update it
-                    if (ticketId) {
-                        updateQuery += ", ticketId = ?";
-                        updateParams.push(ticketId);
-                    }
-
-                    updateQuery += " WHERE callId = ?";
-                    updateParams.push(callId);
-
-                    console.log('Update query:', updateQuery);
-                    console.log('Update params:', updateParams);
-
-                    connection.query(
-                        updateQuery,
-                        updateParams,
-                        async (err, result) => {
-                            if (err) {
-                                return res.status(500).json({
-                                    message: "Error updating call status",
-                                    error: err
-                                });
-                            }
-
-                            if (result.affectedRows === 0) {
-                                return res.status(404).json({
-                                    message: "Call log not found"
-                                });
-                            }
-
-                            // Log activity for call status change
-                            if (ticketId) {
-                                try {
-                                    await ticketController.logActivity(
-                                        ticketId,
-                                        'call_status_changed',
-                                        `Call ${callId} status changed from ${previousCallStatus || 'none'} to ${newStatus}`,
-                                        {
-                                            callId: callId,
-                                            callStatus: newStatus,
-                                            previousStatus: previousCallStatus,
-                                            currentStatus: newStatus,
-                                            additionalInfo: {
-                                                statusType: 'call_status'
-                                            }
-                                        }
-                                    );
-                                } catch (logErr) {
-                                    console.error('Error logging call status change:', logErr);
-                                }
-                            }
-
-                            return res.json({
-                                message: "Call status updated successfully",
-                                data: {
-                                    callId: callId,
-                                    callStatus: newStatus
-                                }
-                            });
+                    // Determine FCR (First Call Resolution) value
+                    // FCR = 1 if status is resolved AND there is only 1 call for this ticket
+                    // FCR = 0 if status is resolved AND there are multiple calls for this ticket
+                    const calculateFCR = (callback) => {
+                        if (newStatus !== 'resolved') {
+                            // If not resolved, set firstCall to 0
+                            return callback(0);
                         }
-                    );
+
+                        // If resolved, check how many calls exist for this ticketId
+                        if (!ticketIdFromCall) {
+                            // No ticketId, cannot determine FCR accurately, default to 0
+                            console.log('⚠️ No ticketId found for call, setting FCR to 0');
+                            return callback(0);
+                        }
+
+                        // Count total calls for this ticketId
+                        connection.query(
+                            "SELECT COUNT(*) as callCount FROM calls WHERE ticketId = ? AND ticketId IS NOT NULL AND ticketId != ''",
+                            [ticketIdFromCall],
+                            (countErr, countResult) => {
+                                if (countErr) {
+                                    console.error('Error counting calls for ticketId:', countErr);
+                                    return callback(0); // Default to 0 on error
+                                }
+
+                                const callCount = countResult[0].callCount;
+                                console.log('=== FCR CALCULATION ===');
+                                console.log('TicketId:', ticketIdFromCall);
+                                console.log('Total calls for this ticket:', callCount);
+                                console.log('Call status:', newStatus);
+
+                                // FCR = 1 if this is the only call (callCount = 1)
+                                // FCR = 0 if there are multiple calls (callCount > 1)
+                                const fcrValue = callCount === 1 ? 1 : 0;
+                                console.log('FCR value:', fcrValue, callCount === 1 ? '(First Call Resolution - ONLY 1 call)' : '(NOT First Call Resolution - Multiple calls)');
+                                console.log('=== END FCR CALCULATION ===');
+
+                                return callback(fcrValue);
+                            }
+                        );
+                    };
+
+                    // Calculate FCR value
+                    calculateFCR((firstCallValue) => {
+                        let updateQuery = "UPDATE calls SET callStatus = ?, firstCall = ?";
+                        let updateParams = [newStatus, firstCallValue];
+
+                        // If ticketId is provided in request body, also update it
+                        if (ticketId) {
+                            updateQuery += ", ticketId = ?";
+                            updateParams.push(ticketId);
+                        }
+
+                        updateQuery += " WHERE callId = ?";
+                        updateParams.push(callId);
+
+                        console.log('Update query:', updateQuery);
+                        console.log('Update params:', updateParams);
+
+                        connection.query(
+                            updateQuery,
+                            updateParams,
+                            async (err, result) => {
+                                if (err) {
+                                    return res.status(500).json({
+                                        message: "Error updating call status",
+                                        error: err
+                                    });
+                                }
+
+                                if (result.affectedRows === 0) {
+                                    return res.status(404).json({
+                                        message: "Call log not found"
+                                    });
+                                }
+
+                                // Log activity for call status change
+                                if (ticketIdFromCall) {
+                                    try {
+                                        await ticketController.logActivity(
+                                            ticketIdFromCall,
+                                            'call_status_changed',
+                                            `Call ${callId} status changed from ${previousCallStatus || 'none'} to ${newStatus}`,
+                                            {
+                                                callId: callId,
+                                                callStatus: newStatus,
+                                                previousStatus: previousCallStatus,
+                                                currentStatus: newStatus,
+                                                additionalInfo: {
+                                                    statusType: 'call_status',
+                                                    fcrValue: firstCallValue
+                                                }
+                                            }
+                                        );
+                                    } catch (logErr) {
+                                        console.error('Error logging call status change:', logErr);
+                                    }
+                                }
+
+                                return res.json({
+                                    message: "Call status updated successfully",
+                                    data: {
+                                        callId: callId,
+                                        callStatus: newStatus,
+                                        firstCall: firstCallValue
+                                    }
+                                });
+                            }
+                        );
+                    });
                 }
             );
 
