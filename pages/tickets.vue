@@ -2136,6 +2136,7 @@ export default {
   methods: {
     // Fetch tickets from backend
     async fetchTickets() {
+      const startTime = Date.now()
       this.loading = true
       this.error = null
       try {
@@ -2200,7 +2201,16 @@ export default {
         this.error = 'Failed to load tickets'
         this.tickets = []
       } finally {
-        this.loading = false
+        // Ensure loading indicator shows for at least 1 second
+        const elapsedTime = Date.now() - startTime
+        const minimumLoadingTime = 1000 // 1 second
+        if (elapsedTime < minimumLoadingTime) {
+          setTimeout(() => {
+            this.loading = false
+          }, minimumLoadingTime - elapsedTime)
+        } else {
+          this.loading = false
+        }
       }
     },
 

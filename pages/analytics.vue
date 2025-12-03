@@ -3,9 +3,17 @@
     <!-- Fixed Header Section - Sticky -->
     <div class="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-2 shadow-sm">
       <!-- Header Title -->
-      <div class="mb-2">
-        <h1 class="text-xl font-bold text-gray-900">Analytics Dashboard</h1>
-        <p class="text-gray-600 mt-0.5 text-sm">View and analyze support performance metrics</p>
+      <div class="mb-2 flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <p class="text-gray-600 mt-0.5 text-sm">View and analyze support performance metrics</p>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div v-if="loading" class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span class="text-sm text-blue-600 font-medium">Refreshing...</span>
+        </div>
       </div>
 
       <!-- Search and Filter Bar -->
@@ -1019,7 +1027,10 @@ export default {
 
   data() {
     return {
-          // Filter dropdown state
+      // Loading state
+      loading: false,
+
+      // Filter dropdown state
       showFilterDropdown: false,
       showExportDropdown: false,
       isExportingPDF: false,
@@ -1278,17 +1289,35 @@ export default {
 
   methods: {
     // Refresh all analytics data
-    refreshAllData() {
-      this.fetchAnalyticsData();
-      this.fetchTicketTrends();
-      this.fetchFreshdeskTicketTrends();
-      this.fetchResolutionTimeDistribution();
-      this.fetchCustomerSatisfactionDistribution();
-      this.fetchAgentPerformance();
-      this.fetchCallStatistics();
-      this.fetchCallTrends();
-      this.fetchProductPerformance();
-      this.fetchCallbackStatus();
+    async refreshAllData() {
+      const startTime = Date.now()
+      this.loading = true
+
+      try {
+        await Promise.all([
+          this.fetchAnalyticsData(),
+          this.fetchTicketTrends(),
+          this.fetchFreshdeskTicketTrends(),
+          this.fetchResolutionTimeDistribution(),
+          this.fetchCustomerSatisfactionDistribution(),
+          this.fetchAgentPerformance(),
+          this.fetchCallStatistics(),
+          this.fetchCallTrends(),
+          this.fetchProductPerformance(),
+          this.fetchCallbackStatus()
+        ])
+      } finally {
+        // Ensure loading indicator shows for at least 1 second
+        const elapsedTime = Date.now() - startTime
+        const minimumLoadingTime = 1000 // 1 second
+        if (elapsedTime < minimumLoadingTime) {
+          setTimeout(() => {
+            this.loading = false
+          }, minimumLoadingTime - elapsedTime)
+        } else {
+          this.loading = false
+        }
+      }
     },
 
     // Helper method to format numbers with commas

@@ -3,9 +3,17 @@
     <!-- Fixed Header Section - Sticky -->
     <div class="flex-shrink-0 px-6 py-4">
       <!-- Header Title -->
-      <div class="mb-1">
-        <h1 class="text-2xl font-bold text-gray-900">Callback Requests</h1>
-        <p class="text-gray-600 mt-1">View and manage customer callback requests</p>
+      <div class="mb-1 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Callback Requests</h1>
+          <p class="text-gray-600 mt-1">View and manage customer callback requests</p>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div v-if="loading" class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span class="text-sm text-blue-600 font-medium">Refreshing...</span>
+        </div>
       </div>
 
       <!-- Search and Filter Bar -->
@@ -1763,6 +1771,7 @@ export default {
   methods: {
     // Fetch calls data from API
     async fetchCallLogs() {
+      const startTime = Date.now()
       this.loading = true
       this.error = null
 
@@ -1821,7 +1830,16 @@ export default {
         console.error('Error fetching calls:', error)
         this.error = error.message || 'Error fetching calls. Please try again.'
       } finally {
-        this.loading = false
+        // Ensure loading indicator shows for at least 1 second
+        const elapsedTime = Date.now() - startTime
+        const minimumLoadingTime = 1000 // 1 second
+        if (elapsedTime < minimumLoadingTime) {
+          setTimeout(() => {
+            this.loading = false
+          }, minimumLoadingTime - elapsedTime)
+        } else {
+          this.loading = false
+        }
       }
     },
 
