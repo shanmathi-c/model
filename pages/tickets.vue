@@ -3327,11 +3327,11 @@ export default {
 
         const idx = this.tickets.findIndex(t => t.id === ticketId)
         if (idx !== -1) {
-          this.$set(this.tickets, idx, {
+          this.tickets[idx] = {
             ...this.tickets[idx],
             agentName,
             agentId
-          })
+          }
         }
 
         // Refresh assignment history
@@ -3528,10 +3528,10 @@ export default {
         this.selectedTicketDetails.status = this.newStatus
         const ticketIndex = this.tickets.findIndex(t => t.id === id)
         if (ticketIndex !== -1) {
-          this.$set(this.tickets, ticketIndex, {
+          this.tickets[ticketIndex] = {
             ...this.tickets[ticketIndex],
             status: this.newStatus
-          })
+          }
         }
 
         // If status is resolved, show feedback link modal
