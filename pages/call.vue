@@ -1802,10 +1802,10 @@ export default {
     this.fetchCallLogs()
     this.fetchProducts() // Fetch products for ticket creation
 
-    // Setup auto-refresh every 10 seconds
+    // Setup auto-refresh every 30 seconds
     this.refreshInterval = setInterval(() => {
       this.fetchCallLogs();
-    }, 10000); // 10000ms = 10 seconds
+    }, 30000); // 30000ms = 30 seconds
 
     // Add click event listener
     document.addEventListener('click', this.handleClickOutside);
