@@ -1364,6 +1364,9 @@ export default {
       loading: false,
       error: null,
 
+      // Auto-refresh
+      refreshInterval: null,
+
       // Search and filter
       searchQuery: '',
       statusFilter: '',
@@ -1737,6 +1740,12 @@ export default {
   mounted() {
     this.fetchCallLogs()
     this.fetchProducts() // Fetch products for ticket creation
+
+    // Setup auto-refresh every 10 seconds
+    this.refreshInterval = setInterval(() => {
+      this.fetchCallLogs();
+    }, 10000); // 10000ms = 10 seconds
+
     // Add click event listener
     document.addEventListener('click', this.handleClickOutside);
   },
@@ -1744,6 +1753,11 @@ export default {
   beforeDestroy() {
     // Clean up event listener
     document.removeEventListener('click', this.handleClickOutside);
+
+    // Clear auto-refresh interval
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   },
 
   methods: {
@@ -1802,9 +1816,6 @@ export default {
             .filter(c => c.agentId && c.agentName && c.agentName !== 'Not Assigned')
             .map(c => [c.agentId, { id: c.agentId, agentName: c.agentName }])
         ).values()]
-
-        // Reset to first page when filtering
-        this.currentPage = 1
 
       } catch (error) {
         console.error('Error fetching calls:', error)
