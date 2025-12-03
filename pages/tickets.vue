@@ -20,7 +20,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search by ticket ID, customer phone, keywords..."
+              placeholder="Search by ticket ID, call ID, customer phone, keywords..."
               class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
           </div>
@@ -3806,6 +3806,9 @@ export default {
           // Search in Merge ID
           const mergeIdMatch = ticket.mergeId && String(ticket.mergeId).toLowerCase().includes(query)
 
+          // Search in Call ID (could be single callId or comma-separated list)
+          const callIdMatch = ticket.callId && String(ticket.callId).toLowerCase().includes(query)
+
           // Search in customer phone
           const phoneMatch = ticket.phone && String(ticket.phone).toLowerCase().includes(query)
 
@@ -3824,7 +3827,7 @@ export default {
           // Search in notes (keywords)
           const notesMatch = ticket.notes && String(ticket.notes).toLowerCase().includes(query)
 
-          return ticketIdMatch || freshdeskIdMatch || mergeIdMatch || phoneMatch || nameMatch || contactMatch || subjectMatch || descriptionMatch || notesMatch
+          return ticketIdMatch || freshdeskIdMatch || mergeIdMatch || callIdMatch || phoneMatch || nameMatch || contactMatch || subjectMatch || descriptionMatch || notesMatch
         })
       }
 
