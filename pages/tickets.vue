@@ -179,6 +179,28 @@
                 </div>
               </div>
 
+              <!-- Way of Communication Filter -->
+              <div class="mb-2">
+                <button
+                  @click="toggleFilterSection('communication')"
+                  class="flex items-center justify-between w-full text-xs font-medium text-gray-700 hover:text-gray-900 py-1"
+                >
+                  <span>Way of Communication</span>
+                  <img
+                    src="/chevron-right.svg"
+                    alt="expand"
+                    class="w-3 h-3 transition-transform"
+                    :class="{ 'rotate-90': expandedSections.communication }"
+                  />
+                </button>
+                <div v-if="expandedSections.communication" class="mt-1 space-y-1 pl-2">
+                  <label v-for="comm in communicationOptions" :key="comm.value" class="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded text-xs">
+                    <input type="checkbox" :value="comm.value" v-model="activeFilters.wayOfCommunication" class="w-3 h-3 text-blue-600 rounded border-gray-300">
+                    <span>{{ comm.label }}</span>
+                  </label>
+                </div>
+              </div>
+
               <!-- Date Range Filter -->
               <div>
                 <button
@@ -1908,6 +1930,11 @@ export default {
         { value: '2', label: '2 - Poor' },
         { value: '1', label: '1 - Very Poor' }
       ],
+      communicationOptions: [
+        { value: 'Call', label: 'Call' },
+        { value: 'Email', label: 'Email' },
+        { value: 'Chat', label: 'Chat' }
+      ],
 
       // Active filters state
       activeFilters: {
@@ -1916,6 +1943,7 @@ export default {
         products: [],
         fcr: [],
         csatRating: [],
+        wayOfCommunication: [],
         dateRange: {
           createdFrom: null,
           createdTo: null,
@@ -1931,6 +1959,7 @@ export default {
         product: false,
         fcr: false,
         csat: false,
+        communication: false,
         dateRange: false
       },
 
@@ -2287,6 +2316,10 @@ export default {
           const csatIndex = this.activeFilters.csatRating.indexOf(value)
           if (csatIndex > -1) this.activeFilters.csatRating.splice(csatIndex, 1)
           break
+        case 'communication':
+          const commIndex = this.activeFilters.wayOfCommunication.indexOf(value)
+          if (commIndex > -1) this.activeFilters.wayOfCommunication.splice(commIndex, 1)
+          break
         case 'dateRange':
           if (value === 'created') {
             this.activeFilters.dateRange.createdFrom = null
@@ -2307,6 +2340,7 @@ export default {
         products: [],
         fcr: [],
         csatRating: [],
+        wayOfCommunication: [],
         dateRange: {
           createdFrom: null,
           createdTo: null,
@@ -3728,6 +3762,10 @@ export default {
         }
       })
 
+      this.activeFilters.wayOfCommunication.forEach(comm => {
+        chips.push({ key: `communication-${comm}`, label: `Communication: ${comm}`, type: 'communication', value: comm })
+      })
+
       if (this.activeFilters.dateRange.createdFrom || this.activeFilters.dateRange.createdTo) {
         const label = `Created: ${this.activeFilters.dateRange.createdFrom || '...'} - ${this.activeFilters.dateRange.createdTo || '...'}`
         chips.push({ key: 'dateRange-created', label, type: 'dateRange', value: 'created' })
@@ -3814,6 +3852,13 @@ export default {
           if (!ticket.csatRating) return false
           const rating = String(ticket.csatRating)
           return this.activeFilters.csatRating.includes(rating)
+        })
+      }
+
+      // Filter by Way of Communication
+      if (this.activeFilters.wayOfCommunication.length > 0) {
+        result = result.filter(ticket => {
+          return this.activeFilters.wayOfCommunication.includes(ticket.wayOfCommunication)
         })
       }
 
