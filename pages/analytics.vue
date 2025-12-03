@@ -1024,6 +1024,9 @@ export default {
       showExportDropdown: false,
       isExportingPDF: false,
 
+      // Auto-refresh
+      refreshInterval: null,
+
       // Expanded sections in filter dropdown
       expandedSections: {
         agents: false,
@@ -1274,6 +1277,20 @@ export default {
   },
 
   methods: {
+    // Refresh all analytics data
+    refreshAllData() {
+      this.fetchAnalyticsData();
+      this.fetchTicketTrends();
+      this.fetchFreshdeskTicketTrends();
+      this.fetchResolutionTimeDistribution();
+      this.fetchCustomerSatisfactionDistribution();
+      this.fetchAgentPerformance();
+      this.fetchCallStatistics();
+      this.fetchCallTrends();
+      this.fetchProductPerformance();
+      this.fetchCallbackStatus();
+    },
+
     // Helper method to format numbers with commas
     formatNumber(num) {
       if (num === null || num === undefined || isNaN(num)) return '0';
@@ -2836,16 +2853,12 @@ export default {
     await this.fetchFilterOptions();
 
     // Fetch initial data from backend
-    this.fetchAnalyticsData();
-    this.fetchTicketTrends();
-    this.fetchFreshdeskTicketTrends();
-    this.fetchResolutionTimeDistribution();
-    this.fetchCustomerSatisfactionDistribution();
-    this.fetchAgentPerformance();
-    this.fetchCallStatistics();
-    this.fetchCallTrends();
-    this.fetchProductPerformance();
-    this.fetchCallbackStatus();
+    this.refreshAllData();
+
+    // Setup auto-refresh every 30 seconds
+    this.refreshInterval = setInterval(() => {
+      this.refreshAllData();
+    }, 30000); // 30000ms = 30 seconds
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)
@@ -2854,6 +2867,11 @@ export default {
   beforeDestroy() {
     // Clean up click outside listener
     document.removeEventListener('click', this.handleClickOutside)
+
+    // Clear auto-refresh interval
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
 };
 </script>
