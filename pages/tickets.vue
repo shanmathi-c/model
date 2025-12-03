@@ -2102,10 +2102,10 @@ export default {
     // Add click event listener
     document.addEventListener('click', this.handleClickOutside);
 
-    // Setup auto-refresh every 60 seconds
+    // Setup auto-refresh every 10 seconds
     this.refreshInterval = setInterval(() => {
       this.fetchTickets();
-    }, 60000); // 60000ms = 60 seconds
+    }, 10000); // 10000ms = 10 seconds
 
     // Check if ticketId is in query params (from call page navigation)
     const ticketIdFromQuery = this.$route.query.ticketId;
