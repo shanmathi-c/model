@@ -1394,6 +1394,7 @@ export class ticketController {
                         SELECT * FROM (
                             -- Tickets from create page (each ticket appears once)
                             SELECT
+                                t.id,
                                 t.ticketId,
                                 t.name as customerName,
                                 t.email as customerEmail,
@@ -1412,6 +1413,7 @@ export class ticketController {
                                 NULL as callType,
                                 COALESCE((SELECT p.productName FROM product p WHERE p.productId = t.productId LIMIT 1), 'No Product') as productName,
                                 COALESCE((SELECT a.agentName FROM \`assign-ticket\` at LEFT JOIN agents a ON at.agentId = a.id WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1), NULL) as assignedAgentName,
+                                COALESCE((SELECT at.agentId FROM \`assign-ticket\` at WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1), NULL) as agentId,
                                 COALESCE((SELECT at.importAction FROM \`assign-ticket\` at WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1), NULL) as importAction,
                                 (SELECT at.id FROM \`assign-ticket\` at WHERE at.ticketId = t.ticketId ORDER BY at.id DESC LIMIT 1) as freshdeskId,
                                 (SELECT GROUP_CONCAT(c.callId ORDER BY c.callId SEPARATOR ',') FROM calls c WHERE c.ticketId = t.ticketId) as callId,
@@ -1431,6 +1433,7 @@ export class ticketController {
 
                             -- Only standalone inbound calls (calls without ticketIds to avoid duplication)
                             SELECT
+                                c.id,
                                 '--' as ticketId,
                                 COALESCE(
                                     (SELECT cb.name FROM callback cb WHERE cb.callbackId = c.callId LIMIT 1),
@@ -1458,6 +1461,7 @@ export class ticketController {
                                 c.startTime as created_at,
                                 COALESCE((SELECT p.productName FROM product p WHERE p.productId = c.productId LIMIT 1), 'No Product') as productName,
                                 COALESCE((SELECT a.agentName FROM agents a WHERE a.id = c.agentId LIMIT 1), NULL) as assignedAgentName,
+                                c.agentId,
                                 NULL as importAction,
                                 NULL as freshdeskId,
                                 c.callId as callId,

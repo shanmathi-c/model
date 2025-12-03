@@ -3091,6 +3091,8 @@ export default {
 
     // Ticket Details Side Panel Methods
     openTicketDetails(ticket) {
+      console.log('Opening ticket details:', ticket)
+      console.log('Ticket ID:', ticket.id, 'Ticket formatted ID:', ticket.ticketId)
       this.selectedTicketDetails = { ...ticket }
       this.editedTicket = { ...ticket }
       this.showTicketDetails = true
@@ -3284,20 +3286,34 @@ export default {
     },
 
     async changeTicketAgent() {
-      if (!this.selectedTicketDetails || !this.selectedTicketDetails.agentId) return
+      if (!this.selectedTicketDetails || !this.selectedTicketDetails.agentId) {
+        console.error('Cannot change agent: selectedTicketDetails or agentId is missing')
+        return
+      }
 
       this.changingAgent = true
       const ticketId = this.selectedTicketDetails.id
       const agentId = this.selectedTicketDetails.agentId
 
+      console.log('Changing ticket agent with:', { ticketId, agentId })
+
+      if (!ticketId || !agentId) {
+        console.error('Missing ticketId or agentId:', { ticketId, agentId })
+        alert('Error: Missing ticket ID or agent ID. Please refresh the page and try again.')
+        this.changingAgent = false
+        return
+      }
+
       try {
-        await $fetch('http://localhost:5001/assign', {
+        const response = await $fetch('http://localhost:5001/assign', {
           method: 'POST',
           body: {
             ticketId,
             agentId
           }
         })
+
+        console.log('Agent assignment successful:', response)
 
         // Update local ticket data with new agent info
         const agent = this.availableAgentsForTicket.find(a => a.id == agentId)
@@ -3317,8 +3333,14 @@ export default {
             agentId
           })
         }
+
+        // Refresh assignment history
+        await this.loadTicketRelatedData(ticketId, this.selectedTicketDetails.ticketId)
+
+        alert('Agent updated successfully!')
       } catch (error) {
-        console.error('Error changing ticket agent', error)
+        console.error('Error changing ticket agent:', error)
+        alert('Failed to update agent: ' + (error.data?.message || error.message || 'Unknown error'))
       } finally {
         this.changingAgent = false
       }
