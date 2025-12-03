@@ -3,9 +3,16 @@
     <!-- Fixed Header Section - Sticky -->
     <div class="flex-shrink-0 px-6">
       <!-- Header Title -->
-      <div class="mb-1">
-        <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
-        <p class="text-gray-600 mt-1">View and manage support tickets</p>
+      <div class="mb-1 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
+          <p class="text-gray-600 mt-1">View and manage support tickets</p>
+        </div>
+        <!-- Loading Indicator -->
+        <div v-if="loading" class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span class="text-sm text-blue-600 font-medium">Refreshing...</span>
+        </div>
       </div>
 
       <!-- Search and Filter Bar -->
@@ -1858,6 +1865,7 @@ export default {
       // Loading state
       loading: false,
       error: null,
+      refreshInterval: null, // Auto-refresh timer
 
       // Filters
       searchQuery: '',
@@ -2054,6 +2062,11 @@ export default {
     // Add click event listener
     document.addEventListener('click', this.handleClickOutside);
 
+    // Setup auto-refresh every 60 seconds
+    this.refreshInterval = setInterval(() => {
+      this.fetchTickets();
+    }, 60000); // 60000ms = 60 seconds
+
     // Check if ticketId is in query params (from call page navigation)
     const ticketIdFromQuery = this.$route.query.ticketId;
     if (ticketIdFromQuery) {
@@ -2073,6 +2086,11 @@ export default {
   beforeDestroy() {
     // Clean up event listener
     document.removeEventListener('click', this.handleClickOutside);
+
+    // Clear auto-refresh interval
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   },
 
   methods: {
