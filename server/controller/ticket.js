@@ -1841,7 +1841,7 @@ export class ticketController {
                 // PRIORITY: If ticketId and ticketStatus are provided from frontend (from ticket page)
                 // Check if ticket status is open and use Scenario 2
                 if (ticketId && ticketStatus) {
-                    const openTicketStatuses = ['unresolved', 'assigned', 'in progress', 'in-progress', 'pending'];
+                    const openTicketStatuses = ['created', 'unresolved', 'assigned', 'in progress', 'in-progress', 'pending'];
                     const isTicketOpen = openTicketStatuses.includes(ticketStatus.toLowerCase());
 
                     console.log('=== TICKET PAGE CALL DETECTED ===');
@@ -1901,15 +1901,15 @@ export class ticketController {
                             console.log('Call internal ID:', prevCall.call_id);
                             console.log('Ticket internal ID:', prevCall.ticket_id);
 
-                            // Check if ticket is in open status (Unresolved, Assigned, In Progress, Pending)
-                            const openTicketStatuses = ['unresolved', 'assigned', 'in progress', 'in-progress', 'pending'];
+                            // Check if ticket is in open status (Created, Unresolved, Assigned, In Progress, Pending)
+                            const openTicketStatuses = ['created', 'unresolved', 'assigned', 'in progress', 'in-progress', 'pending'];
                             const ticketOpen = prevCall.ticketStatus && openTicketStatuses.includes(prevCall.ticketStatus.toLowerCase());
                             const ticketClosedOrResolved = prevCall.ticketStatus && (prevCall.ticketStatus.toLowerCase() === 'resolved' || prevCall.ticketStatus.toLowerCase() === 'closed');
                             const callResolvedOrCompleted = prevCall.callStatus && (prevCall.callStatus.toLowerCase() === 'completed' || prevCall.callStatus.toLowerCase() === 'resolved');
 
                             console.log('=== DEBUG: STATUS ANALYSIS ===');
                             console.log('Call resolved/completed?', callResolvedOrCompleted);
-                            console.log('Ticket open (Unresolved/Assigned/In Progress/Pending)?', ticketOpen);
+                            console.log('Ticket open (Created/Unresolved/Assigned/In Progress/Pending)?', ticketOpen);
                             console.log('Ticket closed/resolved?', ticketClosedOrResolved);
 
                             console.log('=== PREVIOUS CALL ANALYSIS ===');
@@ -1917,14 +1917,14 @@ export class ticketController {
                             console.log('Call Status:', prevCall.callStatus);
                             console.log('  - is resolved/completed?', callResolvedOrCompleted);
                             console.log('Ticket Status:', prevCall.ticketStatus);
-                            console.log('  - is open (Unresolved/Assigned/In Progress/Pending)?', ticketOpen);
+                            console.log('  - is open (Created/Unresolved/Assigned/In Progress/Pending)?', ticketOpen);
                             console.log('  - is closed/resolved?', ticketClosedOrResolved);
                             console.log('');
 
-                            // SCENARIO 2: Create new callId for same ticket if ticket is open (Unresolved/Assigned/In Progress/Pending)
+                            // SCENARIO 2: Create new callId for same ticket if ticket is open (Created/Unresolved/Assigned/In Progress/Pending)
                             if (ticketOpen && prevCall.ticketId) {
                                 console.log('✅ SCENARIO 2: CREATE NEW CALL ID FOR SAME TICKET');
-                                console.log('   Conditions met: Ticket status is Unresolved/Assigned/In Progress/Pending');
+                                console.log('   Conditions met: Ticket status is Created/Unresolved/Assigned/In Progress/Pending');
                                 console.log('   Will create new callId but keep same ticketId:', prevCall.ticketId);
                                 console.log('   Will keep same agentId:', prevCall.agentId);
 

@@ -3,16 +3,9 @@
     <!-- Fixed Header Section - Sticky -->
     <div class="flex-shrink-0 px-6">
       <!-- Header Title -->
-      <div class="mb-1 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
-          <p class="text-gray-600 mt-1">View and manage support tickets</p>
-        </div>
-        <!-- Loading Indicator -->
-        <div v-if="loading" class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
-          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-          <span class="text-sm text-blue-600 font-medium">Refreshing...</span>
-        </div>
+      <div class="mb-1">
+        <h1 class="text-2xl font-bold text-gray-900">Tickets Management</h1>
+        <p class="text-gray-600 mt-1">View and manage support tickets</p>
       </div>
 
       <!-- Search and Filter Bar -->
@@ -390,9 +383,25 @@
     </div>
 
     <!-- Table Container - Takes full remaining height with fixed pagination -->
-    <div class="flex-1 overflow-hidden flex flex-col">
+    <div class="flex-1 overflow-hidden flex flex-col relative">
+      <!-- Loading Overlay (Centered) -->
+      <div v-if="loading && tickets.length > 0" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="flex flex-col items-center gap-3">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
+          <span class="text-lg text-blue-600 font-medium">Refreshing tickets...</span>
+        </div>
+      </div>
+
+      <!-- Initial Loading State (Full Screen) -->
+      <div v-if="loading && tickets.length === 0" class="flex items-center justify-center" style="min-height: calc(100vh - 250px);">
+        <div class="flex flex-col items-center gap-3">
+          <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+          <span class="text-xl text-blue-600 font-medium">Loading tickets...</span>
+        </div>
+      </div>
+
       <!-- Table Wrapper with scrollable content -->
-      <div class="flex-1 overflow-auto" style="min-height: calc(100vh - 250px);">
+      <div v-else class="flex-1 overflow-auto" style="min-height: calc(100vh - 250px);">
         <!-- Empty State -->
         <div v-if="filteredTickets.length === 0" class="flex items-center justify-center" style="min-height: 400px;">
           <div class="text-center">
@@ -653,10 +662,11 @@
             </div>
           </div>
         </div>
+
       </div>
 
       <!-- Pagination Controls - Fixed at the bottom of the table container -->
-      <div class="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
+      <div class="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0" v-if="!loading || tickets.length > 0">
         <div class="flex flex-col gap-2">
           <!-- Controls row -->
           <div class="flex items-center justify-center">
