@@ -1878,6 +1878,7 @@ export default {
       sortOrder: 'asc',
       sortOptions: [
         { value: 'ticketId', label: 'Ticket ID' },
+        { value: 'freshdeskId', label: 'Freshdesk ID' },
         { value: 'customerName', label: 'Customer Name' },
         { value: 'agentName', label: 'Agent Name' },
         { value: 'productName', label: 'Product Name' },
@@ -3873,6 +3874,14 @@ export default {
           const numA = parseInt(String(valueA).match(/\d+/)?.[0] || '0')
           const numB = parseInt(String(valueB).match(/\d+/)?.[0] || '0')
 
+          const comparison = numA - numB
+          return this.sortOrder === 'asc' ? comparison : -comparison
+        }
+
+        // Handle freshdeskId sorting - numeric sorting
+        if (this.sortBy === 'freshdeskId') {
+          const numA = Number(valueA) || 0
+          const numB = Number(valueB) || 0
           const comparison = numA - numB
           return this.sortOrder === 'asc' ? comparison : -comparison
         }
