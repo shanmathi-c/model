@@ -321,7 +321,7 @@
           <!-- Display Dropdown -->
           <div
             v-if="showDisplayDropdown"
-            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
+            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200"
             style="z-index: 50;"
           >
             <div class="p-3">
@@ -353,9 +353,9 @@
                   <input
                     type="checkbox"
                     v-model="visibleColumns[col.key]"
-                    class="w-3 h-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    class="w-3 h-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500 flex-shrink-0"
                   />
-                  <span class="text-gray-700">{{ col.label }}</span>
+                  <span class="text-gray-700 break-words leading-tight">{{ col.label }}</span>
                 </label>
               </div>
             </div>
