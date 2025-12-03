@@ -3790,6 +3790,12 @@ export default {
           // Search in ticket ID (formatted ID like "TCK-001")
           const ticketIdMatch = ticket.ticketId && String(ticket.ticketId).toLowerCase().includes(query)
 
+          // Search in Freshdesk ID
+          const freshdeskIdMatch = ticket.freshdeskId && String(ticket.freshdeskId).toLowerCase().includes(query)
+
+          // Search in Merge ID
+          const mergeIdMatch = ticket.mergeId && String(ticket.mergeId).toLowerCase().includes(query)
+
           // Search in customer phone
           const phoneMatch = ticket.phone && String(ticket.phone).toLowerCase().includes(query)
 
@@ -3808,7 +3814,7 @@ export default {
           // Search in notes (keywords)
           const notesMatch = ticket.notes && String(ticket.notes).toLowerCase().includes(query)
 
-          return ticketIdMatch || phoneMatch || nameMatch || contactMatch || subjectMatch || descriptionMatch || notesMatch
+          return ticketIdMatch || freshdeskIdMatch || mergeIdMatch || phoneMatch || nameMatch || contactMatch || subjectMatch || descriptionMatch || notesMatch
         })
       }
 
