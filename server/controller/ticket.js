@@ -1364,10 +1364,10 @@ export class ticketController {
                 ? `SELECT COUNT(*) as total FROM tickets t WHERE t.status = '${status}'`
                 : "SELECT COUNT(*) as total FROM tickets";
 
-            // Get total count for inbound calls without ticketIds (0, NULL, or empty)
+            // Get total count for inbound AND outbound calls without ticketIds (0, NULL, or empty)
             const callsCountQuery = status
-                ? `SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound' AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0') AND c.ticketStatus = '${status}'`
-                : "SELECT COUNT(*) as total FROM calls c WHERE c.callType = 'inbound' AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0')";
+                ? `SELECT COUNT(*) as total FROM calls c WHERE (c.callType = 'inbound' OR c.callType = 'outbound') AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0') AND c.ticketStatus = '${status}'`
+                : "SELECT COUNT(*) as total FROM calls c WHERE (c.callType = 'inbound' OR c.callType = 'outbound') AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0')";
 
             connection.query(ticketsCountQuery, (err, ticketsCountResult) => {
                 if (err) {
@@ -1431,7 +1431,7 @@ export class ticketController {
 
                             UNION ALL
 
-                            -- Only standalone inbound calls (calls without ticketIds to avoid duplication)
+                            -- Standalone calls (both inbound AND outbound) without ticketIds (to avoid duplication with tickets)
                             SELECT
                                 c.id,
                                 '--' as ticketId,
@@ -1475,7 +1475,7 @@ export class ticketController {
                                 (SELECT mc.mergeId FROM \`merge-ticketcalls\` mc WHERE mc.callId = c.callId LIMIT 1) as mergeId,
                                 'call' as dataSource
                             FROM calls c
-                            WHERE c.callType = 'inbound'
+                            WHERE (c.callType = 'inbound' OR c.callType = 'outbound')
                             AND (c.ticketId IS NULL OR c.ticketId = '' OR c.ticketId = '0')
                             ${status ? `AND c.ticketStatus = '${status}'` : ''}
                         ) combined_data
