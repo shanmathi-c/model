@@ -2855,10 +2855,10 @@ export default {
     // Fetch initial data from backend
     this.refreshAllData();
 
-    // Setup auto-refresh every 30 seconds
+    // Setup auto-refresh every 10 seconds
     this.refreshInterval = setInterval(() => {
       this.refreshAllData();
-    }, 30000); // 30000ms = 30 seconds
+    }, 10000); // 10000ms = 10 seconds
 
     // Add click outside listener for dropdown
     document.addEventListener('click', this.handleClickOutside)
