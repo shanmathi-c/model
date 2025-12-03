@@ -3864,29 +3864,29 @@ export class ticketController {
                         if (followupStatus !== undefined) {
                             callUpdateFields.push("followupStatus = ?");
                             callUpdateValues.push(followupStatus);
+
+                            // Only set resolvedOn if followupStatus is being changed to 'resolved'
+                            if (followupStatus === 'resolved') {
+                                const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                                callUpdateFields.push("resolvedOn = ?");
+                                callUpdateValues.push(currentTimestamp);
+                                console.log(`Setting resolvedOn to ${currentTimestamp} because followupStatus changed to 'resolved'`);
+                            } else if (followupStatus !== 'closed') {
+                                // If status is changed to something other than resolved or closed, clear resolvedOn
+                                // When transitioning to 'closed', preserve the existing resolvedOn date
+                                callUpdateFields.push("resolvedOn = ?");
+                                callUpdateValues.push(null);
+                                console.log(`Clearing resolvedOn because followupStatus changed to '${followupStatus}' (not resolved or closed)`);
+                            } else {
+                                console.log(`Preserving existing resolvedOn because followupStatus changed to 'closed'`);
+                            }
+                            // When followupStatus is 'closed', we don't update resolvedOn field,
+                            // thus preserving the existing resolvedOn date
                         }
                         if (communicationWay !== undefined) {
                             callUpdateFields.push("wayOfCommunication = ?");
                             callUpdateValues.push(communicationWay);
                         }
-
-                            // Only set resolvedOn if status is being changed to 'resolved'
-                        if (followupStatus === 'resolved') {
-                            const currentTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                            callUpdateFields.push("resolvedOn = ?");
-                            callUpdateValues.push(currentTimestamp);
-                            console.log(`Setting resolvedOn to ${currentTimestamp} because followupStatus changed to 'resolved'`);
-                        } else if (followupStatus !== 'closed') {
-                            // If status is changed to something other than resolved or closed, clear resolvedOn
-                            // When transitioning to 'closed', preserve the existing resolvedOn date
-                            callUpdateFields.push("resolvedOn = ?");
-                            callUpdateValues.push(null);
-                            console.log(`Clearing resolvedOn because followupStatus changed to '${followupStatus}' (not resolved or closed)`);
-                        } else {
-                            console.log(`Preserving existing resolvedOn because followupStatus changed to 'closed'`);
-                        }
-                        // When followupStatus is 'closed', we don't update resolvedOn field,
-                        // thus preserving the existing resolvedOn date
                         if (priority !== undefined) {
                             callUpdateFields.push("priority = ?");
                             callUpdateValues.push(priority);

@@ -1788,7 +1788,8 @@ export default {
           ticketStatus: call.ticketStatus,
           productId: call.productId,
           agentId: call.agentId,
-          agentPhone: call.agentPhone
+          agentPhone: call.agentPhone,
+          notes: call.notes // Internal notes from calls table
         }))
 
         // Extract unique agent names for filter dropdown
