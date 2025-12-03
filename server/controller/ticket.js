@@ -1438,12 +1438,14 @@ export class ticketController {
                                 COALESCE(
                                     (SELECT cb.name FROM callback cb WHERE cb.callbackId = c.callId LIMIT 1),
                                     (SELECT cb.name FROM callback cb WHERE cb.phone = c.userPhone LIMIT 1),
+                                    (SELECT t.name FROM tickets t WHERE REPLACE(REPLACE(REPLACE(t.phone, ' ', ''), '+', ''), '-', '') = REPLACE(REPLACE(REPLACE(c.userPhone, ' ', ''), '+', ''), '-', '') LIMIT 1),
                                     c.userPhone,
                                     '-'
                                 ) as customerName,
                                 COALESCE(
                                     (SELECT cb.email FROM callback cb WHERE cb.callbackId = c.callId AND cb.email IS NOT NULL LIMIT 1),
                                     (SELECT cb.email FROM callback cb WHERE cb.phone = c.userPhone AND cb.email IS NOT NULL LIMIT 1),
+                                    (SELECT t.email FROM tickets t WHERE REPLACE(REPLACE(REPLACE(t.phone, ' ', ''), '+', ''), '-', '') = REPLACE(REPLACE(REPLACE(c.userPhone, ' ', ''), '+', ''), '-', '') AND t.email IS NOT NULL LIMIT 1),
                                     NULL
                                 ) as customerEmail,
                                 c.userPhone as customerPhone,
