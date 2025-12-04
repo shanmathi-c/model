@@ -750,52 +750,6 @@
         </table>
       </div>
 
-      <!-- Status Counts Summary -->
-      <div class="mb-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Status Distribution Summary</h2>
-        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Status</th>
-              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
-              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">Assigned</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.assignedCount) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.assignedCount / metrics.totalTickets) * 100) : 0 }}%</td>
-            </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-3 py-1">Pending</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.pendingCount) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.pendingCount / metrics.totalTickets) * 100) : 0 }}%</td>
-            </tr>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">In Progress</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.inProgressCount) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.inProgressCount / metrics.totalTickets) * 100) : 0 }}%</td>
-            </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-3 py-1">Resolved</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.resolvedCount) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.resolvedCount / metrics.totalTickets) * 100) : 0 }}%</td>
-            </tr>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">Closed</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(metrics.closedCount) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ metrics.totalTickets > 0 ? Math.round((metrics.closedCount / metrics.totalTickets) * 100) : 0 }}%</td>
-            </tr>
-            <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-3 py-1">Total Tickets</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(metrics.totalTickets) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">100%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
     </div>
 
     <!-- Main Content Area -->
