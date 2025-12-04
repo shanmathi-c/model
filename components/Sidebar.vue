@@ -1,8 +1,18 @@
 <template>
   <aside class="w-64 bg-white border-r border-gray-300 flex flex-col h-screen">
     <!-- Fixed Header -->
-    <div class="p-4 border-b border-gray-300">
+    <div class="p-4 border-b border-gray-300 flex items-center justify-between">
       <h2 class="text-xl font-bold text-gray-800">Menu</h2>
+      <button
+        @click="$emit('close')"
+        class="p-1 hover:bg-gray-100 rounded transition-colors"
+        title="Hide sidebar"
+      >
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"></rect>
+          <path d="M9 3v18" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+      </button>
     </div>
 
     <!-- Scrollable Navigation -->
@@ -83,6 +93,8 @@
 import { ref } from 'vue'
 
 const isSupportOpen = ref(true)
+
+const emit = defineEmits(['close'])
 
 const toggleSupport = () => {
   isSupportOpen.value = !isSupportOpen.value
