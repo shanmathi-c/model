@@ -536,12 +536,14 @@
             <button
               @click="prevPage"
               :disabled="currentPage === 1"
-              class="px-3 py-1 text-sm border rounded-md transition-colors mr-2"
+              class="px-3 py-2 text-sm border rounded-md transition-colors mr-2 flex items-center justify-center"
               :class="currentPage === 1
                 ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
             >
-              Previous
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
             </button>
 
             <!-- Page Numbers -->
@@ -570,12 +572,14 @@
             <button
               @click="nextPage"
               :disabled="currentPage === totalPages"
-              class="px-3 py-1 text-sm border rounded-md transition-colors ml-2"
+              class="px-3 py-2 text-sm border rounded-md transition-colors ml-2 flex items-center justify-center"
               :class="currentPage === totalPages
                 ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
             >
-              Next
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
             </button>
           </div>
         </div>
