@@ -829,10 +829,10 @@
         <!-- Main Card 2: Performance Metrics -->
         <div class="bg-white rounded-lg shadow-md border border-gray-300 p-4">
           <h2 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Performance Metrics</h2>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="flex flex-row gap-4">
 
         <!-- Avg Resolution Time -->
-        <div class="min-w-0 flex flex-col items-stretch">
+        <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-yellow-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -847,7 +847,7 @@
         </div>
 
         <!-- Avg Reconnection Time -->
-        <div class="min-w-0 flex flex-col items-stretch">
+        <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-pink-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -862,7 +862,7 @@
         </div>
 
         <!-- First Call Resolution Rate -->
-        <div class="min-w-0 flex flex-col items-stretch">
+        <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-teal-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -877,7 +877,7 @@
         </div>
 
         <!-- Avg Customer Satisfaction -->
-        <div class="min-w-0 flex flex-col items-stretch">
+        <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-purple-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -892,7 +892,7 @@
         </div>
 
         <!-- Callback Completion Rate -->
-        <div class="min-w-0 flex flex-col items-stretch">
+        <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
             <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
               <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
