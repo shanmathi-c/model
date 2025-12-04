@@ -441,6 +441,40 @@
         </table>
       </div>
 
+      <!-- Freshdesk Ticket Trends Table -->
+      <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Freshdesk Tickets Created vs Resolved Over Time</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 8px;">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Date</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Created</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Resolved</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Difference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!freshdeskTicketTrends.labels || freshdeskTicketTrends.labels.length === 0">
+              <td colspan="4" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No Freshdesk ticket trends data available</td>
+            </tr>
+            <tr v-for="(label, index) in freshdeskTicketTrends.labels" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
+              <td class="border border-gray-300 px-3 py-2">{{ label }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ freshdeskTicketTrends.created[index] || 0 }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ freshdeskTicketTrends.resolved[index] || 0 }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right" :class="{ 'text-green-600': (freshdeskTicketTrends.resolved[index] || 0) >= (freshdeskTicketTrends.created[index] || 0), 'text-red-600': (freshdeskTicketTrends.resolved[index] || 0) < (freshdeskTicketTrends.created[index] || 0) }">
+                {{ (freshdeskTicketTrends.resolved[index] || 0) - (freshdeskTicketTrends.created[index] || 0) }}
+              </td>
+            </tr>
+            <tr v-if="freshdeskTicketTrends.labels && freshdeskTicketTrends.labels.length > 0" class="bg-blue-50 font-semibold">
+              <td class="border border-gray-300 px-3 py-2">Total</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ freshdeskTicketTrends.created.reduce((a, b) => a + b, 0) }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ freshdeskTicketTrends.resolved.reduce((a, b) => a + b, 0) }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ freshdeskTicketTrends.resolved.reduce((a, b) => a + b, 0) - freshdeskTicketTrends.created.reduce((a, b) => a + b, 0) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <!-- Resolution Time Distribution Table -->
       <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Resolution Time Distribution</h2>
@@ -596,34 +630,6 @@
         </table>
       </div>
 
-      <!-- Product Performance Table -->
-      <div class="mb-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Product Performance Breakdown</h2>
-        <table class="w-full border-collapse border border-gray-300" style="font-size: 10px;">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Product</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Total Tickets</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Avg Resolution Time</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">CSAT</th>
-              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Volume Trend</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!productPerformanceData || productPerformanceData.length === 0">
-              <td colspan="5" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No product performance data available</td>
-            </tr>
-            <tr v-for="(product, index) in productPerformanceData" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
-              <td class="border border-gray-300 px-3 py-2">{{ product.category }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.volume }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ formatResolutionTime(product.resolutionTime) }}</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.csat }}/5</td>
-              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.volumeTrend > 0 ? '+' : '' }}{{ product.volumeTrend }}%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
       <!-- Callback Status Table -->
       <div class="mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Callback Status</h2>
@@ -664,31 +670,81 @@
         </table>
       </div>
 
-      <!-- Call Trends Table -->
+      <!-- Inbound Call Trends Table -->
       <div class="mb-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Trends Over Time</h2>
-        <table class="w-full border-collapse border border-gray-300" style="font-size: 8px;">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Inbound Call Trends</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 9px;">
           <thead>
             <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-2 py-1 text-left font-semibold">Date</th>
-              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Inbound</th>
-              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Outbound</th>
-              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Completed</th>
-              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Missed</th>
-              <th class="border border-gray-300 px-1 py-1 text-right font-semibold">Pending</th>
+              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Date</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Inbound Calls</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!callTrendsData.labels || callTrendsData.labels.length === 0">
-              <td colspan="6" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No call trends data available</td>
+              <td colspan="2" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No inbound call trends data available</td>
             </tr>
             <tr v-for="(label, index) in callTrendsData.labels" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
-              <td class="border border-gray-300 px-2 py-1">{{ label }}</td>
-              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.inbound[index] || 0 }}</td>
-              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.outbound[index] || 0 }}</td>
-              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.completed[index] || 0 }}</td>
-              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.missed[index] || 0 }}</td>
-              <td class="border border-gray-300 px-1 py-1 text-right">{{ callTrendsData.pending[index] || 0 }}</td>
+              <td class="border border-gray-300 px-3 py-2">{{ label }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right font-medium">{{ callTrendsData.inbound[index] || 0 }}</td>
+            </tr>
+            <tr v-if="callTrendsData.labels && callTrendsData.labels.length > 0" class="bg-blue-50 font-semibold">
+              <td class="border border-gray-300 px-3 py-2">Total</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ callTrendsData.inbound.reduce((a, b) => a + b, 0) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Outbound Call Trends Table -->
+      <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Outbound Call Trends</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 9px;">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Date</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Outbound Calls</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!callTrendsData.labels || callTrendsData.labels.length === 0">
+              <td colspan="2" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No outbound call trends data available</td>
+            </tr>
+            <tr v-for="(label, index) in callTrendsData.labels" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
+              <td class="border border-gray-300 px-3 py-2">{{ label }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right font-medium">{{ callTrendsData.outbound[index] || 0 }}</td>
+            </tr>
+            <tr v-if="callTrendsData.labels && callTrendsData.labels.length > 0" class="bg-blue-50 font-semibold">
+              <td class="border border-gray-300 px-3 py-2">Total</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ callTrendsData.outbound.reduce((a, b) => a + b, 0) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Product Performance Table -->
+      <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Product Performance Breakdown</h2>
+        <table class="w-full border-collapse border border-gray-300" style="font-size: 10px;">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Product</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Total Tickets</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Avg Resolution Time</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">CSAT</th>
+              <th class="border border-gray-300 px-3 py-2 text-right font-semibold">Volume Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!productPerformanceData || productPerformanceData.length === 0">
+              <td colspan="5" class="border border-gray-300 px-3 py-4 text-center text-gray-500">No product performance data available</td>
+            </tr>
+            <tr v-for="(product, index) in productPerformanceData" :key="index" :class="{ 'bg-gray-50': index % 2 === 0 }">
+              <td class="border border-gray-300 px-3 py-2">{{ product.category }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right font-medium">{{ formatNumber(product.volume) }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ formatResolutionTime(product.resolutionTime) }}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right font-medium">{{ product.csat }}/5</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">{{ product.volumeTrend > 0 ? '+' : '' }}{{ product.volumeTrend }}%</td>
             </tr>
           </tbody>
         </table>
@@ -2647,10 +2703,11 @@ export default {
         console.log('Data right before PDF render:', {
           agentPerformanceData: JSON.stringify(this.agentPerformanceData),
           productPerformanceData: JSON.stringify(this.productPerformanceData),
-          callStatisticsData: JSON.stringify(this.callStatisticsData)
+          callStatisticsData: JSON.stringify(this.callStatisticsData),
+          productPerformanceCount: this.productPerformanceData?.length || 0
         });
 
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Use the export content
         const element = this.$refs.exportContent;
@@ -2663,7 +2720,15 @@ export default {
         console.log('Element found, generating PDF...', {
           scrollHeight: element.scrollHeight,
           clientHeight: element.clientHeight,
-          offsetWidth: element.offsetWidth
+          offsetWidth: element.offsetWidth,
+          offsetHeight: element.offsetHeight
+        });
+
+        // Log all table sections to verify they exist
+        const tables = element.querySelectorAll('h2');
+        console.log('Number of table sections found:', tables.length);
+        tables.forEach((table, index) => {
+          console.log(`Table ${index + 1}: ${table.textContent}`);
         });
 
         // Verify element has content
@@ -2673,6 +2738,10 @@ export default {
           throw new Error('Export content is empty. Please ensure data is loaded.');
         }
 
+        // Ensure we capture full content height
+        const fullHeight = Math.max(element.scrollHeight, element.offsetHeight, element.clientHeight);
+        console.log('Using full height for PDF:', fullHeight);
+
         const opt = {
           margin: 0,
           filename: `Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`,
@@ -2680,15 +2749,15 @@ export default {
           html2canvas: {
             scale: 1.5,
             useCORS: true,
-            logging: false,
+            logging: true,
             allowTaint: true,
             scrollY: 0,
             scrollX: 0,
             backgroundColor: '#ffffff',
             windowWidth: element.offsetWidth,
-            windowHeight: element.scrollHeight,
+            windowHeight: fullHeight + 1000,
             width: element.offsetWidth,
-            height: element.scrollHeight,
+            height: fullHeight + 1000,
             x: 0,
             y: 0,
             removeContainer: false,
