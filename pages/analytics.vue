@@ -741,10 +741,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatNumber(metrics.totalTickets) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Total Tickets</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Total Tickets</p>
           </div>
         </div>
 
@@ -756,10 +756,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatNumber(metrics.assignedCount) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Assigned</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Assigned</p>
           </div>
         </div>
 
@@ -771,10 +771,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatNumber(metrics.pendingCount) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Pending</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Pending</p>
           </div>
         </div>
 
@@ -786,10 +786,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatNumber(metrics.inProgressCount) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">In Progress</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">In Progress</p>
           </div>
         </div>
 
@@ -801,10 +801,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatNumber(metrics.resolvedCount) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Resolved</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Resolved</p>
           </div>
         </div>
 
@@ -817,10 +817,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatNumber(metrics.closedCount) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Closed</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Closed</p>
           </div>
         </div>
           </div>
