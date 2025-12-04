@@ -547,6 +547,7 @@
                       @change="updateTicketStatus(ticket)"
                       @click.stop
                     >
+                      <option value="">Select...</option>
                       <option value="created">Created</option>
                       <option value="assigned">Assigned</option>
                       <option value="in-progress">In Progress</option>
@@ -2176,7 +2177,7 @@ export default {
               productCategory: ticket.productName || 'No Product',
               productId: ticket.productId || ticket.product_id || null,
               type: ticket.ticketType || '-',
-              status: ticket.status || 'assigned',
+              status: ticket.ticketId === '--' ? '' : (ticket.status || 'assigned'),
               createdDate: ticket.createdAt || ticket.created_at || new Date().toISOString(),
               assignedDate: ticket.assignedAt || ticket.assigned_at || ticket.assignedDate || null,
               statusUpdatedAt: ticket.statusUpdatedAt || ticket.status_updated_at || ticket.updatedAt || ticket.updated_at || null,
