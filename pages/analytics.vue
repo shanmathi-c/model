@@ -839,10 +839,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : formatResolutionTime(metrics.avgResolutionTimeMinutes) }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Resolution Time</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Avg Resolution Time</p>
           </div>
         </div>
 
@@ -854,10 +854,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : `${formatResolutionTime(metrics.avgReconnectionTimeMinutes)}(${formatNumber(metrics.reconnectionCount)})` }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Reconnection Time</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Avg Reconnection Time</p>
           </div>
         </div>
 
@@ -869,10 +869,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : `${metrics.fcrRate}%(${formatNumber(metrics.fcrCount)})` }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">FCR Rate (%)</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">FCR Rate (%)</p>
           </div>
         </div>
 
@@ -884,10 +884,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : `${Math.round((metrics.csatScore / 5) * 100)}% | ${metrics.csatScore}/5 | (${formatNumber(metrics.csatCount)})` }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Avg Customer Satisfaction</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Avg Customer Satisfaction</p>
           </div>
         </div>
 
@@ -899,10 +899,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
             </div>
-            <p class="text-sm font-semibold text-gray-900 truncate w-full">
+            <p class="text-base font-bold text-gray-900 truncate w-full">
               {{ metrics.isLoading ? '...' : `${metrics.callbackCompletionRate}%(${formatNumber(metrics.callbackCount)})` }}
             </p>
-            <p class="text-xs text-gray-500 text-center leading-tight truncate w-full" style="font-size: 10px;">Callback Completion Rate (%)</p>
+            <p class="text-sm text-gray-500 text-center leading-tight truncate w-full">Callback Completion Rate (%)</p>
           </div>
         </div>
           </div>
