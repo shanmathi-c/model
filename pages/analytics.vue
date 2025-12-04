@@ -2745,29 +2745,79 @@ export default {
       try {
         this.showExportDropdown = false;
 
-        // Prepare data for Excel export
+        // Prepare data for Excel export with ALL analytics sections
         const exportData = {
-          'Analytics Cards': [
-            { Metric: 'Total Tickets', Value: this.metrics.totalTickets },
-            { Metric: 'Avg Resolution Time', Value: `${this.metrics.avgResolutionTime} hours` },
-            { Metric: 'First Call Resolution', Value: `${this.metrics.firstCallResolution}%` },
-            { Metric: 'Avg Customer Satisfaction', Value: this.metrics.avgCustomerSatisfaction }
+          'Summary Metrics': [
+            { Metric: 'Total Tickets', Value: this.formatNumber(this.metrics.totalTickets) },
+            { Metric: 'Assigned Tickets', Value: this.formatNumber(this.metrics.assignedCount) },
+            { Metric: 'Pending Tickets', Value: this.formatNumber(this.metrics.pendingCount) },
+            { Metric: 'In Progress Tickets', Value: this.formatNumber(this.metrics.inProgressCount) },
+            { Metric: 'Resolved Tickets', Value: this.formatNumber(this.metrics.resolvedCount) },
+            { Metric: 'Closed Tickets', Value: this.formatNumber(this.metrics.closedCount) },
+            { Metric: 'Avg Resolution Time', Value: this.formatResolutionTime(this.metrics.avgResolutionTimeMinutes) },
+            { Metric: 'Avg Reconnection Time', Value: `${this.formatResolutionTime(this.metrics.avgReconnectionTimeMinutes)} (${this.formatNumber(this.metrics.reconnectionCount)} reconnections)` },
+            { Metric: 'First Call Resolution Rate', Value: `${this.metrics.fcrRate}% (${this.formatNumber(this.metrics.fcrCount)} tickets)` },
+            { Metric: 'Avg Customer Satisfaction', Value: `${this.metrics.csatScore}/5 or ${Math.round((this.metrics.csatScore / 5) * 100)}% (${this.formatNumber(this.metrics.csatCount)} ratings)` },
+            { Metric: 'Callback Completion Rate', Value: `${this.metrics.callbackCompletionRate}% (${this.formatNumber(this.metrics.callbackCount)} completed)` }
+          ],
+          'Tickets Trends': this.ticketTrends.labels.map((label, index) => ({
+            Date: label,
+            Created: this.ticketTrends.created[index] || 0,
+            Resolved: this.ticketTrends.resolved[index] || 0,
+            Difference: (this.ticketTrends.resolved[index] || 0) - (this.ticketTrends.created[index] || 0)
+          })),
+          'Freshdesk Tickets Trends': this.freshdeskTicketTrends.labels?.map((label, index) => ({
+            Date: label,
+            Created: this.freshdeskTicketTrends.created[index] || 0,
+            Resolved: this.freshdeskTicketTrends.resolved[index] || 0,
+            Difference: (this.freshdeskTicketTrends.resolved[index] || 0) - (this.freshdeskTicketTrends.created[index] || 0)
+          })) || [],
+          'Resolution Time Distribution': this.timeDistributionData.map(item => ({
+            'Time Range': item.timeRange,
+            Count: item.total,
+            Percentage: `${this.getTimeDistributionPercentage(item.total)}%`
+          })),
+          'Customer Satisfaction': [
+            { Rating: '5 Stars (Very Satisfied)', Count: this.customerSatisfactionData[5] || 0, Percentage: `${this.getCSATPercentage(5)}%` },
+            { Rating: '4 Stars (Satisfied)', Count: this.customerSatisfactionData[4] || 0, Percentage: `${this.getCSATPercentage(4)}%` },
+            { Rating: '3 Stars (Neutral)', Count: this.customerSatisfactionData[3] || 0, Percentage: `${this.getCSATPercentage(3)}%` },
+            { Rating: '2 Stars (Dissatisfied)', Count: this.customerSatisfactionData[2] || 0, Percentage: `${this.getCSATPercentage(2)}%` },
+            { Rating: '1 Star (Very Dissatisfied)', Count: this.customerSatisfactionData[1] || 0, Percentage: `${this.getCSATPercentage(1)}%` }
           ],
           'Agent Performance': this.agentPerformanceData.map(agent => ({
-            Rank: agent.rank,
+            Rank: agent.rank || '',
             Name: agent.name,
             Assigned: agent.assigned,
             Resolved: agent.resolved,
-            'Resolution Time': `${agent.resolutionTime} min`,
+            'Resolution Rate': `${this.getAgentResolutionRate(agent)}%`,
+            'Avg Resolution Time': this.formatResolutionTime(agent.resolutionTime),
             'FCR Rate': `${agent.fcrRate}%`,
-            'CSAT Rating': agent.csatRating
+            'CSAT Rating': `${agent.csatRating}/5`
           })),
+          'Call Statistics & Callback Status': [
+            { Metric: 'Total Inbound Calls', Count: this.formatNumber(this.callStatisticsData.inbound), Percentage: '-' },
+            { Metric: 'Total Outbound Calls', Count: this.formatNumber(this.callStatisticsData.outbound), Percentage: '-' },
+            { Metric: 'Completed Calls', Count: this.formatNumber(this.callStatisticsData.completed), Percentage: '-' },
+            { Metric: 'Missed Calls', Count: this.formatNumber(this.callStatisticsData.missed), Percentage: '-' },
+            { Metric: 'Average Call Duration', Count: this.formatResolutionTime(this.callStatisticsData.avgDuration), Percentage: '-' },
+            { Metric: 'Total Calls', Count: this.formatNumber(this.callStatisticsData.inbound + this.callStatisticsData.outbound), Percentage: '-' },
+            { Metric: 'Pending Callbacks', Count: this.formatNumber(this.callbackStatusData.pending), Percentage: `${this.getCallbackPercentage(this.callbackStatusData.pending)}%` },
+            { Metric: 'Callback Success Rate', Count: `${this.callbackStatusData.successRate}%`, Percentage: '-' }
+          ],
+          'Inbound Call Trends': this.callTrendsData.labels?.map((label, index) => ({
+            Date: label,
+            'Inbound Calls': this.callTrendsData.inbound[index] || 0
+          })) || [],
+          'Outbound Call Trends': this.callTrendsData.labels?.map((label, index) => ({
+            Date: label,
+            'Outbound Calls': this.callTrendsData.outbound[index] || 0
+          })) || [],
           'Product Performance': this.productPerformanceData.map(product => ({
-            Category: product.category,
-            Volume: product.volume,
-            'Resolution Time': `${product.resolutionTime} min`,
-            'CSAT': product.csat,
-            'Volume Trend': `${product.volumeTrend}%`
+            Product: product.category,
+            'Total Tickets': this.formatNumber(product.volume),
+            'Avg Resolution Time': this.formatResolutionTime(product.resolutionTime),
+            'CSAT': `${product.csat}/5`,
+            'Volume Trend': `${product.volumeTrend > 0 ? '+' : ''}${product.volumeTrend}%`
           }))
         };
 
