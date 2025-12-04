@@ -1,11 +1,11 @@
 <template>
   <div class="h-full bg-gray-50 flex flex-col">
     <!-- Fixed Header Section - Sticky -->
-    <div class="flex-shrink-0 px-6 py-4">
+    <div class="flex-shrink-0 px-6 ">
       <!-- Header Title -->
       <div class="mb-1 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Callback Requests</h1>
+          <h1 class="text-xl font-bold text-gray-900">Callback Requests</h1>
           <p class="text-gray-600 mt-1">View and manage customer callback requests</p>
         </div>
 
