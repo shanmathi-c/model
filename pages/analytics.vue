@@ -736,8 +736,8 @@
         <!-- Total Tickets -->
         <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-blue-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-blue-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
@@ -751,8 +751,8 @@
         <!-- Assigned -->
         <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-indigo-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-indigo-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
@@ -766,8 +766,8 @@
         <!-- Pending -->
         <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-orange-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -781,8 +781,8 @@
         <!-- In Progress -->
         <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-cyan-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-cyan-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
@@ -796,8 +796,8 @@
         <!-- Resolved -->
         <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-green-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-green-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -812,8 +812,8 @@
 
         <div class="min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-gray-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-gray-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -834,8 +834,8 @@
         <!-- Avg Resolution Time -->
         <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-yellow-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-yellow-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -849,8 +849,8 @@
         <!-- Avg Reconnection Time -->
         <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-pink-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-pink-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
@@ -864,8 +864,8 @@
         <!-- First Call Resolution Rate -->
         <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-teal-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-teal-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -879,8 +879,8 @@
         <!-- Avg Customer Satisfaction -->
         <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-purple-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-purple-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
               </svg>
             </div>
@@ -894,8 +894,8 @@
         <!-- Callback Completion Rate -->
         <div class="flex-1 min-w-0 flex flex-col items-stretch">
           <div class="flex flex-col items-center text-center p-1 h-full">
-            <div class="p-0.5 bg-orange-100 rounded mb-0.5 flex-shrink-0">
-              <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1 bg-orange-100 rounded mb-1 flex-shrink-0">
+              <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
             </div>
