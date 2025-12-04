@@ -2193,7 +2193,7 @@ export default {
               freshdeskId: ticket.freshdeskId || null,
               callId: ticket.callId || null,
               mergeId: ticket.mergeId || null,
-              wayOfCommunication: ticket.wayOfCommunication || null,
+              wayOfCommunication: ticket.wayOfCommunication || '',
               dataSource: ticket.dataSource || 'ticket', // Track if data is from ticket or call
               feedbackLink: null,
               feedbackLinkCopied: false
