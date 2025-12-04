@@ -587,83 +587,55 @@
         </table>
       </div>
 
-      <!-- Call Statistics Table -->
+      <!-- Call Statistics & Callback Status Table -->
       <div class="mb-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Statistics</h2>
+        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Call Statistics & Callback Status</h2>
         <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
           <thead>
             <tr class="bg-gray-100">
               <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Metric</th>
-              <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">Total Inbound Calls</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.inbound) }}</td>
-            </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-3 py-1">Total Outbound Calls</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.outbound) }}</td>
-            </tr>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">Completed Calls</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.completed) }}</td>
-            </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-3 py-1">Missed Calls</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.missed) }}</td>
-            </tr>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">Callbacks Made</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.callbacks) }}</td>
-            </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-3 py-1">Average Call Duration</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatResolutionTime(callStatisticsData.avgDuration) }}</td>
-            </tr>
-            <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-3 py-1">Total Calls</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(callStatisticsData.inbound + callStatisticsData.outbound) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Callback Status Table -->
-      <div class="mb-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Callback Status</h2>
-        <table class="w-full border-collapse border border-gray-300" style="font-size: 11px;">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border border-gray-300 px-3 py-1 text-left font-semibold">Status</th>
               <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Count</th>
               <th class="border border-gray-300 px-3 py-1 text-right font-semibold">Percentage</th>
             </tr>
           </thead>
           <tbody>
             <tr>
+              <td class="border border-gray-300 px-3 py-1">Total Inbound Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.inbound) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">-</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-1">Total Outbound Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.outbound) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">-</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">Completed Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.completed) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">-</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border border-gray-300 px-3 py-1">Missed Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callStatisticsData.missed) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">-</td>
+            </tr>
+            <tr>
+              <td class="border border-gray-300 px-3 py-1">Average Call Duration</td>
+              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatResolutionTime(callStatisticsData.avgDuration) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">-</td>
+            </tr>
+            <tr class="bg-blue-50 font-semibold">
+              <td class="border border-gray-300 px-3 py-1">Total Calls</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(callStatisticsData.inbound + callStatisticsData.outbound) }}</td>
+              <td class="border border-gray-300 px-3 py-1 text-right">-</td>
+            </tr>
+            <tr>
               <td class="border border-gray-300 px-3 py-1">Pending Callbacks</td>
               <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callbackStatusData.pending) }}</td>
               <td class="border border-gray-300 px-3 py-1 text-right">{{ getCallbackPercentage(callbackStatusData.pending) }}%</td>
             </tr>
-            <tr class="bg-gray-50">
-              <td class="border border-gray-300 px-3 py-1">Missed Callbacks</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callbackStatusData.missed) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ getCallbackPercentage(callbackStatusData.missed) }}%</td>
-            </tr>
-            <tr>
-              <td class="border border-gray-300 px-3 py-1">Successful Callbacks</td>
-              <td class="border border-gray-300 px-3 py-1 text-right font-medium">{{ formatNumber(callbackStatusData.successful) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ getCallbackPercentage(callbackStatusData.successful) }}%</td>
-            </tr>
-            <tr class="bg-blue-50 font-semibold">
-              <td class="border border-gray-300 px-3 py-1">Total Callbacks</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">{{ formatNumber(callbackStatusData.total) }}</td>
-              <td class="border border-gray-300 px-3 py-1 text-right">100%</td>
-            </tr>
             <tr class="bg-green-50">
-              <td class="border border-gray-300 px-3 py-1">Success Rate</td>
+              <td class="border border-gray-300 px-3 py-1">Callback Success Rate</td>
               <td class="border border-gray-300 px-3 py-1 text-right font-medium" colspan="2">{{ callbackStatusData.successRate }}%</td>
             </tr>
           </tbody>
