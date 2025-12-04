@@ -392,7 +392,7 @@
         </div>
 
         <!-- Table -->
-        <div v-else class="overflow-x-auto" style="min-height: calc(100vh - 300px);">
+        <div v-else class="overflow-x-auto pt-4" style="min-height: calc(100vh - 300px);">
           <div class="inline-block min-w-full align-middle h-full">
             <div class="overflow-hidden h-full">
               <table class="min-w-full border-collapse">
